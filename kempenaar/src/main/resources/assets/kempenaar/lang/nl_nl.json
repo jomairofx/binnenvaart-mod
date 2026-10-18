@@ -1,11 +1,11 @@
 {
   "entity.kempenaar.kempenaar": "Kempenaar JOHANNA",
-  "block.kempenaar.verplaatst_water": "Verplaatst water",
+  "block.kempenaar.verplaatst_water": "Displaced Water",
   "category.kempenaar": "Kempenaar",
-  "key.kempenaar.boeg_links": "Boegschroef bakboord (links)",
-  "key.kempenaar.boeg_rechts": "Boegschroef stuurboord (rechts)",
-  "key.kempenaar.hoorn": "Scheepshoorn",
-  "key.kempenaar.luiken": "Luiken open/dicht",
-  "item.kempenaar.kempenaar": "Kempenaar (binnenvaartschip)",
-  "block.kempenaar.laadkraan": "Laadkraan"
+  "item.kempenaar.kempenaar": "Kempenaar (inland ship)",
+  "block.kempenaar.laadkraan": "Cargo Crane",
+  "key.kempenaar.boeg_links_v2": "Bow thruster port (left)",
+  "key.kempenaar.boeg_rechts_v2": "Bow thruster starboard (right)",
+  "key.kempenaar.hoorn_v2": "Ship horn",
+  "key.kempenaar.luiken_v2": "Open/close hatches"
 }

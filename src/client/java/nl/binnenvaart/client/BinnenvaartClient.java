@@ -32,10 +32,10 @@ public class BinnenvaartClient implements ClientModInitializer {
 		EntityRendererRegistry.register(Binnenvaart.SHIP, ShipRenderer::new);
 		ShipEntity.clientSender = ClientPlayNetworking::send;
 
-		thrusterLeft = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.boeg_links", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_LEFT, "category.binnenvaart"));
-		thrusterRight = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.boeg_rechts", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT, "category.binnenvaart"));
-		horn = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.hoorn", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.binnenvaart"));
-		hatches = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.luiken", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "category.binnenvaart"));
+		thrusterLeft = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.boeg_links_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_LEFT, "category.binnenvaart"));
+		thrusterRight = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.boeg_rechts_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT, "category.binnenvaart"));
+		horn = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.hoorn_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.binnenvaart"));
+		hatches = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.luiken_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "category.binnenvaart"));
 
 		ClientPlayNetworking.registerGlobalReceiver(ShipPayloads.Blocks.ID, (payload, context) -> {
 			var world = context.client().world;
@@ -92,8 +92,9 @@ public class BinnenvaartClient implements ClientModInitializer {
 		if (mc.currentScreen == null) {
 			if (mc.options.leftKey.isPressed()) rudder -= 1;
 			if (mc.options.rightKey.isPressed()) rudder += 1;
-			if (held(mc, thrusterLeft)) thruster -= 1;
-			if (held(mc, thrusterRight)) thruster += 1;
+			long win = mc.getWindow().getHandle();
+			if (held(mc, thrusterLeft) || InputUtil.isKeyPressed(win, GLFW.GLFW_KEY_LEFT)) thruster -= 1;
+			if (held(mc, thrusterRight) || InputUtil.isKeyPressed(win, GLFW.GLFW_KEY_RIGHT)) thruster += 1;
 		}
 		boolean h = false, l = false;
 		while (horn.wasPressed()) h = true;
@@ -133,12 +134,12 @@ public class BinnenvaartClient implements ClientModInitializer {
 		var m = ctx.getMatrices();
 		m.push();
 		m.scale(sc, sc, 1f);
-		int w = 286, hgt = 114;
+		int w = 318, hgt = 114;
 		int x = Math.round(6 / sc), y = Math.round(ctx.getScaledWindowHeight() / 2f / sc - hgt / 2f);
 		ctx.fill(x, y, x + w, y + hgt, 0xB0101820);
 		ctx.fill(x, y, x + 2, y + hgt, 0xFF3D7BD9);
 		int lx = x + 7;
-		String where = ship.isAtBowHelm(mc.player) ? "Stuurstand voor" : "Stuurhuis";
+		String where = ship.isAtBowHelm(mc.player) ? "Bow helm" : "Wheelhouse";
 		ctx.drawTextWithShadow(tr, ship.template.name + " · " + where, lx, y + 5, 0xFFFFFF);
 		// telegraaf
 		int thr = ship.syncedThrottle();
@@ -157,8 +158,8 @@ public class BinnenvaartClient implements ClientModInitializer {
 		double kmh = Math.abs(ship.syncedSpeed()) * 20 * 3.6;
 		double heading = ((ship.shipYaw * 180 / Math.PI) - 90 + 180) % 360;
 		if (heading < 0) heading += 360;
-		ctx.drawTextWithShadow(tr, String.format("%.1f km/u%s", kmh, ship.syncedSpeed() < -0.001 ? " achteruit" : ""), lx, y + 43, 0xFFFFFF);
-		ctx.drawTextWithShadow(tr, String.format("Koers %03.0f°", heading), lx + 100, y + 43, 0xFFFFFF);
+		ctx.drawTextWithShadow(tr, String.format("%.1f km/h%s", kmh, ship.syncedSpeed() < -0.001 ? " astern" : ""), lx, y + 43, 0xFFFFFF);
+		ctx.drawTextWithShadow(tr, String.format("Heading %03.0f°", heading), lx + 160, y + 43, 0xFFFFFF);
 		// roer
 		float r = ship.syncedRudder();
 		int ry = y + 57, rw = 90;
@@ -167,30 +168,30 @@ public class BinnenvaartClient implements ClientModInitializer {
 		int pos = lx + rw / 2 + Math.round(r * (rw / 2 - 2));
 		ctx.fill(pos - 2, ry - 2, pos + 2, ry + 7, 0xFFFFD34D);
 		int deg = Math.round(Math.abs(r) * 35);
-		ctx.drawTextWithShadow(tr, "Roer " + deg + "°" + (deg == 0 ? "" : r < 0 ? " BB" : " SB"), lx + rw + 6, ry - 1, 0xFFFFFF);
+		ctx.drawTextWithShadow(tr, "Rudder " + deg + "°" + (deg == 0 ? "" : r < 0 ? " P" : " S"), lx + rw + 6, ry - 1, 0xFFFFFF);
 		// boegschroef: pijlen lichten op
 		int th = ship.syncedThruster();
-		ctx.drawTextWithShadow(tr, "Boeg", lx, y + 69, 0xFFFFFF);
-		int ax = lx + tr.getWidth("Boeg") + 6;
+		ctx.drawTextWithShadow(tr, "Thruster", lx, y + 69, 0xFFFFFF);
+		int ax = lx + tr.getWidth("Thruster") + 6;
 		ctx.fill(ax, y + 68, ax + 14, y + 78, th < 0 ? 0xFF3DBE6A : 0xFF2A333D);
 		ctx.drawText(tr, "◀", ax + 3, y + 69, th < 0 ? 0x101010 : 0x9AA5B0, false);
 		ctx.fill(ax + 16, y + 68, ax + 30, y + 78, th > 0 ? 0xFF3DBE6A : 0xFF2A333D);
 		ctx.drawText(tr, "▶", ax + 19, y + 69, th > 0 ? 0x101010 : 0x9AA5B0, false);
-		ctx.drawText(tr, th == 0 ? "uit" : "", ax + 34, y + 69, 0x9AA5B0, false);
+		ctx.drawText(tr, th == 0 ? "off" : "", ax + 34, y + 69, 0x9AA5B0, false);
 		String extra;
 		if (ShipEntity.COVERS > 0) {
-			extra = "Luiken " + (ship.hatchProgress >= 0.999f ? "dicht" : ship.hatchProgress <= 0.001f ? "open" : "beweegt");
+			extra = "Hatches " + (ship.hatchProgress >= 0.999f ? "closed" : ship.hatchProgress <= 0.001f ? "open" : "moving");
 		} else {
 			StringBuilder sb = new StringBuilder("Tanks");
 			for (int i = 0; i < ship.template.holds.length; i++) sb.append(' ').append(Math.round(ship.fill(i) * 100)).append('%');
 			extra = sb.toString();
 		}
-		ctx.drawTextWithShadow(tr, extra, lx + 100, y + 69, 0xFFFFFF);
-		ctx.drawTextWithShadow(tr, String.format("Lading %d%%  Diepgang %.1f m", Math.round(ship.load() * 100), ship.draft()), lx, y + 81, 0xFFFFFF);
-		if (ship.isAground()) ctx.drawTextWithShadow(tr, "AAN DE GROND", lx + 120, y + 81, 0xFF5555);
-		String keys = String.format("W/S telegraaf  A/D roer  %s/%s boeg  H hoorn", keyName(thrusterLeft), keyName(thrusterRight)) + (ShipEntity.COVERS > 0 ? "  L luiken" : "");
+		ctx.drawTextWithShadow(tr, extra, lx + 160, y + 69, 0xFFFFFF);
+		ctx.drawTextWithShadow(tr, String.format("Cargo %d%%  Draught %.1f m", Math.round(ship.load() * 100), ship.draft()), lx, y + 81, 0xFFFFFF);
+		if (ship.isAground()) ctx.drawTextWithShadow(tr, "AGROUND", lx + 200, y + 81, 0xFF5555);
+		String keys = String.format("W/S telegraph  A/D rudder  %s/%s thruster  H horn", keyName(thrusterLeft), keyName(thrusterRight)) + (ShipEntity.COVERS > 0 ? "  L hatches" : "");
 		ctx.drawText(tr, keys, lx, y + 93, 0x7F8C99, false);
-		ctx.drawText(tr, "F5 camera  (muiswiel: in-/uitzoomen)", lx, y + 103, 0x7F8C99, false);
+		ctx.drawText(tr, "F5 camera  (scroll wheel: zoom)", lx, y + 103, 0x7F8C99, false);
 		m.pop();
 	}
 }

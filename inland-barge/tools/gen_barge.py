@@ -75,8 +75,10 @@ for b in BEAMS:
     for z in R(2, 8):
         S(b, 3, z, SSL)
 for a, b in HOLDS:
-    for y in R(-2, 2):
+    for y in R(-2, 3):
         S(a + 1, y, 2, "ladder[facing=south]")
+    # ladder on the outside of the coaming: from the side deck over the edge into the hold
+    for y in (2, 3): S(a + 1, y, 0, "ladder[facing=north]")
 
 # ---------------- stern gear ----------------
 for x in R(2, 4):
@@ -146,7 +148,7 @@ S(10, 2, 4, "dark_oak_door[facing=south,half=lower,hinge=right,open=false]")
 S(10, 3, 4, "dark_oak_door[facing=south,half=upper,hinge=right,open=false]")
 # bedroom: double bed against the aft wall, wardrobe in the corner (door at x=6 stays free)
 for z in (2, 3):
-    S(4, 2, z, "smooth_quartz_slab[type=bottom]"); S(5, 2, z, "smooth_quartz_slab[type=bottom]")
+    S(4, 2, z, "blue_bed[facing=west,part=head,occupied=false]"); S(5, 2, z, "blue_bed[facing=west,part=foot,occupied=false]")
 S(7, 2, 2, "barrel[facing=up]"); S(7, 3, 2, "barrel[facing=up]")
 S(4, 2, 4, W)
 # bathroom: shower, sink, toilet (door at x=10 stays free)
@@ -212,8 +214,6 @@ for y in R(2, 5): S(0, y, 5, "birch_fence")
 S(0, 6, 5, "end_rod[facing=up]")
 for z in (3, 4):
     S(0, 5, z, "red_wool"); S(0, 4, z, "white_wool"); S(0, 3, z, "blue_wool")
-S(2, 2, 1, "polished_blackstone_wall"); S(2, 2, 9, "polished_blackstone_wall")
-S(14, 2, 1, "polished_blackstone_wall"); S(14, 2, 9, "polished_blackstone_wall")
 # boarding ladders (outside the hull) reaching below the waterline
 for y in R(-4, 1):
     S(14, y, -1, "ladder[facing=north]"); S(14, y, 11, "ladder[facing=south]")
@@ -224,7 +224,6 @@ for x in R(98, L - 3): S(x, 2, 0, DB); S(x, 2, 10, DB)
 S(L - 2, 2, 1, DB); S(L - 2, 2, 9, DB)
 for z in R(2, 8): S(L - 1, 2, z, DB)
 S(L - 1, 3, 5, "lantern[hanging=false]")
-for p in [(96, 2, 1), (96, 2, 9), (L - 4, 2, 1), (L - 4, 2, 9)]: S(*p, "polished_blackstone_wall")
 # bow steering position
 for z in R(4, 6): S(100, 2, z, "polished_deepslate_slab[type=top]")
 S(100, 3, 4, "black_carpet"); S(100, 3, 6, "black_carpet")
@@ -251,12 +250,14 @@ S(100, 1, 8, "dark_oak_trapdoor[facing=north,half=top,open=false]")
 for x in (97,):
     S(x, 2, 0, "air"); S(x, 2, 10, "air")
 
+# free passage from the aft deck to the side gangways
+for z in (1, 9): S(1, 2, z, "air")
 B = {k: v for k, v in B.items() if v != "minecraft:air"}
 
 # ---------------- connections (bars, fences, walls) ----------------
 def base(s): return s.split("[")[0].replace("minecraft:", "")
 NONFULL = ("slab", "stairs", "pane", "bars", "fence", "wall", "trapdoor", "door", "ladder", "lantern", "carpet",
-           "rod", "chain", "potted", "cauldron", "lever", "campfire", "grindstone", "anvil")
+           "rod", "chain", "potted", "cauldron", "lever", "campfire", "grindstone", "anvil", "_bed")
 def is_full(s):
     if s is None: return False
     b = base(s)

@@ -20,7 +20,9 @@ import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.random.Random;
@@ -39,6 +41,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 	};
 	private final Map<BlockState, Sprite[]> spriteCache = new HashMap<>();
 	private final Map<ShipEntity, DynCache> caches = new java.util.WeakHashMap<>();
+	private Frustum lastFrustum;
 
 	public ShipRenderer(EntityRendererFactory.Context ctx) {
 		super(ctx);
@@ -52,6 +55,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 
 	@Override
 	public boolean shouldRender(ShipEntity entity, Frustum frustum, double x, double y, double z) {
+		lastFrustum = frustum;
 		return frustum.isVisible(entity.getBoundingBox().expand(2));
 	}
 
@@ -68,7 +72,12 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		matrices.push();
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotation((float) -y));
 		matrices.translate(-ShipTemplate.CX, 0, -ShipTemplate.CZ);
-		mesh.render(matrices, consumers);
+		Vec3d cam = this.dispatcher.camera.getPos();
+		Vec3d shipPos = ship.getLerpedPos(tickDelta);
+		Box bb = ship.getBoundingBox();
+		double dx = Math.max(0, Math.max(bb.minX - cam.x, cam.x - bb.maxX)), dz = Math.max(0, Math.max(bb.minZ - cam.z, cam.z - bb.maxZ));
+		double dyy = Math.max(0, Math.max(bb.minY - cam.y, cam.y - bb.maxY));
+		mesh.render(matrices, consumers, lastFrustum, shipPos, y, Math.sqrt(dx * dx + dyy * dyy + dz * dz));
 
 		DynCache dc = caches.computeIfAbsent(ship, k -> new DynCache());
 		float hatch = MathHelper.lerp(tickDelta, ship.prevHatchProgress, ship.hatchProgress);

@@ -1,5 +1,6 @@
 package nl.binnenvaart.client;
 
+import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -19,7 +20,9 @@ import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.random.Random;
@@ -38,6 +41,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 	};
 	private final Map<BlockState, Sprite[]> spriteCache = new HashMap<>();
 	private final Map<ShipEntity, DynCache> caches = new java.util.WeakHashMap<>();
+	private Frustum lastFrustum;
 
 	public ShipRenderer(EntityRendererFactory.Context ctx) {
 		super(ctx);
@@ -51,6 +55,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 
 	@Override
 	public boolean shouldRender(ShipEntity entity, Frustum frustum, double x, double y, double z) {
+		lastFrustum = frustum;
 		return frustum.isVisible(entity.getBoundingBox().expand(2));
 	}
 
@@ -67,7 +72,12 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		matrices.push();
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotation((float) -y));
 		matrices.translate(-ShipTemplate.CX, 0, -ShipTemplate.CZ);
-		mesh.render(matrices, consumers);
+		Vec3d cam = this.dispatcher.camera.getPos();
+		Vec3d shipPos = ship.getLerpedPos(tickDelta);
+		Box bb = ship.getBoundingBox();
+		double dx = Math.max(0, Math.max(bb.minX - cam.x, cam.x - bb.maxX)), dz = Math.max(0, Math.max(bb.minZ - cam.z, cam.z - bb.maxZ));
+		double dyy = Math.max(0, Math.max(bb.minY - cam.y, cam.y - bb.maxY));
+		mesh.render(matrices, consumers, lastFrustum, shipPos, y, Math.sqrt(dx * dx + dyy * dyy + dz * dz));
 
 		DynCache dc = caches.computeIfAbsent(ship, k -> new DynCache());
 		float hatch = MathHelper.lerp(tickDelta, ship.prevHatchProgress, ship.hatchProgress);
@@ -87,6 +97,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			}
 			renderCargo(ship, fills, hatch, dc.sink, light);
 			renderCovers(hatch, dc.sink, light);
+			renderBeds(ship, dc.sink, light);
 		}
 		dc.sink.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
 		renderName(ship, matrices, consumers, light);
@@ -202,6 +213,47 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			box(vc, s, x0 + 0.03f, y + 0.25f, 2.2f, x0 + 4.97f, y + 0.5f, 8.8f, light, 1f);
 			box(vc, s, x0 + 0.03f, y + 0.5f, 3.8f, x0 + 4.97f, y + 0.62f, 7.2f, light, 1f);
 		}
+	}
+
+	// ---------------------------------------------------------------- bedden
+
+	/** Bedden worden in Minecraft apart getekend (geen blokmodel), dus hier zelf: frame, matras, dekbed en kussen. */
+	private void renderBeds(ShipEntity ship, Sink vc, int light) {
+		Sprite wool = sprites(Blocks.WHITE_WOOL.getDefaultState())[0];
+		Sprite frame = sprites(Blocks.DARK_OAK_PLANKS.getDefaultState())[0];
+		for (int[] h : ship.bedHeads()) {
+			BlockState st = ship.structure.get(h[0], h[1], h[2]);
+			if (!(st.getBlock() instanceof BedBlock bed)) continue;
+			Block w = Registries.BLOCK.get(Identifier.ofVanilla(bed.getColor().getName() + "_wool"));
+			Sprite cover = sprites(w.getDefaultState())[0];
+			Direction f = st.get(BedBlock.FACING);
+			// maten in het bed: u over de breedte (0..1), v van hoofdeinde (0) naar voeteneind (2)
+			bedBox(vc, frame, h, f, 0.0f, 0.0f, 1.0f, 2.0f, 0.12f, 0.3f, light, 0.9f);           // frame
+			for (float[] leg : new float[][]{{0f, 0f}, {0.85f, 0f}, {0f, 1.85f}, {0.85f, 1.85f}})
+				bedBox(vc, frame, h, f, leg[0], leg[1], leg[0] + 0.15f, leg[1] + 0.15f, 0f, 0.12f, light, 0.8f);
+			bedBox(vc, frame, h, f, 0.0f, 0.0f, 1.0f, 0.1f, 0.12f, 0.9f, light, 0.85f);           // hoofdeinde
+			bedBox(vc, wool, h, f, 0.03f, 0.1f, 0.97f, 1.97f, 0.3f, 0.5625f, light, 1f);          // matras
+			bedBox(vc, wool, h, f, 0.15f, 0.16f, 0.85f, 0.55f, 0.5625f, 0.7f, light, 1f);         // kussen
+			bedBox(vc, cover, h, f, 0.0f, 0.7f, 1.0f, 2.0f, 0.5625f, 0.62f, light, 1f);           // dekbed
+			bedBox(vc, cover, h, f, 0.0f, 1.97f, 1.0f, 2.02f, 0.28f, 0.62f, light, 0.9f);         // overslag voeteneind
+		}
+	}
+
+	private static void bedBox(Sink vc, Sprite s, int[] h, Direction f, float u0, float v0, float u1, float v1, float y0, float y1, int light, float tint) {
+		float[] a = map(f, u0, v0), b = map(f, u1, v1);
+		float x0 = h[0] + Math.min(a[0], b[0]), x1 = h[0] + Math.max(a[0], b[0]);
+		float z0 = h[2] + Math.min(a[1], b[1]), z1 = h[2] + Math.max(a[1], b[1]);
+		box(vc, s, x0, h[1] + y0, z0, x1, h[1] + y1, z1, light, tint);
+	}
+
+	/** (u, v) in bedmaten naar (x, z) vanaf de hoek van het blok met het hoofdeinde. */
+	private static float[] map(Direction f, float u, float v) {
+		return switch (f) {
+			case NORTH -> new float[]{u, v};            // hoofd naar -z, voeteneind richting +z
+			case SOUTH -> new float[]{1 - u, 1 - v};
+			case WEST -> new float[]{v, 1 - u};
+			default -> new float[]{1 - v, u};           // EAST
+		};
 	}
 
 	// ---------------------------------------------------------------- naam

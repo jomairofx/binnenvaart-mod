@@ -33,7 +33,9 @@ public final class SelfTest {
 	private static boolean failed;
 	private static int waterTop, craneBefore;
 	private static BlockPos cranePos;
-	private static nl.kempenaar.block.CraneBlockEntity crane;
+	private static nl.kempenaar.block.CraneBlockEntity crane, crane2;
+	private static net.minecraft.entity.Entity barge;
+	private static int switchTick;
 
 	public static void register() {
 		String mode = System.getProperty("kempenaar.selftest", "");
@@ -128,15 +130,43 @@ public final class SelfTest {
 				crane = (nl.kempenaar.block.CraneBlockEntity) w.getBlockEntity(cranePos);
 				for (int i = 0; i < 10; i++) crane.setStack(i, new ItemStack(Items.SAND, 64));
 			}
-			if (tick == 1330) {
+			if (tick == 1001) {
+				// een STELLA MARIS uit de andere mod, om te zien of de kraan ook met andere schepen werkt
+				var type = net.minecraft.registry.Registries.ENTITY_TYPE.get(net.minecraft.util.Identifier.of("inlandbarge", "inland_barge"));
+				net.minecraft.entity.Entity e = type == null ? null : type.create(w);
+				if (e != null && e.getClass().getSimpleName().equals("ShipEntity")) {
+					e.getClass().getMethod("place", double.class, int.class, double.class, double.class).invoke(e, 60.0, waterTop, -60.5, 0.0);
+					w.spawnEntity(e);
+					barge = e;
+					nl.kempenaar.block.ShipAccess acc = nl.kempenaar.block.ShipAccess.of(e);
+					Vec3d cp2 = acc.toWorld(55.5, 0, -4.5);
+					BlockPos c2 = BlockPos.ofFloored(cp2.x, waterTop, cp2.z);
+					w.setBlockState(c2, Kempenaar.CRANE.getDefaultState());
+					crane2 = (nl.kempenaar.block.CraneBlockEntity) w.getBlockEntity(c2);
+					for (int i = 0; i < 6; i++) crane2.setStack(i, new ItemStack(Items.GRAVEL, 64));
+				} else {
+					log.add("geen STELLA MARIS beschikbaar (mod niet geladen)");
+				}
+			}
+			if (tick == 1640) {
 				int sand = 0;
 				for (int i = 0; i < ShipEntity.HOLD_SLOTS; i++) if (ship.hold(0).getStack(i).isOf(Items.SAND)) sand += ship.hold(0).getStack(i).getCount();
-				check("laadkraan laden", sand >= 512, sand + " zand in ruim 1, nog " + crane.countItems() + " in de kraan");
+				check("laadkraan laden", sand >= 256 && sand < 640, sand + " zand in ruim 1 na 32 s (rustig tempo), nog " + crane.countItems() + " in de kraan");
+				if (barge != null) {
+					nl.kempenaar.block.ShipAccess acc = nl.kempenaar.block.ShipAccess.of(barge);
+					int gravel = 0;
+					for (int h = 0; h < acc.holdCount(); h++)
+						for (int i = 0; i < acc.hold(h).size(); i++) if (acc.hold(h).getStack(i).isOf(Items.GRAVEL)) gravel += acc.hold(h).getStack(i).getCount();
+					check("laadkraan met STELLA MARIS", gravel >= 128, gravel + " grind in de ruimen van de STELLA MARIS");
+				}
+			}
+			if (tick > 1640 && switchTick == 0 && !crane.running) {
 				crane.testSetUnloading(true);
 				craneBefore = crane.countItems();
+				switchTick = tick;
 			}
-			if (tick == 1630) {
-				check("laadkraan lossen", crane.countItems() >= craneBefore + 256, "kraan had " + craneBefore + ", nu " + crane.countItems());
+			if (switchTick > 0 && tick == switchTick + 520) {
+				check("laadkraan lossen", crane.countItems() >= craneBefore + 128, "kraan had " + craneBefore + ", nu " + crane.countItems());
 				Files.writeString(Path.of("selftest.txt"), String.join("\n", log) + "\n" + (failed ? "RESULT FAIL" : "RESULT PASS") + "\n");
 				server.saveAll(false, true, true);
 				server.stop(false);

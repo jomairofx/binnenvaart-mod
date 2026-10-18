@@ -39,6 +39,8 @@ public final class ClientSelfTest {
 			new Shot("05_ruim", new double[]{50, 5.6, 4.5}, new double[]{8, 5.5, 4.5}, false),
 			new Shot("06_woonkamer", new double[]{16.2, 2.62, 6.5}, new double[]{12.5, 2.0, 1.5}, false),
 			new Shot("07_gang", new double[]{15.8, 2.62, 4.5}, new double[]{6.0, 2.4, 4.5}, false),
+			new Shot("07b_keuken", new double[]{11.6, 2.62, 4.4}, new double[]{15.5, 1.6, 7.5}, false),
+			new Shot("07c_zithoek", new double[]{16.4, 2.62, 5.5}, new double[]{11.5, 1.6, 1.5}, false),
 			new Shot("08_achterdek_trap", new double[]{1.4, 3.8, 3.0}, new double[]{9, 5, 5.5}, false),
 			new Shot("09_stuurhuis_binnen", new double[]{13.2, 6.7, 4.5}, new double[]{40, 4.5, 4.5}, false),
 	};
@@ -291,10 +293,10 @@ public final class ClientSelfTest {
 			});
 			cmd(srv, "gamemode spectator @p");
 			mc.options.hudHidden = true;
-			tp(srv, ship, new double[]{28.5, 12, -17}, new double[]{28.5, 3, 3});
+			tp(srv, ship, new double[]{24.5, 17, -36}, new double[]{30.5, 9, 3});
 		}
-		if (t == crane + 150) shot(mc, "21_kraan");
-		if (t == crane + 178) shot(mc, "22_kraan_storten");
+		if (t == crane + 175) shot(mc, "21_kraan");
+		if (t == crane + 228) shot(mc, "22_kraan_storten");
 		if (t == crane + 380) {
 			tp(srv, ship, new double[]{60.5, 2.0 + 1.62, 2.5}, new double[]{61.5, 1.5, 1.5});
 		}
@@ -314,7 +316,7 @@ public final class ClientSelfTest {
 			int sand = 0;
 			if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s)
 				for (int i = 0; i < s.hold(0).size(); i++) if (s.hold(0).getStack(i).isOf(net.minecraft.item.Items.SAND)) sand += s.hold(0).getStack(i).getCount();
-			check("laadkraan", sand >= 256, sand + " zand in ruim 1");
+			check("laadkraan", sand >= 128, sand + " zand in ruim 1");
 			shot(mc, "23_kraan_ruim");
 			finish(mc, failed ? "RESULT FAIL" : "RESULT PASS");
 		}

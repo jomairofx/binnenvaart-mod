@@ -208,7 +208,7 @@ S(14, 2, 20, "dark_oak_stairs[facing=west,half=bottom]"); S(16, 2, 21, "dark_oak
 for f in FLOORS[:-1]:
     y = f + 1
     for (bx, bz) in ((10, 7), (14, 7), (22, 7), (10, 22), (14, 22), (22, 22)):
-        S(bx, y, bz, "white_wool"); S(bx + 1, y, bz, "smooth_quartz_slab[type=bottom]")
+        S(bx, y, bz, "white_bed[facing=west,part=head,occupied=false]"); S(bx + 1, y, bz, "white_bed[facing=west,part=foot,occupied=false]")
     S(24, y, 7, "barrel[facing=up]"); S(24, y, 22, "barrel[facing=up]")
     S(10, y, 12, "potted_fern")
 # bridge: helm console, chair, chart table, radar screens
@@ -255,7 +255,7 @@ B = {k: v for k, v in B.items() if v != "minecraft:air"}
 # ---------------- connections ----------------
 def base(s): return s.split("[")[0].replace("minecraft:", "")
 NONFULL = ("slab", "stairs", "pane", "bars", "fence", "wall", "trapdoor", "door", "ladder", "lantern", "carpet",
-           "rod", "chain", "potted", "cauldron", "lever", "campfire", "grindstone", "anvil")
+           "rod", "chain", "potted", "cauldron", "lever", "campfire", "grindstone", "anvil", "_bed")
 def is_full(s):
     if s is None: return False
     b = base(s)

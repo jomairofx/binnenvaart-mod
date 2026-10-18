@@ -32,10 +32,10 @@ public class MegaTankerClient implements ClientModInitializer {
 		EntityRendererRegistry.register(MegaTanker.SHIP, ShipRenderer::new);
 		ShipEntity.clientSender = ClientPlayNetworking::send;
 
-		thrusterLeft = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.megatanker.thruster_port", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_LEFT, "category.megatanker"));
-		thrusterRight = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.megatanker.thruster_starboard", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT, "category.megatanker"));
-		horn = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.megatanker.horn", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.megatanker"));
-		hatches = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.megatanker.hatches", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "category.megatanker"));
+		thrusterLeft = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.megatanker.thruster_port_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_LEFT, "category.megatanker"));
+		thrusterRight = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.megatanker.thruster_starboard_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT, "category.megatanker"));
+		horn = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.megatanker.horn_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.megatanker"));
+		hatches = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.megatanker.hatches_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "category.megatanker"));
 
 		ClientPlayNetworking.registerGlobalReceiver(ShipPayloads.Blocks.ID, (payload, context) -> {
 			var world = context.client().world;
@@ -92,8 +92,9 @@ public class MegaTankerClient implements ClientModInitializer {
 		if (mc.currentScreen == null) {
 			if (mc.options.leftKey.isPressed()) rudder -= 1;
 			if (mc.options.rightKey.isPressed()) rudder += 1;
-			if (held(mc, thrusterLeft)) thruster -= 1;
-			if (held(mc, thrusterRight)) thruster += 1;
+			long win = mc.getWindow().getHandle();
+			if (held(mc, thrusterLeft) || InputUtil.isKeyPressed(win, GLFW.GLFW_KEY_LEFT)) thruster -= 1;
+			if (held(mc, thrusterRight) || InputUtil.isKeyPressed(win, GLFW.GLFW_KEY_RIGHT)) thruster += 1;
 		}
 		boolean h = false, l = false;
 		while (horn.wasPressed()) h = true;
@@ -133,7 +134,7 @@ public class MegaTankerClient implements ClientModInitializer {
 		var m = ctx.getMatrices();
 		m.push();
 		m.scale(sc, sc, 1f);
-		int w = 286, hgt = 114;
+		int w = 318, hgt = 114;
 		int x = Math.round(6 / sc), y = Math.round(ctx.getScaledWindowHeight() / 2f / sc - hgt / 2f);
 		ctx.fill(x, y, x + w, y + hgt, 0xB0101820);
 		ctx.fill(x, y, x + 2, y + hgt, 0xFF3D7BD9);
@@ -158,7 +159,7 @@ public class MegaTankerClient implements ClientModInitializer {
 		double heading = ((ship.shipYaw * 180 / Math.PI) - 90 + 180) % 360;
 		if (heading < 0) heading += 360;
 		ctx.drawTextWithShadow(tr, String.format("%.1f km/h%s", kmh, ship.syncedSpeed() < -0.001 ? " astern" : ""), lx, y + 43, 0xFFFFFF);
-		ctx.drawTextWithShadow(tr, String.format("Heading %03.0f°", heading), lx + 100, y + 43, 0xFFFFFF);
+		ctx.drawTextWithShadow(tr, String.format("Heading %03.0f°", heading), lx + 160, y + 43, 0xFFFFFF);
 		// roer
 		float r = ship.syncedRudder();
 		int ry = y + 57, rw = 90;
@@ -185,9 +186,9 @@ public class MegaTankerClient implements ClientModInitializer {
 			for (int i = 0; i < ship.template.holds.length; i++) sb.append(' ').append(Math.round(ship.fill(i) * 100)).append('%');
 			extra = sb.toString();
 		}
-		ctx.drawTextWithShadow(tr, extra, lx + 100, y + 69, 0xFFFFFF);
+		ctx.drawTextWithShadow(tr, extra, lx + 160, y + 69, 0xFFFFFF);
 		ctx.drawTextWithShadow(tr, String.format("Cargo %d%%  Draught %.1f m", Math.round(ship.load() * 100), ship.draft()), lx, y + 81, 0xFFFFFF);
-		if (ship.isAground()) ctx.drawTextWithShadow(tr, "AGROUND", lx + 120, y + 81, 0xFF5555);
+		if (ship.isAground()) ctx.drawTextWithShadow(tr, "AGROUND", lx + 200, y + 81, 0xFF5555);
 		String keys = String.format("W/S telegraph  A/D rudder  %s/%s thruster  H horn", keyName(thrusterLeft), keyName(thrusterRight)) + (ShipEntity.COVERS > 0 ? "  L hatches" : "");
 		ctx.drawText(tr, keys, lx, y + 93, 0x7F8C99, false);
 		ctx.drawText(tr, "F5 camera  (scroll wheel: zoom)", lx, y + 103, 0x7F8C99, false);

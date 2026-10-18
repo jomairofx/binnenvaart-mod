@@ -5,52 +5,105 @@ import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
-import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.util.shape.VoxelShape;
 import nl.kempenaar.ship.ShipStructure;
 import nl.kempenaar.ship.ShipTemplate;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Een eenmalig opgebouwd model van alle scheepsblokken, dat elk beeld alleen nog gedraaid hoeft te worden. */
+/**
+ * Een eenmalig opgebouwd model van alle scheepsblokken.
+ * Voor snelheid is het opgedeeld in plakken van 8 blokken (alleen wat in beeld is wordt getekend)
+ * en in drie detailniveaus: kleine details alleen van dichtbij, binnenkant tot middellange afstand,
+ * en van ver weg alleen de buitenkant.
+ */
 public final class ShipMesh {
 	private static final int STRIDE = 7; // x y z u v kleur licht
+	private static final int SEC = 8;
+	/** Sommige schepen (tanker) hebben dichte tanks: vlakken daarheen zijn nooit te zien. */
+	private static final boolean SEALED_CULL = false;
+	/** Afstanden (blokken) waaronder detailniveau 0 en 1 nog getekend worden. */
+	public static final double NEAR = 40, MID = 96;
+
 	public final int version;
+	private final int sections;
 	private final List<RenderLayer> layers = new ArrayList<>();
-	private final List<float[]> data = new ArrayList<>();
+	/** [laag][sectie * 3 + niveau] */
+	private final List<float[][]> data = new ArrayList<>();
 
 	private ShipMesh(int version) {
 		this.version = version;
+		this.sections = (ShipTemplate.SIZE_X + SEC - 1) / SEC;
 	}
 
-	public void render(MatrixStack matrices, VertexConsumerProvider consumers) {
+	/**
+	 * Tekent de zichtbare plakken. {@code frustum} mag null zijn (dan alles), {@code shipPos}/{@code yaw}
+	 * zijn de wereldpositie en draaiing van het schip in dit beeld, {@code distance} de afstand van de camera tot het schip.
+	 */
+	public void render(MatrixStack matrices, VertexConsumerProvider consumers, @Nullable Frustum frustum, Vec3d shipPos, double yaw, double distance) {
 		MatrixStack.Entry entry = matrices.peek();
 		Matrix4f m = entry.getPositionMatrix();
+		int minLevel = distance < NEAR ? 0 : distance < MID ? 1 : 2;
+		boolean[] visible = new boolean[sections];
+		double c = Math.cos(yaw), s = Math.sin(yaw);
+		for (int k = 0; k < sections; k++) {
+			if (frustum == null) {
+				visible[k] = true;
+				continue;
+			}
+			double x0 = ShipTemplate.MIN_X + k * SEC - ShipTemplate.CX, x1 = x0 + SEC;
+			double z0 = ShipTemplate.MIN_Z - ShipTemplate.CZ, z1 = z0 + ShipTemplate.SIZE_Z;
+			double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE, minZ = Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
+			for (double lx : new double[]{x0, x1})
+				for (double lz : new double[]{z0, z1}) {
+					double wx = shipPos.x + lx * c - lz * s, wz = shipPos.z + lx * s + lz * c;
+					minX = Math.min(minX, wx);
+					maxX = Math.max(maxX, wx);
+					minZ = Math.min(minZ, wz);
+					maxZ = Math.max(maxZ, wz);
+				}
+			Box b = new Box(minX, shipPos.y + ShipTemplate.MIN_Y, minZ, maxX, shipPos.y + ShipTemplate.MIN_Y + ShipTemplate.SIZE_Y, maxZ);
+			visible[k] = frustum.isVisible(b);
+		}
 		for (int l = 0; l < layers.size(); l++) {
-			VertexConsumer vc = consumers.getBuffer(layers.get(l));
-			float[] d = data.get(l);
-			for (int i = 0; i < d.length; i += STRIDE) {
-				vc.vertex(m, d[i], d[i + 1], d[i + 2])
-						.color(Float.floatToRawIntBits(d[i + 5]))
-						.texture(d[i + 3], d[i + 4])
-						.overlay(OverlayTexture.DEFAULT_UV)
-						.light(Float.floatToRawIntBits(d[i + 6]))
-						.normal(entry, 0f, 1f, 0f);
+			float[][] parts = data.get(l);
+			VertexConsumer vc = null;
+			for (int k = 0; k < sections; k++) {
+				if (!visible[k]) continue;
+				for (int lev = minLevel; lev < 3; lev++) {
+					float[] d = parts[k * 3 + lev];
+					if (d == null || d.length == 0) continue;
+					if (vc == null) vc = consumers.getBuffer(layers.get(l));
+					for (int i = 0; i < d.length; i += STRIDE) {
+						vc.vertex(m, d[i], d[i + 1], d[i + 2])
+								.color(Float.floatToRawIntBits(d[i + 5]))
+								.texture(d[i + 3], d[i + 4])
+								.overlay(OverlayTexture.DEFAULT_UV)
+								.light(Float.floatToRawIntBits(d[i + 6]))
+								.normal(entry, 0f, 1f, 0f);
+					}
+				}
 			}
 		}
 	}
@@ -66,6 +119,15 @@ public final class ShipMesh {
 		};
 	}
 
+	/** Kleine onderdelen (relingen, tapijt, lampjes, hendels...) zijn van ver niet te zien. */
+	private static boolean isDetail(BlockState st, ShipStructure s, BlockPos pos) {
+		if (st.getBlock() instanceof net.minecraft.block.DoorBlock || st.getBlock() instanceof net.minecraft.block.CarpetBlock) return false;
+		VoxelShape shape = st.getOutlineShape(s, pos);
+		double v = 0;
+		for (Box b : shape.getBoundingBoxes()) v += b.getLengthX() * b.getLengthY() * b.getLengthZ();
+		return v < 0.2;
+	}
+
 	public static ShipMesh build(ShipStructure s) {
 		ShipMesh mesh = new ShipMesh(s.version);
 		MinecraftClient mc = MinecraftClient.getInstance();
@@ -75,8 +137,10 @@ public final class ShipMesh {
 		int[] blk = new int[sky.length];
 		boolean[] opaque = new boolean[sky.length];
 		computeLight(s, sky, blk, opaque);
+		boolean[] outside = floodOutside(opaque);
 
-		Map<RenderLayer, FloatList> buffers = new LinkedHashMap<>();
+		Map<RenderLayer, FloatList[]> buffers = new HashMap<>();
+		List<RenderLayer> order = new ArrayList<>();
 		Random random = Random.create();
 		BlockPos.Mutable pos = new BlockPos.Mutable();
 		for (int y = ShipTemplate.MIN_Y; y < ShipTemplate.MIN_Y + ShipTemplate.SIZE_Y; y++) {
@@ -87,22 +151,39 @@ public final class ShipMesh {
 					pos.set(x, y, z);
 					BakedModel model = brm.getModel(st);
 					RenderLayer layer = RenderLayers.getEntityBlockLayer(st, false);
-					FloatList buf = buffers.computeIfAbsent(layer, k -> new FloatList());
+					FloatList[] buf = buffers.computeIfAbsent(layer, k -> {
+						order.add(k);
+						FloatList[] a = new FloatList[mesh.sections * 3];
+						for (int i = 0; i < a.length; i++) a[i] = new FloatList();
+						return a;
+					});
+					int sec = Math.min(mesh.sections - 1, Math.max(0, (x - ShipTemplate.MIN_X) / SEC));
+					boolean detail = isDetail(st, s, pos);
 					for (Direction dir : Direction.values()) {
 						random.setSeed(42L);
 						List<BakedQuad> quads = model.getQuads(st, dir, random);
 						if (quads.isEmpty()) continue;
 						if (!Block.shouldDrawSide(st, s, pos, dir, pos.offset(dir))) continue;
-						for (BakedQuad q : quads) emit(buf, q, st, x, y, z, dir, sky, blk, opaque, colors);
+						int ni = ShipTemplate.index(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
+						if (SEALED_CULL && ni >= 0 && !outside[ni] && !opaque[ni]) continue;
+						int lev = detail ? 0 : (ni < 0 || outside[ni]) ? 2 : 1;
+						if (dir == Direction.DOWN && !detail && x >= 0 && x < s.template.length && y <= s.template.hullBottom[x]) lev = 1;
+						for (BakedQuad q : quads) emit(buf[sec * 3 + lev], q, st, x, y, z, dir, sky, blk, opaque, colors);
 					}
 					random.setSeed(42L);
-					for (BakedQuad q : model.getQuads(st, null, random)) emit(buf, q, st, x, y, z, null, sky, blk, opaque, colors);
+					int own = ShipTemplate.index(x, y, z);
+					int levFree = detail ? 0 : (own < 0 || outside[own]) ? 2 : 1;
+					for (BakedQuad q : model.getQuads(st, null, random))
+						emit(buf[sec * 3 + levFree], q, st, x, y, z, null, sky, blk, opaque, colors);
 				}
 			}
 		}
-		for (Map.Entry<RenderLayer, FloatList> e : buffers.entrySet()) {
-			mesh.layers.add(e.getKey());
-			mesh.data.add(e.getValue().toArray());
+		for (RenderLayer layer : order) {
+			FloatList[] b = buffers.get(layer);
+			float[][] parts = new float[b.length][];
+			for (int i = 0; i < b.length; i++) parts[i] = b[i].n == 0 ? null : b[i].toArray();
+			mesh.layers.add(layer);
+			mesh.data.add(parts);
 		}
 		return mesh;
 	}
@@ -147,6 +228,38 @@ public final class ShipMesh {
 			buf.add(Float.intBitsToFloat(color));
 			buf.add(Float.intBitsToFloat(light));
 		}
+	}
+
+	/** Alle niet-dichte cellen die van buiten het schip bereikbaar zijn. */
+	private static boolean[] floodOutside(boolean[] opaque) {
+		int sx = ShipTemplate.SIZE_X, sy = ShipTemplate.SIZE_Y, sz = ShipTemplate.SIZE_Z;
+		boolean[] out = new boolean[opaque.length];
+		int[] q = new int[opaque.length];
+		int head = 0, tail = 0;
+		for (int iy = 0; iy < sy; iy++)
+			for (int iz = 0; iz < sz; iz++)
+				for (int ix = 0; ix < sx; ix++) {
+					if (ix == 0 || iy == 0 || iz == 0 || ix == sx - 1 || iy == sy - 1 || iz == sz - 1) {
+						int i = (iy * sz + iz) * sx + ix;
+						if (!opaque[i] && !out[i]) {
+							out[i] = true;
+							q[tail++] = i;
+						}
+					}
+				}
+		while (head < tail) {
+			int i = q[head++];
+			int ix = i % sx, iz = (i / sx) % sz, iy = i / (sx * sz);
+			int[][] n = {{ix + 1, iy, iz}, {ix - 1, iy, iz}, {ix, iy + 1, iz}, {ix, iy - 1, iz}, {ix, iy, iz + 1}, {ix, iy, iz - 1}};
+			for (int[] c : n) {
+				if (c[0] < 0 || c[1] < 0 || c[2] < 0 || c[0] >= sx || c[1] >= sy || c[2] >= sz) continue;
+				int j = (c[1] * sz + c[2]) * sx + c[0];
+				if (opaque[j] || out[j]) continue;
+				out[j] = true;
+				q[tail++] = j;
+			}
+		}
+		return out;
 	}
 
 	/** Eenvoudige lichtberekening binnen het schip: daglicht van boven en licht van lampen. */
@@ -201,7 +314,7 @@ public final class ShipMesh {
 	}
 
 	static final class FloatList {
-		float[] a = new float[4096];
+		float[] a = new float[1024];
 		int n;
 
 		void add(float f) {

@@ -3,7 +3,7 @@
   "id": "binnenvaart",
   "version": "${version}",
   "name": "Binnenvaart",
-  "description": "Een vaarbaar binnenvaartschip om op te lopen, te laden en te besturen.",
+  "description": "HENDRIKA: a sailable, walkable inland cargo ship with four cargo holds.",
   "authors": [
     "jomairofx"
   ],

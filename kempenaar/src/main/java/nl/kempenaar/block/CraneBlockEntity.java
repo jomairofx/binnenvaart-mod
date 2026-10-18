@@ -36,18 +36,19 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import nl.kempenaar.Kempenaar;
-import nl.kempenaar.ship.ShipEntity;
+import net.minecraft.entity.Entity;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
 /**
- * De laadkraan: een torenkraan met een loopkat en een grijper.
- * Eén werkgang duurt 4 seconden en verplaatst tot vier stapels (256 stuks) tussen kraan en laadruim.
+ * De laadkraan: een grote havenkraan (torenkraan) met loopkat en grijper, 42 blokken bereik.
+ * Eén werkgang duurt ruim 11 seconden en verplaatst twee stapels; een volle kraan (54 stapels) is zo'n 5 minuten bezig.
+ * Werkt met alle vrachtschepen met luiken uit deze serie mods (via {@link ShipAccess}).
  */
 public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScreenHandlerFactory {
-	public static final int SLOTS = 27, CYCLE = 78, AT_SHIP = 40, STACKS_PER_RUN = 4;
-	public static final double REACH = 10.5, HOME_R = 2.0, HOOK_TOP = 7.6, HOME_LOW = 0.05;
+	public static final int SLOTS = 54, CYCLE = 230, AT_SHIP = 115, STACKS_PER_RUN = 2;
+	public static final double REACH = 42, HOME_R = 3.0, HOOK_TOP = 20.0, HOME_LOW = 0.05, TOWER = 22;
 
 	private final DefaultedList<ItemStack> items = DefaultedList.ofSize(SLOTS, ItemStack.EMPTY);
 	private final DefaultedList<ItemStack> carried = DefaultedList.ofSize(STACKS_PER_RUN, ItemStack.EMPTY);
@@ -81,25 +82,40 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		return (float) (x * x * (3 - 2 * x));
 	}
 
-	/** Stand van giek, loopkat en grijper op een (gebroken) tijdstip. */
+	/** Stand van giek, loopkat en grijper op een (gebroken) tijdstip, plus hoe ver de grijper openstaat (0..1). */
 	public Pose pose(double time) {
 		float h = homeYaw();
 		if (!running) return new Pose(h, (float) HOME_R, (float) HOME_LOW);
 		double t = time - cycleStart;
 		float dg = MathHelper.wrapDegrees((float) Math.toDegrees(targetYaw - h)) * MathHelper.RADIANS_PER_DEGREE;
 		float r0 = (float) HOME_R, top = (float) HOOK_TOP, low = (float) HOME_LOW;
-		if (t < 12) return new Pose(h, r0, MathHelper.lerp(smooth(t / 12), low, top));
-		if (t < 26) {
-			float s = smooth((t - 12) / 14);
+		if (t < 25) return new Pose(h, r0, MathHelper.lerp(smooth(t / 25), low, top));
+		if (t < 70) {
+			float s = smooth((t - 25) / 45);
 			return new Pose(h + dg * s, MathHelper.lerp(s, r0, targetR), top);
 		}
-		if (t < 40) return new Pose(h + dg, targetR, MathHelper.lerp(smooth((t - 26) / 14), top, targetLow));
-		if (t < 52) return new Pose(h + dg, targetR, MathHelper.lerp(smooth((t - 40) / 12), targetLow, top));
-		if (t < 66) {
-			float s = smooth((t - 52) / 14);
+		if (t < AT_SHIP) return new Pose(h + dg, targetR, MathHelper.lerp(smooth((t - 70) / 45), top, targetLow));
+		if (t < 140) return new Pose(h + dg, targetR, MathHelper.lerp(smooth((t - AT_SHIP) / 25), targetLow, top));
+		if (t < 185) {
+			float s = smooth((t - 140) / 45);
 			return new Pose(h + dg * (1 - s), MathHelper.lerp(s, targetR, r0), top);
 		}
-		return new Pose(h, r0, MathHelper.lerp(smooth((t - 66) / 12), top, low));
+		return new Pose(h, r0, MathHelper.lerp(smooth((t - 185) / 45), top, low));
+	}
+
+	/** Opening van de grijper: bij laden open boven het ruim, bij lossen open boven de kade (en tijdens het zakken in het ruim). */
+	public float grabOpen(double time) {
+		if (!running) return 0.6f;
+		double t = time - cycleStart;
+		if (!unloading) {
+			if (t > AT_SHIP - 8 && t < AT_SHIP + 18) return smooth((t - (AT_SHIP - 8)) / 8) * (1 - smooth((t - (AT_SHIP + 10)) / 8));
+			if (t < 10) return 0.6f * (1 - smooth(t / 10));
+			if (t > CYCLE - 12) return 0.6f * smooth((t - (CYCLE - 12)) / 12);
+			return 0f;
+		}
+		if (t > 90 && t < AT_SHIP + 8) return smooth((t - 90) / 10) * (1 - smooth((t - AT_SHIP) / 8));
+		if (t > CYCLE - 14) return smooth((t - (CYCLE - 14)) / 8);
+		return 0f;
 	}
 
 	// ------------------------------------------------------------------ server
@@ -111,7 +127,8 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 	private void tickServer(ServerWorld w) {
 		if (running) {
 			long t = w.getTime() - cycleStart;
-			if (t == 12 || t == 52) sound(w, Vec3d.ofCenter(pos).add(0, 8, 0), SoundEvents.BLOCK_PISTON_CONTRACT, 0.35f, 0.55f);
+			if (t == 25 || t == 140) sound(w, Vec3d.ofCenter(pos).add(0, TOWER, 0), SoundEvents.BLOCK_PISTON_CONTRACT, 0.5f, 0.5f);
+			if (t == 70 || t == 185) sound(w, Vec3d.ofCenter(pos).add(0, TOWER, 0), SoundEvents.BLOCK_CHAIN_STEP, 0.8f, 0.5f);
 			if (t == AT_SHIP) atShip(w);
 			if (t >= CYCLE || t < 0) {
 				running = false;
@@ -143,7 +160,7 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		} else {
 			carryMat = 0;
 		}
-		shipId = tg.ship.getUuid();
+		shipId = tg.ship.entity().getUuid();
 		holdIndex = tg.hold;
 		targetYaw = tg.yaw;
 		targetR = tg.radius;
@@ -155,20 +172,21 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		sync();
 	}
 
-	private record Target(ShipEntity ship, int hold, float yaw, float radius, float low, Vec3d point) {}
+	private record Target(ShipAccess ship, int hold, float yaw, float radius, float low, Vec3d point) {}
 
 	/** Dichtstbijzijnde laadruim binnen bereik waar nu iets te doen is. */
 	@Nullable
 	private Target findTarget(ServerWorld w) {
 		Vec3d c = Vec3d.ofCenter(pos);
 		Target best = null;
-		ShipEntity closedShip = null;
-		for (ShipEntity s : w.getEntitiesByClass(ShipEntity.class, new Box(pos).expand(16, 16, 16), e -> !e.isRemoved())) {
-			for (int i = 0; i < s.template.holds.length; i++) {
+		ShipAccess closedShip = null;
+		for (Entity e : w.getOtherEntities(null, new Box(pos).expand(REACH + 60, 30, REACH + 60), e -> !e.isRemoved())) {
+			ShipAccess s = ShipAccess.of(e);
+			if (s == null) continue;
+			for (int i = 0; i < s.holdCount(); i++) {
 				Target t = targetFor(s, i, c);
-				if (t == null) continue;
-				if (!work(s, i)) continue;
-				if (s.hatchesClosed() || s.hatchProgress > 0.001f) {
+				if (t == null || !work(s, i)) continue;
+				if (!s.hatchesOpen()) {
 					closedShip = s;
 					continue;
 				}
@@ -176,14 +194,14 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 			}
 		}
 		if (best == null && closedShip != null && ++waitMsg % 10 == 1) {
-			Text msg = Text.literal("Laadkraan wacht: de luiken van de " + closedShip.template.name + " zijn dicht (toets L aan het roer)").formatted(Formatting.GOLD);
-			for (ServerPlayerEntity p : w.getPlayers(p -> p.squaredDistanceTo(c) < 24 * 24)) p.sendMessage(msg, true);
+			Text msg = Text.literal("Cargo crane waiting: the hatches of the " + closedShip.name() + " are closed (press L at the helm)").formatted(Formatting.GOLD);
+			for (ServerPlayerEntity p : w.getPlayers(p -> p.squaredDistanceTo(c) < 48 * 48)) p.sendMessage(msg, true);
 		}
 		return best;
 	}
 
 	/** Is er in dit ruim iets te doen (ruimte bij laden, lading bij lossen)? */
-	private boolean work(ShipEntity s, int hold) {
+	private boolean work(ShipAccess s, int hold) {
 		SimpleInventory inv = s.hold(hold);
 		if (unloading) return !inv.isEmpty() && hasEmptySlot();
 		ItemStack first = ItemStack.EMPTY;
@@ -200,23 +218,25 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 	}
 
 	@Nullable
-	private Target targetFor(ShipEntity s, int hold, Vec3d c) {
+	private Target targetFor(ShipAccess s, int hold, Vec3d c) {
 		Vec3d l = s.toLocal(c);
-		int a = s.template.holds[hold][0], b = s.template.holds[hold][1];
+		int[] hb = s.holds()[hold];
+		int a = hb[0], b = hb[1];
 		double tx = MathHelper.clamp(l.x, a + 1.5, b - 0.5);
-		double tz = MathHelper.clamp(l.z, s.template.holdZ0 + 0.7, s.template.holdZ1 + 0.3);
-		Vec3d p = s.toWorld(tx, s.template.coamingTopY, tz);
+		double tz = MathHelper.clamp(l.z, s.holdZ0() + 0.7, s.holdZ1() + 0.3);
+		Vec3d p = s.toWorld(tx, s.coamingTopY(), tz);
 		double dx = p.x - c.x, dz = p.z - c.z, d = Math.sqrt(dx * dx + dz * dz);
-		if (d > REACH || d < 1.5) return null;
-		float low = (float) MathHelper.clamp(p.y - 1.4 - pos.getY(), -12, HOOK_TOP - 0.5);
+		if (d > REACH || d < 2.5) return null;
+		float low = (float) MathHelper.clamp(p.y - 1.6 - pos.getY(), -14, HOOK_TOP - 1);
 		return new Target(s, hold, (float) Math.atan2(dz, dx), (float) d, low, p);
 	}
 
 	private void atShip(ServerWorld w) {
-		ShipEntity ship = shipId != null && w.getEntity(shipId) instanceof ShipEntity s ? s : null;
-		if (ship == null || holdIndex < 0 || holdIndex >= ship.template.holds.length) return;
+		Entity e = shipId != null ? w.getEntity(shipId) : null;
+		ShipAccess ship = e != null ? ShipAccess.of(e) : null;
+		if (ship == null || holdIndex < 0 || holdIndex >= ship.holdCount()) return;
 		Target t = targetFor(ship, holdIndex, Vec3d.ofCenter(pos));
-		if (t == null || ship.hatchesClosed()) return; // schip is weggevaren: lading gaat terug
+		if (t == null || !ship.hatchesOpen()) return; // schip is weggevaren of luiken dicht: lading gaat terug
 		SimpleInventory inv = ship.hold(holdIndex);
 		if (!unloading) {
 			BlockState mat = carryMat > 0 ? Block.getStateFromRawId(carryMat - 1) : null;
@@ -306,13 +326,13 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 
 	public void toggleMode(PlayerEntity player) {
 		if (running) {
-			player.sendMessage(Text.literal("Even wachten, de kraan is bezig").formatted(Formatting.GRAY), true);
+			player.sendMessage(Text.literal("Please wait, the crane is busy").formatted(Formatting.GRAY), true);
 			return;
 		}
 		unloading = !unloading;
 		markDirty();
 		sync();
-		player.sendMessage(Text.literal(unloading ? "Laadkraan: LOSSEN (uit het ruim, de kraan in)" : "Laadkraan: LADEN (uit de kraan, het ruim in)").formatted(Formatting.AQUA), true);
+		player.sendMessage(Text.literal(unloading ? "Cargo crane: UNLOADING (from the hold into the crane)" : "Cargo crane: LOADING (from the crane into the hold)").formatted(Formatting.AQUA), true);
 	}
 
 	/** Alleen voor de automatische test. */
@@ -436,11 +456,11 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 
 	@Override
 	public Text getDisplayName() {
-		return Text.literal("Laadkraan – " + (unloading ? "lossen" : "laden"));
+		return Text.literal("Cargo Crane – " + (unloading ? "unloading" : "loading"));
 	}
 
 	@Override
 	public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
-		return GenericContainerScreenHandler.createGeneric9x3(syncId, playerInventory, this);
+		return GenericContainerScreenHandler.createGeneric9x6(syncId, playerInventory, this);
 	}
 }

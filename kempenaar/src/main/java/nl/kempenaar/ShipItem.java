@@ -41,12 +41,12 @@ public class ShipItem extends Item {
 		ShipEntity ship = new ShipEntity(Kempenaar.SHIP, world);
 		ship.place(x, top.getY(), z, yaw);
 		if (ship.hullBlocked(ship.getX(), ship.getY(), ship.getZ(), ship.shipYaw)) {
-			user.sendMessage(Text.literal("Hier past het schip niet: het is 70 blokken lang, 9 breed en heeft minstens 3 blokken diep water nodig. Kijk over open water.").formatted(Formatting.RED), false);
+			user.sendMessage(Text.literal("The ship does not fit here: it is 70 blocks long, 9 wide and needs at least 3 blocks of deep water. Look out over open water.").formatted(Formatting.RED), false);
 			return TypedActionResult.fail(stack);
 		}
 		world.spawnEntity(ship);
 		stack.decrementUnlessCreative(1, user);
-		user.sendMessage(Text.literal("De " + ship.template.name + " ligt klaar. Klik op het roer in het stuurhuis om te varen.").formatted(Formatting.AQUA), true);
+		user.sendMessage(Text.literal("The " + ship.template.name + " is ready. Click the helm in the wheelhouse to set sail.").formatted(Formatting.AQUA), true);
 		return TypedActionResult.success(stack);
 	}
 }

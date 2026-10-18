@@ -7,6 +7,7 @@
     "EntityInvoker",
     "EntityMixin",
     "LivingEntityMixin",
+    "PlayerEntityAccessor",
     "PlayerPickupMixin",
     "ServerPlayNetworkHandlerMixin",
     "WorldMixin"

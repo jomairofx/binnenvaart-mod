@@ -108,7 +108,7 @@ public class Kempenaar implements ModInitializer {
 				int[] h = tag.getIntArray("Bed");
 				Vec3d spot = h.length == 3 ? ship.bedWakeSpot(h) : ship.toWorld(9.5, 1.01, 2.5);
 				p.teleport(shipWorld, spot.x, spot.y, spot.z, p.getYaw(), p.getPitch());
-				p.sendMessage(Text.literal("Je wordt wakker aan boord van de " + ship.template.name).formatted(Formatting.AQUA), true);
+				p.sendMessage(Text.literal("You wake up on board the " + ship.template.name).formatted(Formatting.AQUA), true);
 				it.remove();
 			} else if (n == 0) {
 				// schip ligt in een niet-geladen gebied: daarheen, dan laadt het vanzelf
@@ -117,7 +117,7 @@ public class Kempenaar implements ModInitializer {
 						p.teleport(w, tag.getDouble("X"), tag.getDouble("Y") + 1, tag.getDouble("Z"), p.getYaw(), p.getPitch());
 				}
 			} else if (n > 200) {
-				p.sendMessage(Text.literal("Je schip is niet meer gevonden; je slaapplaats aan boord is vervallen").formatted(Formatting.RED), false);
+				p.sendMessage(Text.literal("Your ship could not be found; your bed on board has been reset").formatted(Formatting.RED), false);
 				p.removeAttached(SHIP_BED);
 				it.remove();
 			}

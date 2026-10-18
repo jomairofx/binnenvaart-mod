@@ -77,8 +77,10 @@ for b in BEAMS:
 # ruimnummers op de vloer (lichte strepen) en ladders per ruim
 for i, (a, b) in enumerate(HOLDS):
     lx = a + 1
-    for y in R(-2, 2):
+    for y in R(-2, 3):
         S(lx, y, 2, "ladder[facing=south]")
+    # ladder on the outside of the coaming: from the side deck over the edge into the hold
+    for y in (2, 3): S(lx, y, 0, "ladder[facing=north]")
 
 # ---------------- achterschip: roer, schroeven ----------------
 for x in R(2, 4):
@@ -142,7 +144,7 @@ for z in (2, 3): S(3, 3, z, "glass_pane")
 S(3, 3, 7, "white_stained_glass_pane")
 # slaapkamer: tweepersoonsbed (matras + hoofdeinde), kast, nachtlamp
 for z in (2, 3):
-    S(4, 2, z, "smooth_quartz_slab[type=bottom]"); S(5, 2, z, "smooth_quartz_slab[type=bottom]")
+    S(4, 2, z, "white_bed[facing=west,part=head,occupied=false]"); S(5, 2, z, "white_bed[facing=west,part=foot,occupied=false]")
 S(4, 2, 4, "barrel[facing=up]"); S(4, 3, 4, "lantern[hanging=false]")
 # (ton weggehaald: blokkeerde de slaapkamerdeur)
 # badkamer
@@ -224,8 +226,6 @@ S(0, 6, 5, "end_rod[facing=up]")
 for z in (3, 4):
     S(0, 5, z, "red_wool"); S(0, 4, z, "white_wool"); S(0, 3, z, "blue_wool")
 S(1, 2, 3, "potted_red_tulip"); S(1, 2, 7, "potted_poppy")
-S(2, 2, 1, "polished_blackstone_wall"); S(2, 2, 9, "polished_blackstone_wall")
-S(13, 2, 1, "polished_blackstone_wall"); S(13, 2, 9, "polished_blackstone_wall")
 # buitenladders (aan boord klimmen vanuit het water), tot onder de waterlijn
 for y in R(-3, 1):
     S(12, y, -1, "ladder[facing=north]")
@@ -241,7 +241,6 @@ S(94, 2, 1, BW); S(94, 2, 9, BW)
 for z in R(2, 8): S(95, 2, z, BW)
 S(84, 2, 0, "air"); S(84, 2, 10, "air")   # opening in verschansing bij buitenladder
 S(95, 3, 5, "lantern[hanging=false]")
-for p in [(82, 2, 1), (82, 2, 9), (92, 2, 1), (92, 2, 9), (93, 2, 2), (93, 2, 8)]: S(*p, "polished_blackstone_wall")
 # stuurstand voor: lessenaar met schermen en hendels
 for z in R(4, 6): S(86, 2, z, "polished_deepslate_slab[type=top]")
 S(86, 3, 4, "black_stained_glass"); S(86, 3, 6, "black_stained_glass")
@@ -275,12 +274,14 @@ for k, v in list(B.items()):
     if v.endswith("glass_pane"): B[k] = "minecraft:air"
     elif v in REPL: B[k] = REPL[v]
 
+# free passage from the aft deck to the side gangways
+for z in (1, 9): S(1, 2, z, "air")
 B = {k: v for k, v in B.items() if v != "minecraft:air"}
 
 # ---------------- verbindingen (ruiten, tralies, hekken, muren) ----------------
 def base(s): return s.split("[")[0].replace("minecraft:", "")
 NONFULL = ("slab", "stairs", "pane", "bars", "fence", "wall", "trapdoor", "door", "ladder", "lantern", "carpet",
-           "rod", "chain", "potted", "cauldron", "lever", "campfire", "grindstone", "anvil", "lectern")
+           "rod", "chain", "potted", "cauldron", "lever", "campfire", "grindstone", "anvil", "lectern", "_bed")
 def is_full(s):
     if s is None: return False
     b = base(s)

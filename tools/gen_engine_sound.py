@@ -19,7 +19,7 @@ from scipy.signal import butter, lfilter, iirpeak
 SR = 44100
 LEN = 4.0
 N = int(SR * LEN)
-RPM = 450.0                 # 2 omwentelingen = 1 cyclus = 0,2667 s -> 15 cycli in 4 s
+RPM = 360.0                 # 2 omwentelingen = 1 cyclus = 0,333 s -> precies 12 cycli in 4 s
 CYL = 6
 CYCLE = 2 * 60.0 / RPM
 FIRE = CYCLE / CYL
@@ -132,7 +132,7 @@ def idle():
     bark = circ(bp(150, 1400), exc * rng.standard_normal(N))
     x += 0.45 * bark / np.std(bark) * np.std(low)
     x += clatter(0.05) * np.std(low) / 0.05 * 0.12
-    x = balance(x, [0.42, 0.33, 0.17, 0.065, 0.015])
+    x = balance(x, [0.52, 0.31, 0.12, 0.045, 0.005])
     return finish(x, 0.85)
 
 
@@ -153,7 +153,7 @@ def load():
     wash = circ(bp(120, 900), rng.standard_normal(N))
     x += 0.25 * wash / np.std(wash) * np.std(low)
     x += clatter(0.05) * np.std(low) / 0.05 * 0.08
-    x = balance(x, [0.36, 0.32, 0.2, 0.1, 0.02])
+    x = balance(x, [0.47, 0.3, 0.15, 0.07, 0.01])
     return finish(x, 0.9)
 
 

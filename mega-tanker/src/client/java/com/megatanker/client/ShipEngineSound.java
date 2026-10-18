@@ -26,7 +26,7 @@ public class ShipEngineSound extends MovingSoundInstance {
 		this.loadLayer = loadLayer;
 		this.repeat = true;
 		this.repeatDelay = 0;
-		this.volume = loadLayer ? 0.01f : 0.5f;
+		this.volume = 0.01f;
 		this.pitch = 0.85f * PITCH_FACTOR;
 		updatePos();
 	}
@@ -52,10 +52,13 @@ public class ShipEngineSound extends MovingSoundInstance {
 		}
 		updatePos();
 		float l = ship.engineLoad;
-		float push = Math.max(0f, ship.engineTarget() - l); // gas geven: even extra hard
-		float targetVol = loadLayer ? 0.03f + 0.9f * l + 0.35f * push : 0.55f * (1f - 0.6f * l);
-		float targetPitch = (0.85f + 0.7f * l + 0.05f * push) * PITCH_FACTOR;
-		this.volume += (targetVol - this.volume) * 0.15f;
+		boolean running = ship.syncedThrottle() != 0;
+		float push = Math.max(0f, ship.engineTarget() - l); // gas geven: even wat harder
+		// telegraaf op Stop = motor uit; anders zwaar en vrij zacht, zodat hij niet overheerst
+		float targetVol = !running ? 0f : loadLayer ? 0.02f + 0.5f * l + 0.18f * push : 0.3f * (1f - 0.5f * l);
+		float targetPitch = (0.7f + 0.48f * l + 0.04f * push) * PITCH_FACTOR;
+		this.volume += (targetVol - this.volume) * (running ? 0.08f : 0.035f);
+		if (!running) targetPitch = this.pitch + (0.55f * PITCH_FACTOR - this.pitch) * 0.04f; // uitlopen
 		this.pitch = targetPitch;
 	}
 }

@@ -3,8 +3,8 @@
   "entity.megatanker.mega_oil_tanker": "Mega Oil Tanker",
   "block.megatanker.displaced_water": "Displaced Water",
   "category.megatanker": "Mega Oil Tanker",
-  "key.megatanker.thruster_port": "Bow thruster port (left)",
-  "key.megatanker.thruster_starboard": "Bow thruster starboard (right)",
-  "key.megatanker.horn": "Ship horn",
-  "key.megatanker.hatches": "Open/close hatches"
+  "key.megatanker.thruster_port_v2": "Bow thruster port (left)",
+  "key.megatanker.thruster_starboard_v2": "Bow thruster starboard (right)",
+  "key.megatanker.horn_v2": "Ship horn",
+  "key.megatanker.hatches_v2": "Open/close hatches"
 }

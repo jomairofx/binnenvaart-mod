@@ -18,7 +18,7 @@ public abstract class MouseMixin {
 		MinecraftClient mc = MinecraftClient.getInstance();
 		if (window != mc.getWindow().getHandle() || mc.currentScreen != null || mc.player == null || vertical == 0) return;
 		if (!(mc.player.getVehicle() instanceof ShipEntity) || mc.options.getPerspective().isFirstPerson()) return;
-		ShipCamera.distance = MathHelper.clamp(ShipCamera.distance - (float) vertical * 3f, ShipCamera.MIN, ShipCamera.MAX);
+		ShipCamera.distance = MathHelper.clamp(ShipCamera.distance - (float) vertical * 5f, ShipCamera.MIN, ShipCamera.MAX);
 		ci.cancel();
 	}
 }

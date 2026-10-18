@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -13,6 +14,7 @@ import net.minecraft.block.DoorBlock;
 import net.minecraft.block.LeverBlock;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.TrapdoorBlock;
+import net.minecraft.block.enums.BedPart;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -36,6 +38,7 @@ import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -49,6 +52,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
@@ -72,9 +76,9 @@ public class ShipEntity extends Entity {
 	// ---- constanten ----
 	public static final int LENGTH = 96;
 	public static final double EMPTY_RISE = 2.0;          // zoveel blokken ligt een leeg schip hoger
-	public static final double[] STEP_SPEED = {-0.10, -0.05, 0.0, 0.07, 0.15, 0.24}; // blokken per tick
-	public static final String[] STEP_NAMES = {"Volle kracht achteruit", "Langzaam achteruit", "Stop", "Langzaam vooruit", "Halve kracht vooruit", "Volle kracht vooruit"};
-	public static final double V_FULL = 0.24;
+	public static final double[] STEP_SPEED = {-0.15, -0.075, 0.0, 0.11, 0.23, 0.36}; // blokken per tick
+	public static final String[] STEP_NAMES = {"Full astern", "Slow astern", "Stop", "Slow ahead", "Half ahead", "Full ahead"};
+	public static final double V_FULL = 0.36;
 	private static final double MAX_TURN = Math.toRadians(0.9);
 	private static final double THRUSTER_TURN = Math.toRadians(0.35);
 	private static final double PIVOT_RUDDER = 12.0;      // draaipunt bij roeren (lokaal, t.o.v. midden)
@@ -437,9 +441,10 @@ public class ShipEntity extends Entity {
 		// Daarom pas bijwerken als het schip een merkbaar stuk is verschoven, of meteen als het stil komt te liggen.
 		boolean still = !moved && !vertical;
 		double shift = Double.isNaN(dispX) ? 99 : Math.max(Math.hypot(dispX - getX(), dispZ - getZ()), Math.abs(dispYaw - shipYaw) * 50);
-		boolean due = Double.isNaN(dispX) || shift > 0.9 || Math.abs(dispY - getY()) > 0.3
+		boolean fast = Math.abs(speed) > 0.12;
+		boolean due = Double.isNaN(dispX) || shift > (fast ? 1.8 : 0.9) || Math.abs(dispY - getY()) > 0.3
 				|| (still && (shift > 0.01 || Math.abs(dispY - getY()) > 0.01)) || age % 200 == 0;
-		if (due && age - lastDisplaceTick >= 3) {
+		if (due && age - lastDisplaceTick >= (fast ? 8 : 3)) {
 			updateDisplacement();
 			lastDisplaceTick = age;
 		}
@@ -542,7 +547,7 @@ public class ShipEntity extends Entity {
 		super.removePassenger(passenger);
 		if (!getWorld().isClient) {
 			if (throttle != 0 && getPassengerList().isEmpty() && passenger instanceof PlayerEntity pl)
-				pl.sendMessage(Text.literal("Het schip vaart door. Zet de telegraaf aan het roer op Stop om te stoppen.").formatted(Formatting.GOLD), true);
+				pl.sendMessage(Text.literal("The ship keeps sailing. Set the telegraph to Stop at the helm to halt it.").formatted(Formatting.GOLD), true);
 			if (dataTracker.get(SEAT_AFT) == passenger.getId()) dataTracker.set(SEAT_AFT, -1);
 			if (dataTracker.get(SEAT_BOW) == passenger.getId()) dataTracker.set(SEAT_BOW, -1);
 		}
@@ -606,7 +611,7 @@ public class ShipEntity extends Entity {
 			dataTracker.set(HATCHES_CLOSED, closed);
 			Vec3d h = toWorld(77, 4, 5.5);
 			getWorld().playSound(null, h.x, h.y, h.z, SoundEvents.BLOCK_PISTON_EXTEND, SoundCategory.NEUTRAL, 1.5f, 0.5f);
-			player.sendMessage(Text.literal(closed ? "Luiken gaan dicht" : "Luiken gaan open").formatted(Formatting.GRAY), true);
+			player.sendMessage(Text.literal(closed ? "Hatches closing" : "Hatches opening").formatted(Formatting.GRAY), true);
 		}
 	}
 
@@ -633,7 +638,7 @@ public class ShipEntity extends Entity {
 		return speed;
 	}
 
-	public enum Action { NONE, HELM_AFT, HELM_BOW, HOLD, TOGGLE }
+	public enum Action { NONE, HELM_AFT, HELM_BOW, HOLD, TOGGLE, BED }
 
 	private static boolean inZone(int[] z, int x, int y, int zz) {
 		return x >= z[0] && x <= z[3] && y >= z[1] && y <= z[4] && zz >= z[2] && zz <= z[5];
@@ -655,6 +660,7 @@ public class ShipEntity extends Entity {
 		if (inZone(template.helmBow, bx, by, bz)) return Action.HELM_BOW;
 		BlockState s = structure.get(bx, by, bz);
 		Block b = s.getBlock();
+		if (b instanceof BedBlock) return Action.BED;
 		if (b instanceof DoorBlock || (b instanceof TrapdoorBlock && !s.isOf(Blocks.IRON_TRAPDOOR)) || b instanceof LeverBlock)
 			return Action.TOGGLE;
 		if (holdAt(t) >= 0) return Action.HOLD;
@@ -692,16 +698,17 @@ public class ShipEntity extends Entity {
 				TrackedData<Integer> seat = a == Action.HELM_AFT ? SEAT_AFT : SEAT_BOW;
 				if (hasPassenger(player)) return;
 				if (dataTracker.get(seat) != -1) {
-					player.sendMessage(Text.literal("Deze stuurstand is bezet").formatted(Formatting.RED), true);
+					player.sendMessage(Text.literal("This helm is taken").formatted(Formatting.RED), true);
 					return;
 				}
 				dataTracker.set(seat, player.getId());
 				if (!player.startRiding(this, true)) {
 					dataTracker.set(seat, -1);
 				} else {
-					player.sendMessage(Text.literal(a == Action.HELM_AFT ? "Je staat aan het roer in het stuurhuis" : "Je staat aan de stuurstand voor").formatted(Formatting.AQUA), true);
+					player.sendMessage(Text.literal(a == Action.HELM_AFT ? "You are at the helm in the wheelhouse" : "You are at the bow steering position").formatted(Formatting.AQUA), true);
 				}
 			}
+			case BED -> useBed(player, MathHelper.floor(t.x), MathHelper.floor(t.y), MathHelper.floor(t.z));
 			case TOGGLE -> toggleBlock(MathHelper.floor(t.x), MathHelper.floor(t.y), MathHelper.floor(t.z), w);
 			case HOLD -> {
 				int h = holdAt(t);
@@ -771,24 +778,143 @@ public class ShipEntity extends Entity {
 		ServerPlayNetworking.send(player, new ShipPayloads.Blocks(getId(), pos, st));
 	}
 
+	// =====================================================================
+	// Bedden: echt slapen aan boord
+	// =====================================================================
+
+	private List<int[]> bedHeads;
+
+	/** Alle hoofdeinden van bedden in het schip (sjablooncoördinaten). */
+	public List<int[]> bedHeads() {
+		if (bedHeads == null) {
+			List<int[]> list = new ArrayList<>();
+			for (int x = ShipTemplate.MIN_X; x < ShipTemplate.MIN_X + ShipTemplate.SIZE_X; x++)
+				for (int y = ShipTemplate.MIN_Y; y < ShipTemplate.MIN_Y + ShipTemplate.SIZE_Y; y++)
+					for (int z = ShipTemplate.MIN_Z; z < ShipTemplate.MIN_Z + ShipTemplate.SIZE_Z; z++) {
+						BlockState s = structure.get(x, y, z);
+						if (s.getBlock() instanceof BedBlock && s.get(BedBlock.PART) == BedPart.HEAD) list.add(new int[]{x, y, z});
+					}
+			bedHeads = list;
+		}
+		return bedHeads;
+	}
+
+	@Nullable
+	private int[] bedHead(int x, int y, int z) {
+		BlockState s = structure.get(x, y, z);
+		if (!(s.getBlock() instanceof BedBlock)) return null;
+		if (s.get(BedBlock.PART) == BedPart.HEAD) return new int[]{x, y, z};
+		Direction f = s.get(BedBlock.FACING);
+		return new int[]{x + f.getOffsetX(), y, z + f.getOffsetZ()};
+	}
+
+	/** Waar het hoofd van een slapende speler ligt (wereld). */
+	public Vec3d bedSpot(int[] h) {
+		return toWorld(h[0] + 0.5, h[1] + 0.6875, h[2] + 0.5);
+	}
+
+	/** Kijkrichting van het bed in de wereld (van voeteneind naar hoofdeinde). */
+	public Direction bedDirection(int[] h) {
+		Direction f = structure.get(h[0], h[1], h[2]).get(BedBlock.FACING);
+		Vec3d d = dirToWorld(new Vec3d(f.getOffsetX(), 0, f.getOffsetZ()));
+		return Direction.getFacing(d.x, 0, d.z);
+	}
+
+	/** Een vrije plek naast het bed om op op te staan (wereld). */
+	public Vec3d bedWakeSpot(int[] h) {
+		Direction f = structure.get(h[0], h[1], h[2]).get(BedBlock.FACING);
+		int fx = h[0] - f.getOffsetX(), fz = h[2] - f.getOffsetZ();
+		int[][] cand = new int[16][];
+		int n = 0;
+		for (int[] c : new int[][]{{fx, fz}, {h[0], h[2]}})
+			for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) cand[n++] = new int[]{c[0] + d[0], c[1] + d[1]};
+		BlockPos.Mutable m = new BlockPos.Mutable();
+		for (int i = 0; i < n; i++) {
+			int x = cand[i][0], z = cand[i][1], y = h[1];
+			if (free(m, x, y, z) && free(m, x, y + 1, z) && !structure.get(x, y - 1, z).isAir())
+				return toWorld(x + 0.5, y + 0.01, z + 0.5);
+		}
+		return toWorld(h[0] + 0.5, h[1] + 0.6, h[2] + 0.5);
+	}
+
+	private boolean free(BlockPos.Mutable m, int x, int y, int z) {
+		BlockState s = structure.get(x, y, z);
+		m.set(x, y, z);
+		return !(s.getBlock() instanceof BedBlock) && s.getCollisionShape(structure, m).isEmpty();
+	}
+
+	public record BedRef(ShipEntity ship, int[] head) {}
+
+	/** Hoort deze slaappositie (wereldblok) bij een bed op een schip? */
+	@Nullable
+	public static BedRef findBed(World world, BlockPos sleepPos) {
+		BedRef best = null;
+		double bestD = 2.5 * 2.5;
+		Vec3d c = new Vec3d(sleepPos.getX() + 0.5, sleepPos.getY() + 0.6875, sleepPos.getZ() + 0.5);
+		for (ShipEntity s : ShipHolder.of(world)) {
+			if (!s.getBoundingBox().expand(3).contains(c)) continue;
+			for (int[] h : s.bedHeads()) {
+				Vec3d p = s.bedSpot(h);
+				if (Math.abs(p.y - c.y) > 1.6) continue;
+				double d = (p.x - c.x) * (p.x - c.x) + (p.z - c.z) * (p.z - c.z);
+				if (d < bestD) {
+					bestD = d;
+					best = new BedRef(s, h);
+				}
+			}
+		}
+		return best;
+	}
+
+	private void useBed(ServerPlayerEntity player, int x, int y, int z) {
+		int[] h = bedHead(x, y, z);
+		if (h == null) return;
+		World w = getWorld();
+		// slaapplaats onthouden: na doodgaan word je weer aan boord wakker
+		NbtCompound tag = new NbtCompound();
+		tag.putUuid("Ship", getUuid());
+		tag.putIntArray("Bed", h);
+		Vec3d spot = bedSpot(h);
+		tag.putDouble("X", spot.x);
+		tag.putDouble("Y", spot.y);
+		tag.putDouble("Z", spot.z);
+		tag.putString("Dim", w.getRegistryKey().getValue().toString());
+		NbtCompound old = player.getAttached(Binnenvaart.SHIP_BED);
+		player.setAttached(Binnenvaart.SHIP_BED, tag);
+		if (old == null || !old.getUuid("Ship").equals(getUuid()))
+			player.sendMessage(Text.literal("Your bed is now on board the " + template.name).formatted(Formatting.AQUA), false);
+		if (player.isSleeping()) return;
+		if (w.isDay() && !w.isThundering()) {
+			player.sendMessage(Text.translatable("block.minecraft.bed.no_sleep"), true);
+			return;
+		}
+		if (player.hasVehicle()) player.stopRiding();
+		BlockPos bp = BlockPos.ofFloored(spot.x, spot.y - 0.6875 + 0.01, spot.z);
+		player.sleep(bp);
+		((nl.binnenvaart.mixin.PlayerEntityAccessor) player).binnenvaart$setSleepTimer(0);
+		player.setPosition(spot.x, spot.y, spot.z);
+		player.networkHandler.requestTeleport(spot.x, spot.y, spot.z, player.getYaw(), player.getPitch());
+		if (w instanceof ServerWorld sw) sw.updateSleepingPlayers();
+	}
+
 	private void openHold(ServerPlayerEntity player, int h) {
 		CargoInventory inv = holds[h];
 		int pct = Math.round(fill(h) * 100);
 		player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
 				(syncId, playerInv, p) -> GenericContainerScreenHandler.createGeneric9x6(syncId, playerInv, inv),
-				Text.literal("Laadruim " + (h + 1) + " (" + pct + "% vol)")));
+				Text.literal("Hold " + (h + 1) + " (" + pct + "% full)")));
 	}
 
 	private void tryPickUp(ServerPlayerEntity player) {
 		for (CargoInventory inv : holds) {
 			if (!inv.isEmpty()) {
-				player.sendMessage(Text.literal("Maak eerst alle laadruimen leeg om het schip op te pakken").formatted(Formatting.RED), true);
+				player.sendMessage(Text.literal("Empty all cargo holds before picking up the ship").formatted(Formatting.RED), true);
 				return;
 			}
 		}
 		if (hasPassengers()) return;
 		if (!player.getAbilities().creativeMode) player.giveItemStack(new ItemStack(Binnenvaart.SHIP_ITEM));
-		player.sendMessage(Text.literal("Schip opgepakt").formatted(Formatting.GRAY), true);
+		player.sendMessage(Text.literal("Ship picked up").formatted(Formatting.GRAY), true);
 		discard();
 	}
 
@@ -1056,7 +1182,7 @@ public class ShipEntity extends Entity {
 		double wy = waterSurfaceY();
 		var r = this.random;
 		if (Math.abs(spd) > 0.03) {
-			int n = Math.abs(spd) > 0.15 ? 3 : 1;
+			int n = Math.abs(spd) > 0.15 ? 2 : 1;
 			for (int i = 0; i < n; i++) {
 				for (double tz : new double[]{0.6, 10.4}) {
 					Vec3d p = toWorld(spd > 0 ? 92 + r.nextDouble() * 3 : 2 + r.nextDouble() * 2, 0, tz);
@@ -1073,7 +1199,7 @@ public class ShipEntity extends Entity {
 			}
 		}
 		int smokeEvery = Math.max(2, 8 - Math.abs(thr) * 2);
-		if (age % smokeEvery == 0) {
+		if (thr != 0 && age % smokeEvery == 0) {
 			Vec3d c = toWorld(4.5, 10.2, 8.5);
 			world.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, true, c.x, c.y, c.z, 0, 0.06, 0);
 			if (Math.abs(thr) >= 2) world.addParticle(ParticleTypes.LARGE_SMOKE, c.x, c.y, c.z, 0, 0.08, 0);

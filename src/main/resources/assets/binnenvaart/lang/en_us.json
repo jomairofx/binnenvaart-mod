@@ -1,10 +1,10 @@
 {
-  "item.binnenvaart.binnenvaartschip": "Binnenvaartschip",
-  "entity.binnenvaart.binnenvaartschip": "Binnenvaartschip",
-  "block.binnenvaart.verplaatst_water": "Verplaatst water",
-  "category.binnenvaart": "Binnenvaart",
-  "key.binnenvaart.boeg_links": "Boegschroef bakboord (links)",
-  "key.binnenvaart.boeg_rechts": "Boegschroef stuurboord (rechts)",
-  "key.binnenvaart.hoorn": "Scheepshoorn",
-  "key.binnenvaart.luiken": "Luiken open/dicht"
+  "item.binnenvaart.binnenvaartschip": "Inland Ship HENDRIKA",
+  "entity.binnenvaart.binnenvaartschip": "Inland Ship HENDRIKA",
+  "block.binnenvaart.verplaatst_water": "Displaced Water",
+  "category.binnenvaart": "Inland Ship HENDRIKA",
+  "key.binnenvaart.boeg_links_v2": "Bow thruster port (left)",
+  "key.binnenvaart.boeg_rechts_v2": "Bow thruster starboard (right)",
+  "key.binnenvaart.hoorn_v2": "Ship horn",
+  "key.binnenvaart.luiken_v2": "Open/close hatches"
 }

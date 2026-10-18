@@ -295,6 +295,21 @@ public final class ClientSelfTest {
 		}
 		if (t == crane + 150) shot(mc, "21_kraan");
 		if (t == crane + 178) shot(mc, "22_kraan_storten");
+		if (t == crane + 380) {
+			tp(srv, ship, new double[]{60.5, 2.0 + 1.62, 2.5}, new double[]{61.5, 1.5, 1.5});
+		}
+		if (t == crane + 395) {
+			srv.execute(() -> {
+				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(61.5, 1.9, 1.5), false);
+			});
+		}
+		if (t == crane + 410) {
+			var st = ship.structure.get(61, 1, 1);
+			boolean open = st.contains(net.minecraft.state.property.Properties.OPEN) && st.get(net.minecraft.state.property.Properties.OPEN);
+			check("luik boegschroefruimte", open, "luik: " + st);
+			shot(mc, "24_luik_voorpiek");
+		}
 		if (t == crane + 420) {
 			int sand = 0;
 			if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s)

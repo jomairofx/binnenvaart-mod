@@ -260,7 +260,14 @@ S(67, 9, 4, "lantern[hanging=false]")
 S(67, 6, 3, "red_wool"); S(67, 5, 3, "white_wool"); S(67, 4, 3, "blue_wool")
 # bolders en luik boegschroefruimte
 for p in [(60, 2, 1), (60, 2, 7)]: S(*p, "polished_blackstone_wall")
-S(61, 1, 4, "iron_trapdoor[facing=north,half=top,open=false]")
+# houten luik naar de boegschroefruimte, met ladder tegen de huid
+S(61, 1, 1, "spruce_trapdoor[facing=south,half=top,open=false]")
+for y in R(-2, 0): S(61, y, 1, "ladder[facing=south]")
+# boegschroefmotor en verlichting in de voorpiek
+S(60, -2, 4, "iron_block"); S(61, -2, 4, "iron_block"); S(60, -1, 4, "lightning_rod[facing=up]")
+S(61, -1, 4, "grindstone[face=floor,facing=east]")
+for z in (3, 5): S(60, -2, z, "chain[axis=z]")
+S(63, -2, 6, "lantern[hanging=false]"); S(58, -2, 2, "barrel[facing=up]")
 
 B = {k: v for k, v in B.items() if v != "minecraft:air"}
 

@@ -31,6 +31,9 @@ public final class SelfTest {
 	private static double startYaw, emptyY;
 	private static final List<String> log = new ArrayList<>();
 	private static boolean failed;
+	private static int waterTop, craneBefore;
+	private static BlockPos cranePos;
+	private static nl.kempenaar.block.CraneBlockEntity crane;
 
 	public static void register() {
 		String mode = System.getProperty("kempenaar.selftest", "");
@@ -57,6 +60,7 @@ public final class SelfTest {
 				BlockPos.Mutable m = new BlockPos.Mutable(60, -40, 0);
 				while (m.getY() > -64 && !w.getFluidState(m).isIn(FluidTags.WATER)) m.move(0, -1, 0);
 				top = m.getY();
+				waterTop = top;
 				check("water", w.getFluidState(m).isIn(FluidTags.WATER), "wateroppervlak op y=" + top);
 				ship = new ShipEntity(Kempenaar.SHIP, w);
 				ship.place(60, top, 0.5, 0);
@@ -116,6 +120,23 @@ public final class SelfTest {
 				check("stilstand", Math.abs(ship.currentSpeed()) < 0.01, String.format("snelheid %.4f", ship.currentSpeed()));
 				int restored = 0;
 				log.add("Schip ligt op " + ship.getBlockPos().toShortString() + " koers " + Math.toDegrees(ship.shipYaw));
+				for (int i = 0; i < ShipEntity.HOLD_SLOTS; i++) ship.hold(0).setStack(i, ItemStack.EMPTY);
+				ship.hold(0).markDirty();
+				Vec3d cp = ship.toWorld(28.5, 0, -3.5);
+				cranePos = BlockPos.ofFloored(cp.x, waterTop, cp.z);
+				w.setBlockState(cranePos, Kempenaar.CRANE.getDefaultState());
+				crane = (nl.kempenaar.block.CraneBlockEntity) w.getBlockEntity(cranePos);
+				for (int i = 0; i < 10; i++) crane.setStack(i, new ItemStack(Items.SAND, 64));
+			}
+			if (tick == 1330) {
+				int sand = 0;
+				for (int i = 0; i < ShipEntity.HOLD_SLOTS; i++) if (ship.hold(0).getStack(i).isOf(Items.SAND)) sand += ship.hold(0).getStack(i).getCount();
+				check("laadkraan laden", sand >= 512, sand + " zand in ruim 1, nog " + crane.countItems() + " in de kraan");
+				crane.testSetUnloading(true);
+				craneBefore = crane.countItems();
+			}
+			if (tick == 1630) {
+				check("laadkraan lossen", crane.countItems() >= craneBefore + 256, "kraan had " + craneBefore + ", nu " + crane.countItems());
 				Files.writeString(Path.of("selftest.txt"), String.join("\n", log) + "\n" + (failed ? "RESULT FAIL" : "RESULT PASS") + "\n");
 				server.saveAll(false, true, true);
 				server.stop(false);

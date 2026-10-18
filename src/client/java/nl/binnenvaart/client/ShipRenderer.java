@@ -117,7 +117,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			int a = t.holds[h][0], b = t.holds[h][1];
 			if (mat > 0) {
 				BlockState st = Registries.BLOCK.get(mat - 1).getDefaultState();
-				renderPile(vc, sprites(st), a, b, t.holdZ0, t.holdZ1, (float) t.holdFloorY, f, hatch, light);
+				renderPile(vc, sprites(st), a, b, t.holdZ0, t.holdZ1, (float) t.holdFloorY, (float) t.coamingTopY, f, hatch, light);
 			} else {
 				renderContainers(vc, h, a, b, (float) t.holdFloorY, f, light);
 			}
@@ -136,19 +136,26 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		return MathHelper.clamp(hgt, 0.05f, c);
 	}
 
-	private void renderPile(Sink vc, Sprite[] sp, int a, int b, int z0, int z1, float floor,
+	private void renderPile(Sink vc, Sprite[] sp, int a, int b, int z0, int z1, float floor, float coaming,
 							float f, float hatch, int light) {
 		float cap = MathHelper.lerp(hatch, 7.0f, 5.4f);
 		int w = b - a + 1, d = z1 - z0 + 1;
 		float[][] hm = new float[w][d];
 		for (int i = 0; i < w; i++) for (int k = 0; k < d; k++) hm[i][k] = pileHeight(a + i, z0 + k, a, b, f, cap);
+		// Langs de wanden van het ruim blijft de stort onder de rand van het luikhoofd, de top mag erboven uitsteken.
+		float edge = coaming - floor - 0.06f;
+		for (int i = 0; i < w; i++) for (int k = 0; k < d; k++) {
+			int ring = Math.min(Math.min(i, w - 1 - i), Math.min(k, d - 1 - k));
+			if (ring == 0) hm[i][k] = Math.min(hm[i][k], edge);
+			else if (ring == 1) hm[i][k] = Math.min(hm[i][k], edge + 0.5f);
+		}
 		for (int i = 0; i < w; i++) {
 			for (int k = 0; k < d; k++) {
 				float x = a + i, z = z0 + k, top = floor + hm[i][k];
 				quadUp(vc, sp[0], x, top, z, x + 1, z + 1, 1f, light);
 				// zijkanten waar de buur lager ligt
 				float hxm = i == 0 ? 0 : hm[i - 1][k], hxp = i == w - 1 ? 0 : hm[i + 1][k];
-				float hzm = k == 0 ? hm[i][k] : hm[i][k - 1], hzp = k == d - 1 ? hm[i][k] : hm[i][k + 1];
+				float hzm = k == 0 ? 0 : hm[i][k - 1], hzp = k == d - 1 ? 0 : hm[i][k + 1];
 				sideX(vc, sp[1], x, z, z + 1, floor + hxm, top, false, floor, light);
 				sideX(vc, sp[1], x + 1, z, z + 1, floor + hxp, top, true, floor, light);
 				sideZ(vc, sp[1], z, x, x + 1, floor + hzm, top, false, floor, light);

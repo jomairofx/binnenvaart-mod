@@ -1,5 +1,6 @@
 package nl.kempenaar.client;
 
+import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -87,6 +88,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			}
 			renderCargo(ship, fills, hatch, dc.sink, light);
 			renderCovers(hatch, dc.sink, light);
+			renderBeds(ship, dc.sink, light);
 		}
 		dc.sink.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
 		renderName(ship, matrices, consumers, light);
@@ -117,7 +119,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			int a = t.holds[h][0], b = t.holds[h][1];
 			if (mat > 0) {
 				BlockState st = Registries.BLOCK.get(mat - 1).getDefaultState();
-				renderPile(vc, sprites(st), a, b, t.holdZ0, t.holdZ1, (float) t.holdFloorY, f, hatch, light);
+				renderPile(vc, sprites(st), a, b, t.holdZ0, t.holdZ1, (float) t.holdFloorY, (float) t.coamingTopY, f, hatch, light);
 			} else {
 				renderContainers(vc, h, a, b, (float) t.holdFloorY, f, light);
 			}
@@ -136,19 +138,26 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		return MathHelper.clamp(hgt, 0.05f, c);
 	}
 
-	private void renderPile(Sink vc, Sprite[] sp, int a, int b, int z0, int z1, float floor,
+	private void renderPile(Sink vc, Sprite[] sp, int a, int b, int z0, int z1, float floor, float coaming,
 							float f, float hatch, int light) {
 		float cap = MathHelper.lerp(hatch, 6.0f, 4.4f);
 		int w = b - a + 1, d = z1 - z0 + 1;
 		float[][] hm = new float[w][d];
 		for (int i = 0; i < w; i++) for (int k = 0; k < d; k++) hm[i][k] = pileHeight(a + i, z0 + k, a, b, f, cap);
+		// Langs de wanden van het ruim blijft de stort onder de rand van het luikhoofd, de top mag erboven uitsteken.
+		float edge = coaming - floor - 0.06f;
+		for (int i = 0; i < w; i++) for (int k = 0; k < d; k++) {
+			int ring = Math.min(Math.min(i, w - 1 - i), Math.min(k, d - 1 - k));
+			if (ring == 0) hm[i][k] = Math.min(hm[i][k], edge);
+			else if (ring == 1) hm[i][k] = Math.min(hm[i][k], edge + 0.5f);
+		}
 		for (int i = 0; i < w; i++) {
 			for (int k = 0; k < d; k++) {
 				float x = a + i, z = z0 + k, top = floor + hm[i][k];
 				quadUp(vc, sp[0], x, top, z, x + 1, z + 1, 1f, light);
 				// zijkanten waar de buur lager ligt
 				float hxm = i == 0 ? 0 : hm[i - 1][k], hxp = i == w - 1 ? 0 : hm[i + 1][k];
-				float hzm = k == 0 ? hm[i][k] : hm[i][k - 1], hzp = k == d - 1 ? hm[i][k] : hm[i][k + 1];
+				float hzm = k == 0 ? 0 : hm[i][k - 1], hzp = k == d - 1 ? 0 : hm[i][k + 1];
 				sideX(vc, sp[1], x, z, z + 1, floor + hxm, top, false, floor, light);
 				sideX(vc, sp[1], x + 1, z, z + 1, floor + hxp, top, true, floor, light);
 				sideZ(vc, sp[1], z, x, x + 1, floor + hzm, top, false, floor, light);
@@ -196,6 +205,47 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			box(vc, s, x0 + 0.03f, y + 0.25f, 2.0f, x1, y + 0.5f, 7.0f, light, 1f);
 			box(vc, s, x0 + 0.03f, y + 0.5f, 3.2f, x1, y + 0.62f, 5.8f, light, 1f);
 		}
+	}
+
+	// ---------------------------------------------------------------- bedden
+
+	/** Bedden worden in Minecraft apart getekend (geen blokmodel), dus hier zelf: frame, matras, dekbed en kussen. */
+	private void renderBeds(ShipEntity ship, Sink vc, int light) {
+		Sprite wool = sprites(Blocks.WHITE_WOOL.getDefaultState())[0];
+		Sprite frame = sprites(Blocks.DARK_OAK_PLANKS.getDefaultState())[0];
+		for (int[] h : ship.bedHeads()) {
+			BlockState st = ship.structure.get(h[0], h[1], h[2]);
+			if (!(st.getBlock() instanceof BedBlock bed)) continue;
+			Block w = Registries.BLOCK.get(Identifier.ofVanilla(bed.getColor().getName() + "_wool"));
+			Sprite cover = sprites(w.getDefaultState())[0];
+			Direction f = st.get(BedBlock.FACING);
+			// maten in het bed: u over de breedte (0..1), v van hoofdeinde (0) naar voeteneind (2)
+			bedBox(vc, frame, h, f, 0.0f, 0.0f, 1.0f, 2.0f, 0.12f, 0.3f, light, 0.9f);           // frame
+			for (float[] leg : new float[][]{{0f, 0f}, {0.85f, 0f}, {0f, 1.85f}, {0.85f, 1.85f}})
+				bedBox(vc, frame, h, f, leg[0], leg[1], leg[0] + 0.15f, leg[1] + 0.15f, 0f, 0.12f, light, 0.8f);
+			bedBox(vc, frame, h, f, 0.0f, 0.0f, 1.0f, 0.1f, 0.12f, 0.9f, light, 0.85f);           // hoofdeinde
+			bedBox(vc, wool, h, f, 0.03f, 0.1f, 0.97f, 1.97f, 0.3f, 0.5625f, light, 1f);          // matras
+			bedBox(vc, wool, h, f, 0.15f, 0.16f, 0.85f, 0.55f, 0.5625f, 0.7f, light, 1f);         // kussen
+			bedBox(vc, cover, h, f, 0.0f, 0.7f, 1.0f, 2.0f, 0.5625f, 0.62f, light, 1f);           // dekbed
+			bedBox(vc, cover, h, f, 0.0f, 1.97f, 1.0f, 2.02f, 0.28f, 0.62f, light, 0.9f);         // overslag voeteneind
+		}
+	}
+
+	private static void bedBox(Sink vc, Sprite s, int[] h, Direction f, float u0, float v0, float u1, float v1, float y0, float y1, int light, float tint) {
+		float[] a = map(f, u0, v0), b = map(f, u1, v1);
+		float x0 = h[0] + Math.min(a[0], b[0]), x1 = h[0] + Math.max(a[0], b[0]);
+		float z0 = h[2] + Math.min(a[1], b[1]), z1 = h[2] + Math.max(a[1], b[1]);
+		box(vc, s, x0, h[1] + y0, z0, x1, h[1] + y1, z1, light, tint);
+	}
+
+	/** (u, v) in bedmaten naar (x, z) vanaf de hoek van het blok met het hoofdeinde. */
+	private static float[] map(Direction f, float u, float v) {
+		return switch (f) {
+			case NORTH -> new float[]{u, v};            // hoofd naar -z, voeteneind richting +z
+			case SOUTH -> new float[]{1 - u, 1 - v};
+			case WEST -> new float[]{v, 1 - u};
+			default -> new float[]{1 - v, u};           // EAST
+		};
 	}
 
 	// ---------------------------------------------------------------- naam

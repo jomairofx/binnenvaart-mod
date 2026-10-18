@@ -1,0 +1,18 @@
+{
+  "engine_idle": {
+    "sounds": [
+      {
+        "name": "binnenvaart:engine_idle",
+        "stream": false
+      }
+    ]
+  },
+  "engine_load": {
+    "sounds": [
+      {
+        "name": "binnenvaart:engine_load",
+        "stream": false
+      }
+    ]
+  }
+}

@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.block.BedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -13,6 +14,7 @@ import net.minecraft.block.DoorBlock;
 import net.minecraft.block.LeverBlock;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.TrapdoorBlock;
+import net.minecraft.block.enums.BedPart;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -36,6 +38,7 @@ import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
@@ -49,6 +52,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
@@ -351,7 +355,6 @@ public class ShipEntity extends Entity {
 		if (bumpCooldown > 0) bumpCooldown--;
 
 		if (!testMode && (getHelmsman() == null || age - lastControlTick > 40)) {
-			if (getHelmsman() == null) throttle = 0;
 			rudderInput = 0;
 			thrusterInput = 0;
 		}
@@ -441,6 +444,8 @@ public class ShipEntity extends Entity {
 	}
 
 	private void bump() {
+		// zonder roerganger zet de machine zich bij een aanvaring zelf op stop
+		if (getHelmsman() == null && !testMode) throttle = 0;
 		if (bumpCooldown == 0 && Math.abs(speed) > 0.02) {
 			Vec3d bow = toWorld(speed > 0 ? 69 : 1, 0.5, ShipTemplate.CZ);
 			getWorld().playSound(null, bow.x, bow.y, bow.z, SoundEvents.ENTITY_IRON_GOLEM_DAMAGE, SoundCategory.NEUTRAL, 1.5f, 0.5f);
@@ -533,6 +538,8 @@ public class ShipEntity extends Entity {
 	protected void removePassenger(Entity passenger) {
 		super.removePassenger(passenger);
 		if (!getWorld().isClient) {
+			if (throttle != 0 && getPassengerList().isEmpty() && passenger instanceof PlayerEntity pl)
+				pl.sendMessage(Text.literal("Het schip vaart door. Zet de telegraaf aan het roer op Stop om te stoppen.").formatted(Formatting.GOLD), true);
 			if (dataTracker.get(SEAT_AFT) == passenger.getId()) dataTracker.set(SEAT_AFT, -1);
 			if (dataTracker.get(SEAT_BOW) == passenger.getId()) dataTracker.set(SEAT_BOW, -1);
 		}
@@ -623,7 +630,7 @@ public class ShipEntity extends Entity {
 		return speed;
 	}
 
-	public enum Action { NONE, HELM_AFT, HELM_BOW, HOLD, TOGGLE }
+	public enum Action { NONE, HELM_AFT, HELM_BOW, HOLD, TOGGLE, BED }
 
 	private static boolean inZone(int[] z, int x, int y, int zz) {
 		return x >= z[0] && x <= z[3] && y >= z[1] && y <= z[4] && zz >= z[2] && zz <= z[5];
@@ -645,6 +652,7 @@ public class ShipEntity extends Entity {
 		if (inZone(template.helmBow, bx, by, bz)) return Action.HELM_BOW;
 		BlockState s = structure.get(bx, by, bz);
 		Block b = s.getBlock();
+		if (b instanceof BedBlock) return Action.BED;
 		if (b instanceof DoorBlock || (b instanceof TrapdoorBlock && !s.isOf(Blocks.IRON_TRAPDOOR)) || b instanceof LeverBlock)
 			return Action.TOGGLE;
 		if (holdAt(t) >= 0) return Action.HOLD;
@@ -692,6 +700,7 @@ public class ShipEntity extends Entity {
 					player.sendMessage(Text.literal(a == Action.HELM_AFT ? "Je staat aan het roer in het stuurhuis" : "Je staat aan de stuurstand voor").formatted(Formatting.AQUA), true);
 				}
 			}
+			case BED -> useBed(player, MathHelper.floor(t.x), MathHelper.floor(t.y), MathHelper.floor(t.z));
 			case TOGGLE -> toggleBlock(MathHelper.floor(t.x), MathHelper.floor(t.y), MathHelper.floor(t.z), w);
 			case HOLD -> {
 				int h = holdAt(t);
@@ -759,6 +768,125 @@ public class ShipEntity extends Entity {
 			i++;
 		}
 		ServerPlayNetworking.send(player, new ShipPayloads.Blocks(getId(), pos, st));
+	}
+
+	// =====================================================================
+	// Bedden: echt slapen aan boord
+	// =====================================================================
+
+	private List<int[]> bedHeads;
+
+	/** Alle hoofdeinden van bedden in het schip (sjablooncoördinaten). */
+	public List<int[]> bedHeads() {
+		if (bedHeads == null) {
+			List<int[]> list = new ArrayList<>();
+			for (int x = -2; x < LENGTH + 2; x++)
+				for (int y = -4; y < 14; y++)
+					for (int z = -2; z < 12; z++) {
+						BlockState s = structure.get(x, y, z);
+						if (s.getBlock() instanceof BedBlock && s.get(BedBlock.PART) == BedPart.HEAD) list.add(new int[]{x, y, z});
+					}
+			bedHeads = list;
+		}
+		return bedHeads;
+	}
+
+	@Nullable
+	private int[] bedHead(int x, int y, int z) {
+		BlockState s = structure.get(x, y, z);
+		if (!(s.getBlock() instanceof BedBlock)) return null;
+		if (s.get(BedBlock.PART) == BedPart.HEAD) return new int[]{x, y, z};
+		Direction f = s.get(BedBlock.FACING);
+		return new int[]{x + f.getOffsetX(), y, z + f.getOffsetZ()};
+	}
+
+	/** Waar het hoofd van een slapende speler ligt (wereld). */
+	public Vec3d bedSpot(int[] h) {
+		return toWorld(h[0] + 0.5, h[1] + 0.6875, h[2] + 0.5);
+	}
+
+	/** Kijkrichting van het bed in de wereld (van voeteneind naar hoofdeinde). */
+	public Direction bedDirection(int[] h) {
+		Direction f = structure.get(h[0], h[1], h[2]).get(BedBlock.FACING);
+		Vec3d d = dirToWorld(new Vec3d(f.getOffsetX(), 0, f.getOffsetZ()));
+		return Direction.getFacing(d.x, 0, d.z);
+	}
+
+	/** Een vrije plek naast het bed om op op te staan (wereld). */
+	public Vec3d bedWakeSpot(int[] h) {
+		Direction f = structure.get(h[0], h[1], h[2]).get(BedBlock.FACING);
+		int fx = h[0] - f.getOffsetX(), fz = h[2] - f.getOffsetZ();
+		int[][] cand = new int[16][];
+		int n = 0;
+		for (int[] c : new int[][]{{fx, fz}, {h[0], h[2]}})
+			for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) cand[n++] = new int[]{c[0] + d[0], c[1] + d[1]};
+		BlockPos.Mutable m = new BlockPos.Mutable();
+		for (int i = 0; i < n; i++) {
+			int x = cand[i][0], z = cand[i][1], y = h[1];
+			if (free(m, x, y, z) && free(m, x, y + 1, z) && !structure.get(x, y - 1, z).isAir())
+				return toWorld(x + 0.5, y + 0.01, z + 0.5);
+		}
+		return toWorld(h[0] + 0.5, h[1] + 0.6, h[2] + 0.5);
+	}
+
+	private boolean free(BlockPos.Mutable m, int x, int y, int z) {
+		BlockState s = structure.get(x, y, z);
+		m.set(x, y, z);
+		return !(s.getBlock() instanceof BedBlock) && s.getCollisionShape(structure, m).isEmpty();
+	}
+
+	public record BedRef(ShipEntity ship, int[] head) {}
+
+	/** Hoort deze slaappositie (wereldblok) bij een bed op een schip? */
+	@Nullable
+	public static BedRef findBed(World world, BlockPos sleepPos) {
+		BedRef best = null;
+		double bestD = 2.5 * 2.5;
+		Vec3d c = new Vec3d(sleepPos.getX() + 0.5, sleepPos.getY() + 0.6875, sleepPos.getZ() + 0.5);
+		for (ShipEntity s : ShipHolder.of(world)) {
+			if (!s.getBoundingBox().expand(3).contains(c)) continue;
+			for (int[] h : s.bedHeads()) {
+				Vec3d p = s.bedSpot(h);
+				if (Math.abs(p.y - c.y) > 1.6) continue;
+				double d = (p.x - c.x) * (p.x - c.x) + (p.z - c.z) * (p.z - c.z);
+				if (d < bestD) {
+					bestD = d;
+					best = new BedRef(s, h);
+				}
+			}
+		}
+		return best;
+	}
+
+	private void useBed(ServerPlayerEntity player, int x, int y, int z) {
+		int[] h = bedHead(x, y, z);
+		if (h == null) return;
+		World w = getWorld();
+		// slaapplaats onthouden: na doodgaan word je weer aan boord wakker
+		NbtCompound tag = new NbtCompound();
+		tag.putUuid("Ship", getUuid());
+		tag.putIntArray("Bed", h);
+		Vec3d spot = bedSpot(h);
+		tag.putDouble("X", spot.x);
+		tag.putDouble("Y", spot.y);
+		tag.putDouble("Z", spot.z);
+		tag.putString("Dim", w.getRegistryKey().getValue().toString());
+		NbtCompound old = player.getAttached(Kempenaar.SHIP_BED);
+		player.setAttached(Kempenaar.SHIP_BED, tag);
+		if (old == null || !old.getUuid("Ship").equals(getUuid()))
+			player.sendMessage(Text.literal("Je slaapplaats is nu aan boord van de " + template.name).formatted(Formatting.AQUA), false);
+		if (player.isSleeping()) return;
+		if (w.isDay() && !w.isThundering()) {
+			player.sendMessage(Text.translatable("block.minecraft.bed.no_sleep"), true);
+			return;
+		}
+		if (player.hasVehicle()) player.stopRiding();
+		BlockPos bp = BlockPos.ofFloored(spot.x, spot.y - 0.6875 + 0.01, spot.z);
+		player.sleep(bp);
+		((nl.kempenaar.mixin.PlayerEntityAccessor) player).kempenaar$setSleepTimer(0);
+		player.setPosition(spot.x, spot.y, spot.z);
+		player.networkHandler.requestTeleport(spot.x, spot.y, spot.z, player.getYaw(), player.getPitch());
+		if (w instanceof ServerWorld sw) sw.updateSleepingPlayers();
 	}
 
 	private void openHold(ServerPlayerEntity player, int h) {
@@ -1107,6 +1235,7 @@ public class ShipEntity extends Entity {
 	protected void readCustomDataFromNbt(NbtCompound nbt) {
 		shipYaw = prevShipYaw = nbt.getDouble("ShipYaw");
 		waterLayerY = nbt.getInt("WaterLayer");
+		throttle = MathHelper.clamp(nbt.getInt("Throttle"), -2, 3);
 		dataTracker.set(YAW, (float) shipYaw);
 		dataTracker.set(WATER_Y, waterLayerY + 0.889f);
 		dataTracker.set(HATCHES_CLOSED, nbt.getBoolean("HatchesClosed"));
@@ -1135,6 +1264,7 @@ public class ShipEntity extends Entity {
 	protected void writeCustomDataToNbt(NbtCompound nbt) {
 		nbt.putDouble("ShipYaw", shipYaw);
 		nbt.putInt("WaterLayer", waterLayerY);
+		nbt.putInt("Throttle", throttle);
 		nbt.putBoolean("HatchesClosed", hatchesClosed());
 		NbtList hl = new NbtList();
 		for (CargoInventory h : holds) hl.add(h.toNbtList(getRegistryManager()));

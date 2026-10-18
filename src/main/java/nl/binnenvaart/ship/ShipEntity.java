@@ -348,7 +348,6 @@ public class ShipEntity extends Entity {
 		if (bumpCooldown > 0) bumpCooldown--;
 
 		if (!testMode && (getHelmsman() == null || age - lastControlTick > 40)) {
-			if (getHelmsman() == null) throttle = 0;
 			rudderInput = 0;
 			thrusterInput = 0;
 		}
@@ -438,6 +437,8 @@ public class ShipEntity extends Entity {
 	}
 
 	private void bump() {
+		// zonder roerganger zet de machine zich bij een aanvaring zelf op stop
+		if (getHelmsman() == null && !testMode) throttle = 0;
 		if (bumpCooldown == 0 && Math.abs(speed) > 0.02) {
 			Vec3d bow = toWorld(speed > 0 ? 95 : 1, 0.5, 5.5);
 			getWorld().playSound(null, bow.x, bow.y, bow.z, SoundEvents.ENTITY_IRON_GOLEM_DAMAGE, SoundCategory.NEUTRAL, 1.5f, 0.5f);
@@ -530,6 +531,8 @@ public class ShipEntity extends Entity {
 	protected void removePassenger(Entity passenger) {
 		super.removePassenger(passenger);
 		if (!getWorld().isClient) {
+			if (throttle != 0 && getPassengerList().isEmpty() && passenger instanceof PlayerEntity pl)
+				pl.sendMessage(Text.literal("Het schip vaart door. Zet de telegraaf aan het roer op Stop om te stoppen.").formatted(Formatting.GOLD), true);
 			if (dataTracker.get(SEAT_AFT) == passenger.getId()) dataTracker.set(SEAT_AFT, -1);
 			if (dataTracker.get(SEAT_BOW) == passenger.getId()) dataTracker.set(SEAT_BOW, -1);
 		}
@@ -1101,6 +1104,7 @@ public class ShipEntity extends Entity {
 	protected void readCustomDataFromNbt(NbtCompound nbt) {
 		shipYaw = prevShipYaw = nbt.getDouble("ShipYaw");
 		waterLayerY = nbt.getInt("WaterLayer");
+		throttle = MathHelper.clamp(nbt.getInt("Throttle"), -2, 3);
 		dataTracker.set(YAW, (float) shipYaw);
 		dataTracker.set(WATER_Y, waterLayerY + 0.889f);
 		dataTracker.set(HATCHES_CLOSED, nbt.getBoolean("HatchesClosed"));
@@ -1129,6 +1133,7 @@ public class ShipEntity extends Entity {
 	protected void writeCustomDataToNbt(NbtCompound nbt) {
 		nbt.putDouble("ShipYaw", shipYaw);
 		nbt.putInt("WaterLayer", waterLayerY);
+		nbt.putInt("Throttle", throttle);
 		nbt.putBoolean("HatchesClosed", hatchesClosed());
 		NbtList hl = new NbtList();
 		for (CargoInventory h : holds) hl.add(h.toNbtList(getRegistryManager()));

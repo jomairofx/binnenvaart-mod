@@ -1,0 +1,18 @@
+{
+  "engine_idle": {
+    "sounds": [
+      {
+        "name": "inlandbarge:engine_idle",
+        "stream": false
+      }
+    ]
+  },
+  "engine_load": {
+    "sounds": [
+      {
+        "name": "inlandbarge:engine_load",
+        "stream": false
+      }
+    ]
+  }
+}

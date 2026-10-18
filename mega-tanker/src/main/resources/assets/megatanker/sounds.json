@@ -1,0 +1,18 @@
+{
+  "engine_idle": {
+    "sounds": [
+      {
+        "name": "megatanker:engine_idle",
+        "stream": false
+      }
+    ]
+  },
+  "engine_load": {
+    "sounds": [
+      {
+        "name": "megatanker:engine_load",
+        "stream": false
+      }
+    ]
+  }
+}

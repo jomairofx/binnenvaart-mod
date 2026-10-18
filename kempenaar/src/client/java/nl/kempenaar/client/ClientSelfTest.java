@@ -232,6 +232,75 @@ public final class ClientSelfTest {
 			KempenaarClient.thrusterRight.setPressed(false);
 			double d = Math.toDegrees(ship.shipYaw - yaw0);
 			check("boegschroef (pijltje rechts)", d > 0.5 && ship.syncedThruster() == 1, String.format("koers %.1f graden naar stuurboord, boegschroef %d", d, ship.syncedThruster()));
+			KempenaarClient.testThrottle(2);
+			mc.options.setPerspective(net.minecraft.client.option.Perspective.THIRD_PERSON_BACK);
+		}
+		if (t == helm + 640) {
+			shot(mc, "18_derde_persoon");
+			mc.options.setPerspective(net.minecraft.client.option.Perspective.FIRST_PERSON);
+		}
+		if (t == helm + 650) {
+			srv.execute(() -> srv.getPlayerManager().getPlayerList().get(0).stopRiding());
+		}
+		if (t == helm + 760) {
+			check("doorvaren zonder roerganger", mc.player.getVehicle() == null && ship.syncedThrottle() == 2 && ship.syncedSpeed() > 0.08,
+					String.format("telegraaf %d, snelheid %.3f, speler aan het roer: %s", ship.syncedThrottle(), ship.syncedSpeed(), mc.player.getVehicle() != null));
+			srv.execute(() -> {
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.testControl(0, 0, 0);
+			});
+			cmd(srv, "gamerule doDaylightCycle true");
+			cmd(srv, "time set 18000");
+			cmd(srv, "gamemode survival @p");
+		}
+		if (t == helm + 830) tp(srv, ship, new double[]{9.5, 1.0 + 1.62, 2.5}, new double[]{7.5, 1.5, 1.5});
+		if (t == helm + 850) {
+			srv.execute(() -> {
+				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(8.5, 1.3, 2.5), false);
+			});
+		}
+		if (t == helm + 875) {
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			check("slapen in bed", mc.player.isSleeping(), String.format("slaapt=%s op lokaal (%.2f, %.2f, %.2f), scherm %s", mc.player.isSleeping(), l.x, l.y, l.z,
+					mc.currentScreen == null ? "geen" : mc.currentScreen.getClass().getSimpleName()));
+			shot(mc, "19_slapen");
+		}
+		if (t == helm + 1010) {
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			long tod = mc.world.getTimeOfDay() % 24000;
+			check("nacht overgeslagen", !mc.player.isSleeping() && tod < 3000, "tijd " + tod + ", slaapt " + mc.player.isSleeping());
+			check("opgestaan naast het bed", l.x > 6 && l.x < 12.5 && l.y > 0.9 && l.y < 1.8,
+					String.format("speler op lokaal (%.2f, %.2f, %.2f)", l.x, l.y, l.z));
+			shot(mc, "20_wakker");
+			cmd(srv, "gamerule doDaylightCycle false");
+			cmd(srv, "time set 5000");
+		}
+		int crane = helm + 1030;
+		if (t == crane) {
+			srv.execute(() -> {
+				if (!(srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s)) return;
+				for (int i = 0; i < s.hold(0).size(); i++) s.hold(0).setStack(i, net.minecraft.item.ItemStack.EMPTY);
+				s.hold(0).markDirty();
+				s.testSetHatches(false);
+				Vec3d cp = s.toWorld(28.5, 0, -3.5);
+				net.minecraft.util.math.BlockPos bp = net.minecraft.util.math.BlockPos.ofFloored(cp.x, Math.floor(s.waterSurfaceY()), cp.z);
+				var w = srv.getOverworld();
+				w.setBlockState(bp, Kempenaar.CRANE.getDefaultState().with(nl.kempenaar.block.CraneBlock.FACING, net.minecraft.util.math.Direction.NORTH));
+				if (w.getBlockEntity(bp) instanceof nl.kempenaar.block.CraneBlockEntity c)
+					for (int i = 0; i < 12; i++) c.setStack(i, new net.minecraft.item.ItemStack(net.minecraft.item.Items.SAND, 64));
+			});
+			cmd(srv, "gamemode spectator @p");
+			mc.options.hudHidden = true;
+			tp(srv, ship, new double[]{28.5, 12, -17}, new double[]{28.5, 3, 3});
+		}
+		if (t == crane + 150) shot(mc, "21_kraan");
+		if (t == crane + 178) shot(mc, "22_kraan_storten");
+		if (t == crane + 420) {
+			int sand = 0;
+			if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s)
+				for (int i = 0; i < s.hold(0).size(); i++) if (s.hold(0).getStack(i).isOf(net.minecraft.item.Items.SAND)) sand += s.hold(0).getStack(i).getCount();
+			check("laadkraan", sand >= 256, sand + " zand in ruim 1");
+			shot(mc, "23_kraan_ruim");
 			finish(mc, failed ? "RESULT FAIL" : "RESULT PASS");
 		}
 	}

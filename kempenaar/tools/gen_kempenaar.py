@@ -139,12 +139,13 @@ S(10, 2, 3, "spruce_door[facing=north,half=upper,hinge=left,open=false]")
 S(10, 1, 5, "spruce_door[facing=south,half=lower,hinge=right,open=false]")
 S(10, 2, 5, "spruce_door[facing=south,half=upper,hinge=right,open=false]")
 # slaapkamer (bakboord): tweepersoonsbed met hoofdeinde, nachtkastje, kledingkast
-for x in (7, 8):
-    for z in (1, 2): S(x, 1, z, "smooth_quartz_slab[type=bottom]")
+# echte bedden (twee eenpersoons naast elkaar = tweepersoonsbed), hoofdeinde tegen de achterwand
+for z in (1, 2):
+    S(7, 1, z, "light_blue_bed[facing=west,part=head,occupied=false]")
+    S(8, 1, z, "light_blue_bed[facing=west,part=foot,occupied=false]")
 for z in (1, 2): S(7, 2, z, "dark_oak_trapdoor[facing=east,half=bottom,open=true]")
 S(9, 1, 1, "barrel[facing=up]"); S(9, 2, 1, "lantern[hanging=false]")
 S(11, 1, 1, "barrel[facing=up]"); S(11, 2, 1, "barrel[facing=up]")
-S(8, 1, 2, "smooth_quartz_slab[type=bottom]")
 # badkamer (stuurboord): douche, toilet, wastafel
 S(7, 1, 7, "light_blue_carpet"); S(7, 1, 6, "light_blue_carpet")
 S(9, 1, 7, "quartz_stairs[facing=south,half=bottom]")
@@ -266,7 +267,7 @@ B = {k: v for k, v in B.items() if v != "minecraft:air"}
 # ---------------- verbindingen ----------------
 def base(s): return s.split("[")[0].replace("minecraft:", "")
 NONFULL = ("candle", "slab", "stairs", "pane", "bars", "fence", "wall", "trapdoor", "door", "ladder", "lantern", "carpet",
-           "rod", "chain", "potted", "cauldron", "lever", "campfire", "grindstone", "anvil")
+           "rod", "chain", "potted", "cauldron", "lever", "campfire", "grindstone", "anvil", "_bed")
 def is_full(s):
     if s is None: return False
     b = base(s)

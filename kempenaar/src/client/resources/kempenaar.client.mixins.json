@@ -4,7 +4,11 @@
   "package": "nl.kempenaar.client.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "GameRendererMixin"
+    "CameraMixin",
+    "GameRendererMixin",
+    "MouseMixin"
   ],
-  "injectors": { "defaultRequire": 1 }
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

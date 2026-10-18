@@ -22,7 +22,7 @@ import java.util.WeakHashMap;
 
 public class InlandBargeClient implements ClientModInitializer {
 	static KeyBinding thrusterLeft, thrusterRight, horn, hatches;
-	private static boolean prevForward, prevBack;
+	private static boolean prevForward, prevBack, prevHornKey, prevHatchKey;
 	private static int throttle;
 	private static int lastShipId = -1;
 	private static final Map<ShipEntity, ShipEngineSound> SOUNDS = new WeakHashMap<>();
@@ -59,9 +59,10 @@ public class InlandBargeClient implements ClientModInitializer {
 		for (ShipEntity ship : ShipHolder.of(mc.world)) {
 			ShipEngineSound s = SOUNDS.get(ship);
 			if ((s == null || s.isDone()) && ship.squaredDistanceTo(mc.player) < 100 * 100) {
-				s = new ShipEngineSound(ship);
+				s = new ShipEngineSound(ship, false);
 				SOUNDS.put(ship, s);
 				mc.getSoundManager().play(s);
+				mc.getSoundManager().play(new ShipEngineSound(ship, true));
 			}
 		}
 
@@ -70,6 +71,8 @@ public class InlandBargeClient implements ClientModInitializer {
 			// toetsen niet laten opstapelen
 			while (horn.wasPressed()) { }
 			while (hatches.wasPressed()) { }
+			prevHornKey = held(mc, horn);
+			prevHatchKey = held(mc, hatches);
 			return;
 		}
 		if (lastShipId != ship.getId()) {
@@ -89,13 +92,28 @@ public class InlandBargeClient implements ClientModInitializer {
 		if (mc.currentScreen == null) {
 			if (mc.options.leftKey.isPressed()) rudder -= 1;
 			if (mc.options.rightKey.isPressed()) rudder += 1;
-			if (thrusterLeft.isPressed()) thruster -= 1;
-			if (thrusterRight.isPressed()) thruster += 1;
+			if (held(mc, thrusterLeft)) thruster -= 1;
+			if (held(mc, thrusterRight)) thruster += 1;
 		}
 		boolean h = false, l = false;
 		while (horn.wasPressed()) h = true;
 		while (hatches.wasPressed()) l = true;
+		// Meerdere scheepsmods gebruiken dezelfde toetsen; Minecraft geeft een toets dan maar aan één van hen door.
+		// Daarom kijken we ook rechtstreeks of de toets is ingedrukt.
+		boolean hk = mc.currentScreen == null && held(mc, horn), lk = mc.currentScreen == null && held(mc, hatches);
+		if (hk && !prevHornKey) h = true;
+		if (lk && !prevHatchKey) l = true;
+		prevHornKey = hk;
+		prevHatchKey = lk;
 		ClientPlayNetworking.send(new ShipPayloads.Control(ship.getId(), throttle, rudder, thruster, h, l));
+	}
+
+	/** Is de toets ingedrukt, ook als een andere mod dezelfde toets heeft. */
+	static boolean held(MinecraftClient mc, KeyBinding kb) {
+		if (kb.isPressed()) return true;
+		InputUtil.Key k = KeyBindingHelper.getBoundKeyOf(kb);
+		if (k.getCategory() != InputUtil.Type.KEYSYM || k.getCode() < 0) return false;
+		return InputUtil.isKeyPressed(mc.getWindow().getHandle(), k.getCode());
 	}
 
 	private static String keyName(KeyBinding kb) {
@@ -115,7 +133,7 @@ public class InlandBargeClient implements ClientModInitializer {
 		var m = ctx.getMatrices();
 		m.push();
 		m.scale(sc, sc, 1f);
-		int w = 240, hgt = 104;
+		int w = 240, hgt = 114;
 		int x = Math.round(6 / sc), y = Math.round(ctx.getScaledWindowHeight() / 2f / sc - hgt / 2f);
 		ctx.fill(x, y, x + w, y + hgt, 0xB0101820);
 		ctx.fill(x, y, x + 2, y + hgt, 0xFF3D7BD9);
@@ -172,6 +190,7 @@ public class InlandBargeClient implements ClientModInitializer {
 		if (ship.isAground()) ctx.drawTextWithShadow(tr, "AGROUND", lx + 120, y + 81, 0xFF5555);
 		String keys = String.format("W/S telegraph  A/D rudder  %s/%s thruster  H horn", keyName(thrusterLeft), keyName(thrusterRight)) + (ShipEntity.COVERS > 0 ? "  L hatches" : "");
 		ctx.drawText(tr, keys, lx, y + 93, 0x7F8C99, false);
+		ctx.drawText(tr, "F5 camera  (scroll wheel: zoom)", lx, y + 103, 0x7F8C99, false);
 		m.pop();
 	}
 }

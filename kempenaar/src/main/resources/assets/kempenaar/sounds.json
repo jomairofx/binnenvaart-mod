@@ -1,0 +1,18 @@
+{
+  "engine_idle": {
+    "sounds": [
+      {
+        "name": "kempenaar:engine_idle",
+        "stream": false
+      }
+    ]
+  },
+  "engine_load": {
+    "sounds": [
+      {
+        "name": "kempenaar:engine_load",
+        "stream": false
+      }
+    ]
+  }
+}

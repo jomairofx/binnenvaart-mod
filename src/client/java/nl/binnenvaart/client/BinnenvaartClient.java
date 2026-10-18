@@ -44,6 +44,7 @@ public class BinnenvaartClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(BinnenvaartClient::tick);
+		ClientSelfTest.register();
 		HudRenderCallback.EVENT.register((ctx, tickCounter) -> renderHud(ctx));
 	}
 

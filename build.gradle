@@ -14,6 +14,22 @@ loom {
 			sourceSet sourceSets.client
 		}
 	}
+	runs {
+		testServer {
+			server()
+			name "Test Server"
+			vmArg "-Dbinnenvaart.selftest=server"
+			programArgs "nogui"
+			runDir "run"
+		}
+		testClient {
+			client()
+			name "Test Client"
+			vmArg "-Dbinnenvaart.selftest=client"
+			programArgs "--quickPlaySingleplayer", "testwelt", "--width", "1280", "--height", "720"
+			runDir "run"
+		}
+	}
 }
 
 dependencies {

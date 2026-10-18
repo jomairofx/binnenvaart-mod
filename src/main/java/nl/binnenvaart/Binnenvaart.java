@@ -62,6 +62,8 @@ public class Binnenvaart implements ModInitializer {
 				ship.handleInteract(context.player(), new Vec3d(payload.x(), payload.y(), payload.z()), payload.sneaking());
 		});
 
+		nl.binnenvaart.test.SelfTest.register();
+
 		ShipTemplate t = ShipTemplate.get();
 		LOGGER.info("Binnenvaart geladen: schip {} ({} m lang)", t.name, t.length);
 	}

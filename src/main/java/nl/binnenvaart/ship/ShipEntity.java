@@ -133,6 +133,8 @@ public class ShipEntity extends Entity {
 	public final float[] displayFill = new float[4];
 	public final float[] prevDisplayFill = new float[4];
 	public Object renderCache; // ShipMesh op de client
+	/** Alleen voor de automatische test: besturing zonder roerganger. */
+	public boolean testMode;
 
 	public ShipEntity(EntityType<? extends ShipEntity> type, World world) {
 		super(type, world);
@@ -343,7 +345,7 @@ public class ShipEntity extends Entity {
 		if (hornCooldown > 0) hornCooldown--;
 		if (bumpCooldown > 0) bumpCooldown--;
 
-		if (getHelmsman() == null || age - lastControlTick > 40) {
+		if (!testMode && (getHelmsman() == null || age - lastControlTick > 40)) {
 			if (getHelmsman() == null) throttle = 0;
 			rudderInput = 0;
 			thrusterInput = 0;
@@ -584,6 +586,29 @@ public class ShipEntity extends Entity {
 			getWorld().playSound(null, h.x, h.y, h.z, SoundEvents.BLOCK_PISTON_EXTEND, SoundCategory.NEUTRAL, 1.5f, 0.5f);
 			player.sendMessage(Text.literal(closed ? "Luiken gaan dicht" : "Luiken gaan open").formatted(Formatting.GRAY), true);
 		}
+	}
+
+	public void testControl(int throttle, int rudder, int thruster) {
+		this.testMode = true;
+		this.throttle = throttle;
+		this.rudderInput = rudder;
+		this.thrusterInput = thruster;
+	}
+
+	public void testSetHatches(boolean closed) {
+		dataTracker.set(HATCHES_CLOSED, closed);
+	}
+
+	public SimpleInventory hold(int i) {
+		return holds[i];
+	}
+
+	public int displacedCount() {
+		return displaced.size();
+	}
+
+	public double currentSpeed() {
+		return speed;
 	}
 
 	public enum Action { NONE, HELM_AFT, HELM_BOW, HOLD, TOGGLE }

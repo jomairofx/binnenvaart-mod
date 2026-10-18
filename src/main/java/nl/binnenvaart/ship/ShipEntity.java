@@ -126,6 +126,7 @@ public class ShipEntity extends Entity {
 	private boolean aground;
 	private final LongOpenHashSet displaced = new LongOpenHashSet();
 	private double dispX = Double.NaN, dispY, dispZ, dispYaw;
+	private int lastDisplaceTick = -100;
 
 	// client: interpolatie en weergave
 	private double lerpX, lerpY, lerpZ, lerpYaw;
@@ -423,9 +424,15 @@ public class ShipEntity extends Entity {
 		dataTracker.set(AGROUND, aground);
 		dataTracker.set(WATER_Y, waterLayerY + 0.889f);
 
-		if (Double.isNaN(dispX) || Math.abs(dispX - getX()) > 0.05 || Math.abs(dispZ - getZ()) > 0.05
-				|| Math.abs(dispY - getY()) > 0.05 || Math.abs(dispYaw - shipYaw) > 0.0008 || age % 100 == 0) {
+		// Water verplaatsen kost de spelers veel rekenwerk (elk gewijzigd blok laat de wereld opnieuw opbouwen).
+		// Daarom pas bijwerken als het schip een merkbaar stuk is verschoven, of meteen als het stil komt te liggen.
+		boolean still = !moved && !vertical;
+		double shift = Double.isNaN(dispX) ? 99 : Math.max(Math.hypot(dispX - getX(), dispZ - getZ()), Math.abs(dispYaw - shipYaw) * 50);
+		boolean due = Double.isNaN(dispX) || shift > 0.9 || Math.abs(dispY - getY()) > 0.3
+				|| (still && (shift > 0.01 || Math.abs(dispY - getY()) > 0.01)) || age % 200 == 0;
+		if (due && age - lastDisplaceTick >= 3) {
 			updateDisplacement();
+			lastDisplaceTick = age;
 		}
 	}
 

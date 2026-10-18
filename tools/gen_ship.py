@@ -264,6 +264,17 @@ S(86, -1, 5, "iron_block"); S(86, 0, 5, "grindstone[face=floor,facing=north]")
 for y in (-1, 0): S(86, y, 8, "ladder[facing=north]")
 S(86, 1, 8, "spruce_trapdoor[facing=north,half=top,open=false]")
 
+# geen glas: ruiten worden open raamopeningen, overig glas wordt beton
+REPL = {
+    "minecraft:black_stained_glass": "minecraft:black_carpet",
+    "minecraft:red_stained_glass": "minecraft:red_concrete",
+    "minecraft:green_stained_glass": "minecraft:lime_concrete",
+    "minecraft:light_gray_stained_glass": "minecraft:light_gray_concrete",
+}
+for k, v in list(B.items()):
+    if v.endswith("glass_pane"): B[k] = "minecraft:air"
+    elif v in REPL: B[k] = REPL[v]
+
 B = {k: v for k, v in B.items() if v != "minecraft:air"}
 
 # ---------------- verbindingen (ruiten, tralies, hekken, muren) ----------------

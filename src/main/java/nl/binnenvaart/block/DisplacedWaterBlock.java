@@ -49,7 +49,8 @@ public class DisplacedWaterBlock extends Block implements FluidFillable {
 
 	@Override
 	protected boolean isTransparent(BlockState state, BlockView world, BlockPos pos) {
-		return true;
+		// net als water: licht verzwakt 1 stap. Zo verandert de belichting niet als het schip water verplaatst.
+		return false;
 	}
 
 	@Override

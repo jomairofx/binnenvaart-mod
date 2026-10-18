@@ -37,6 +37,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			Blocks.WHITE_CONCRETE, Blocks.GRAY_CONCRETE, Blocks.CYAN_TERRACOTTA, Blocks.BROWN_CONCRETE
 	};
 	private final Map<BlockState, Sprite[]> spriteCache = new HashMap<>();
+	private final Map<ShipEntity, DynCache> caches = new java.util.WeakHashMap<>();
 
 	public ShipRenderer(EntityRendererFactory.Context ctx) {
 		super(ctx);
@@ -68,10 +69,26 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		matrices.translate(-ShipTemplate.CX, 0, -ShipTemplate.CZ);
 		mesh.render(matrices, consumers);
 
-		VertexConsumer vc = consumers.getBuffer(TexturedRenderLayers.getEntityCutout());
-		MatrixStack.Entry entry = matrices.peek();
-		renderCargo(ship, tickDelta, vc, entry, light);
-		renderCovers(ship, tickDelta, vc, entry, light);
+		DynCache dc = caches.computeIfAbsent(ship, k -> new DynCache());
+		float hatch = MathHelper.lerp(tickDelta, ship.prevHatchProgress, ship.hatchProgress);
+		boolean dirty = Math.abs(dc.hatch - hatch) > 1e-4f || dc.light != light;
+		float[] fills = new float[4];
+		for (int h = 0; h < 4; h++) {
+			fills[h] = MathHelper.lerp(tickDelta, ship.prevDisplayFill[h], ship.displayFill[h]);
+			if (Math.abs(dc.fill[h] - fills[h]) > 1e-4f || dc.mat[h] != ship.material(h)) dirty = true;
+		}
+		if (dirty) {
+			dc.sink.n = 0;
+			dc.hatch = hatch;
+			dc.light = light;
+			for (int h = 0; h < 4; h++) {
+				dc.fill[h] = fills[h];
+				dc.mat[h] = ship.material(h);
+			}
+			renderCargo(ship, fills, hatch, dc.sink, light);
+			renderCovers(hatch, dc.sink, light);
+		}
+		dc.sink.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
 		renderName(ship, matrices, consumers, light);
 		matrices.pop();
 		super.render(ship, yaw, tickDelta, matrices, consumers, light);
@@ -91,19 +108,18 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		});
 	}
 
-	private void renderCargo(ShipEntity ship, float td, VertexConsumer vc, MatrixStack.Entry e, int light) {
+	private void renderCargo(ShipEntity ship, float[] fills, float hatch, Sink vc, int light) {
 		ShipTemplate t = ship.template;
-		float hatch = MathHelper.lerp(td, ship.prevHatchProgress, ship.hatchProgress);
 		for (int h = 0; h < t.holds.length; h++) {
-			float f = MathHelper.lerp(td, ship.prevDisplayFill[h], ship.displayFill[h]);
+			float f = fills[h];
 			if (f < 0.002f) continue;
 			int mat = ship.material(h);
 			int a = t.holds[h][0], b = t.holds[h][1];
 			if (mat > 0) {
 				BlockState st = Registries.BLOCK.get(mat - 1).getDefaultState();
-				renderPile(vc, e, sprites(st), a, b, t.holdZ0, t.holdZ1, (float) t.holdFloorY, f, hatch, light);
+				renderPile(vc, sprites(st), a, b, t.holdZ0, t.holdZ1, (float) t.holdFloorY, f, hatch, light);
 			} else {
-				renderContainers(vc, e, h, a, b, (float) t.holdFloorY, f, light);
+				renderContainers(vc, h, a, b, (float) t.holdFloorY, f, light);
 			}
 		}
 	}
@@ -120,7 +136,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		return MathHelper.clamp(hgt, 0.05f, c);
 	}
 
-	private void renderPile(VertexConsumer vc, MatrixStack.Entry e, Sprite[] sp, int a, int b, int z0, int z1, float floor,
+	private void renderPile(Sink vc, Sprite[] sp, int a, int b, int z0, int z1, float floor,
 							float f, float hatch, int light) {
 		float cap = MathHelper.lerp(hatch, 7.0f, 5.4f);
 		int w = b - a + 1, d = z1 - z0 + 1;
@@ -129,19 +145,19 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		for (int i = 0; i < w; i++) {
 			for (int k = 0; k < d; k++) {
 				float x = a + i, z = z0 + k, top = floor + hm[i][k];
-				quadUp(vc, e, sp[0], x, top, z, x + 1, z + 1, 1f, light);
+				quadUp(vc, sp[0], x, top, z, x + 1, z + 1, 1f, light);
 				// zijkanten waar de buur lager ligt
 				float hxm = i == 0 ? 0 : hm[i - 1][k], hxp = i == w - 1 ? 0 : hm[i + 1][k];
 				float hzm = k == 0 ? hm[i][k] : hm[i][k - 1], hzp = k == d - 1 ? hm[i][k] : hm[i][k + 1];
-				sideX(vc, e, sp[1], x, z, z + 1, floor + hxm, top, false, floor, light);
-				sideX(vc, e, sp[1], x + 1, z, z + 1, floor + hxp, top, true, floor, light);
-				sideZ(vc, e, sp[1], z, x, x + 1, floor + hzm, top, false, floor, light);
-				sideZ(vc, e, sp[1], z + 1, x, x + 1, floor + hzp, top, true, floor, light);
+				sideX(vc, sp[1], x, z, z + 1, floor + hxm, top, false, floor, light);
+				sideX(vc, sp[1], x + 1, z, z + 1, floor + hxp, top, true, floor, light);
+				sideZ(vc, sp[1], z, x, x + 1, floor + hzm, top, false, floor, light);
+				sideZ(vc, sp[1], z + 1, x, x + 1, floor + hzp, top, true, floor, light);
 			}
 		}
 	}
 
-	private void renderContainers(VertexConsumer vc, MatrixStack.Entry e, int hold, int a, int b, float floor, float f, int light) {
+	private void renderContainers(Sink vc, int hold, int a, int b, float floor, float f, int light) {
 		float slots = f * 8f;
 		int len = b - a + 1;
 		for (int k = 0; k < 8; k++) {
@@ -154,16 +170,15 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			float y0 = floor + tier * 2.62f + drop;
 			Block color = CONTAINER_COLORS[(hold * 3 + k * 5) % CONTAINER_COLORS.length];
 			Sprite s = sprites(color.getDefaultState())[0];
-			box(vc, e, s, x0, y0, zz, x0 + 6.05f, y0 + 2.59f, zz + 2.44f, light, 1f);
+			box(vc, s, x0, y0, zz, x0 + 6.05f, y0 + 2.59f, zz + 2.44f, light, 1f);
 			// deuren aan de kopse kant: iets donkerder strookje
-			box(vc, e, s, x0 + 6.05f, y0 + 0.1f, zz + 0.1f, x0 + 6.1f, y0 + 2.49f, zz + 2.34f, light, 0.55f);
+			box(vc, s, x0 + 6.05f, y0 + 0.1f, zz + 0.1f, x0 + 6.1f, y0 + 2.49f, zz + 2.34f, light, 0.55f);
 		}
 	}
 
 	// ---------------------------------------------------------------- luiken
 
-	private void renderCovers(ShipEntity ship, float td, VertexConsumer vc, MatrixStack.Entry e, int light) {
-		float t = MathHelper.lerp(td, ship.prevHatchProgress, ship.hatchProgress);
+	private void renderCovers(float t, Sink vc, int light) {
 		Sprite s = sprites(Blocks.POLISHED_ANDESITE.getDefaultState())[0];
 		Sprite rim = sprites(Blocks.SMOOTH_STONE.getDefaultState())[0];
 		int n = ShipEntity.COVERS;
@@ -176,9 +191,9 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			float x0 = MathHelper.lerp(p, 75f, 15f + 5f * i);
 			float y = MathHelper.lerp(drop, stackY, 3.5f);
 			if (p > 0 && p < 1) y += 0.15f * MathHelper.sin(p * MathHelper.PI);
-			box(vc, e, rim, x0 + 0.03f, y, 0.95f, x0 + 4.97f, y + 0.25f, 10.05f, light, 0.95f);
-			box(vc, e, s, x0 + 0.03f, y + 0.25f, 2.2f, x0 + 4.97f, y + 0.5f, 8.8f, light, 1f);
-			box(vc, e, s, x0 + 0.03f, y + 0.5f, 3.8f, x0 + 4.97f, y + 0.62f, 7.2f, light, 1f);
+			box(vc, rim, x0 + 0.03f, y, 0.95f, x0 + 4.97f, y + 0.25f, 10.05f, light, 0.95f);
+			box(vc, s, x0 + 0.03f, y + 0.25f, 2.2f, x0 + 4.97f, y + 0.5f, 8.8f, light, 1f);
+			box(vc, s, x0 + 0.03f, y + 0.5f, 3.8f, x0 + 4.97f, y + 0.62f, 7.2f, light, 1f);
 		}
 	}
 
@@ -226,51 +241,67 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 
 	// ---------------------------------------------------------------- hulpfuncties
 
-	private static void v(VertexConsumer vc, MatrixStack.Entry e, float x, float y, float z, float u, float vv, float c, int light) {
-		int ci = (int) (c * 255);
-		vc.vertex(e.getPositionMatrix(), x, y, z).color(ci, ci, ci, 255).texture(u, vv).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(e, 0, 1, 0);
+	private static void v(Sink vc, float x, float y, float z, float u, float vv, float c, int light) {
+		vc.add(x, y, z, u, vv, c, light);
 	}
 
-	private static void quadUp(VertexConsumer vc, MatrixStack.Entry e, Sprite s, float x0, float y, float z0, float x1, float z1, float c, int light) {
-		float u0 = s.getFrameU(0), u1 = s.getFrameU(1), v0 = s.getFrameV(0), v1 = s.getFrameV(1);
-		v(vc, e, x0, y, z0, u0, v0, c, light);
-		v(vc, e, x0, y, z1, u0, v1, c, light);
-		v(vc, e, x1, y, z1, u1, v1, c, light);
-		v(vc, e, x1, y, z0, u1, v0, c, light);
-	}
+	/** Verzamelt hoekpunten in sjablooncoördinaten; wordt pas opnieuw opgebouwd als lading of luiken veranderen. */
+	static final class Sink {
+		float[] a = new float[8192];
+		int n;
 
-	private static void quadDown(VertexConsumer vc, MatrixStack.Entry e, Sprite s, float x0, float y, float z0, float x1, float z1, float c, int light) {
-		float u0 = s.getFrameU(0), u1 = s.getFrameU(1), v0 = s.getFrameV(0), v1 = s.getFrameV(1);
-		v(vc, e, x0, y, z0, u0, v0, c, light);
-		v(vc, e, x1, y, z0, u1, v0, c, light);
-		v(vc, e, x1, y, z1, u1, v1, c, light);
-		v(vc, e, x0, y, z1, u0, v1, c, light);
-	}
+		void add(float x, float y, float z, float u, float v, float c, int light) {
+			if (n + 7 > a.length) a = java.util.Arrays.copyOf(a, a.length * 2);
+			int ci = Math.min(255, (int) (c * 255));
+			a[n++] = x;
+			a[n++] = y;
+			a[n++] = z;
+			a[n++] = u;
+			a[n++] = v;
+			a[n++] = Float.intBitsToFloat(0xFF000000 | (ci << 16) | (ci << 8) | ci);
+			a[n++] = Float.intBitsToFloat(light);
+		}
 
-	/** Verticaal vlak loodrecht op x, opgedeeld per blokhoogte zodat de textuur niet uitrekt. */
-	private static void sideX(VertexConsumer vc, MatrixStack.Entry e, Sprite s, float x, float z0, float z1, float yLow, float yHigh,
-							  boolean positive, float base, int light) {
-		if (yHigh - yLow < 0.01f) return;
-		float u0 = s.getFrameU(0), u1 = s.getFrameU(1);
-		for (float k = (float) Math.floor(yLow - base) + base; k < yHigh; k += 1f) {
-			float a = Math.max(yLow, k), b = Math.min(yHigh, k + 1);
-			if (b - a < 0.005f) continue;
-			float va = s.getFrameV(1 - (a - k)), vb = s.getFrameV(1 - (b - k));
-			if (positive) {
-				v(vc, e, x, a, z0, u0, va, 0.6f, light);
-				v(vc, e, x, b, z0, u0, vb, 0.6f, light);
-				v(vc, e, x, b, z1, u1, vb, 0.6f, light);
-				v(vc, e, x, a, z1, u1, va, 0.6f, light);
-			} else {
-				v(vc, e, x, a, z0, u0, va, 0.6f, light);
-				v(vc, e, x, a, z1, u1, va, 0.6f, light);
-				v(vc, e, x, b, z1, u1, vb, 0.6f, light);
-				v(vc, e, x, b, z0, u0, vb, 0.6f, light);
+		void emit(VertexConsumer vc, MatrixStack.Entry e) {
+			Matrix4f m = e.getPositionMatrix();
+			for (int i = 0; i < n; i += 7) {
+				vc.vertex(m, a[i], a[i + 1], a[i + 2])
+						.color(Float.floatToRawIntBits(a[i + 5]))
+						.texture(a[i + 3], a[i + 4])
+						.overlay(OverlayTexture.DEFAULT_UV)
+						.light(Float.floatToRawIntBits(a[i + 6]))
+						.normal(e, 0f, 1f, 0f);
 			}
 		}
 	}
 
-	private static void sideZ(VertexConsumer vc, MatrixStack.Entry e, Sprite s, float z, float x0, float x1, float yLow, float yHigh,
+	/** Bewaarde lading/luiken per schip, met de waarden waarvoor ze gemaakt zijn. */
+	static final class DynCache {
+		final Sink sink = new Sink();
+		float hatch = -1;
+		final float[] fill = {-1, -1, -1, -1};
+		final int[] mat = new int[4];
+		int light = -1;
+	}
+
+	private static void quadUp(Sink vc, Sprite s, float x0, float y, float z0, float x1, float z1, float c, int light) {
+		float u0 = s.getFrameU(0), u1 = s.getFrameU(1), v0 = s.getFrameV(0), v1 = s.getFrameV(1);
+		v(vc, x0, y, z0, u0, v0, c, light);
+		v(vc, x0, y, z1, u0, v1, c, light);
+		v(vc, x1, y, z1, u1, v1, c, light);
+		v(vc, x1, y, z0, u1, v0, c, light);
+	}
+
+	private static void quadDown(Sink vc, Sprite s, float x0, float y, float z0, float x1, float z1, float c, int light) {
+		float u0 = s.getFrameU(0), u1 = s.getFrameU(1), v0 = s.getFrameV(0), v1 = s.getFrameV(1);
+		v(vc, x0, y, z0, u0, v0, c, light);
+		v(vc, x1, y, z0, u1, v0, c, light);
+		v(vc, x1, y, z1, u1, v1, c, light);
+		v(vc, x0, y, z1, u0, v1, c, light);
+	}
+
+	/** Verticaal vlak loodrecht op x, opgedeeld per blokhoogte zodat de textuur niet uitrekt. */
+	private static void sideX(Sink vc, Sprite s, float x, float z0, float z1, float yLow, float yHigh,
 							  boolean positive, float base, int light) {
 		if (yHigh - yLow < 0.01f) return;
 		float u0 = s.getFrameU(0), u1 = s.getFrameU(1);
@@ -279,77 +310,98 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			if (b - a < 0.005f) continue;
 			float va = s.getFrameV(1 - (a - k)), vb = s.getFrameV(1 - (b - k));
 			if (positive) {
-				v(vc, e, x0, a, z, u0, va, 0.8f, light);
-				v(vc, e, x1, a, z, u1, va, 0.8f, light);
-				v(vc, e, x1, b, z, u1, vb, 0.8f, light);
-				v(vc, e, x0, b, z, u0, vb, 0.8f, light);
+				v(vc, x, a, z0, u0, va, 0.6f, light);
+				v(vc, x, b, z0, u0, vb, 0.6f, light);
+				v(vc, x, b, z1, u1, vb, 0.6f, light);
+				v(vc, x, a, z1, u1, va, 0.6f, light);
 			} else {
-				v(vc, e, x0, a, z, u0, va, 0.8f, light);
-				v(vc, e, x0, b, z, u0, vb, 0.8f, light);
-				v(vc, e, x1, b, z, u1, vb, 0.8f, light);
-				v(vc, e, x1, a, z, u1, va, 0.8f, light);
+				v(vc, x, a, z0, u0, va, 0.6f, light);
+				v(vc, x, a, z1, u1, va, 0.6f, light);
+				v(vc, x, b, z1, u1, vb, 0.6f, light);
+				v(vc, x, b, z0, u0, vb, 0.6f, light);
+			}
+		}
+	}
+
+	private static void sideZ(Sink vc, Sprite s, float z, float x0, float x1, float yLow, float yHigh,
+							  boolean positive, float base, int light) {
+		if (yHigh - yLow < 0.01f) return;
+		float u0 = s.getFrameU(0), u1 = s.getFrameU(1);
+		for (float k = (float) Math.floor(yLow - base) + base; k < yHigh; k += 1f) {
+			float a = Math.max(yLow, k), b = Math.min(yHigh, k + 1);
+			if (b - a < 0.005f) continue;
+			float va = s.getFrameV(1 - (a - k)), vb = s.getFrameV(1 - (b - k));
+			if (positive) {
+				v(vc, x0, a, z, u0, va, 0.8f, light);
+				v(vc, x1, a, z, u1, va, 0.8f, light);
+				v(vc, x1, b, z, u1, vb, 0.8f, light);
+				v(vc, x0, b, z, u0, vb, 0.8f, light);
+			} else {
+				v(vc, x0, a, z, u0, va, 0.8f, light);
+				v(vc, x0, b, z, u0, vb, 0.8f, light);
+				v(vc, x1, b, z, u1, vb, 0.8f, light);
+				v(vc, x1, a, z, u1, va, 0.8f, light);
 			}
 		}
 	}
 
 	/** Doos met tegels van 1 blok, zodat texturen niet uitrekken. */
-	private static void box(VertexConsumer vc, MatrixStack.Entry e, Sprite s, float x0, float y0, float z0, float x1, float y1, float z1, int light, float tint) {
+	private static void box(Sink vc, Sprite s, float x0, float y0, float z0, float x1, float y1, float z1, int light, float tint) {
 		for (float x = x0; x < x1 - 1e-4f; x += 1f) {
 			float xe = Math.min(x1, x + 1);
 			for (float z = z0; z < z1 - 1e-4f; z += 1f) {
 				float ze = Math.min(z1, z + 1);
-				quadUp(vc, e, s, x, y1, z, xe, ze, tint, light);
-				quadDown(vc, e, s, x, y0, z, xe, ze, tint * 0.5f, light);
+				quadUp(vc, s, x, y1, z, xe, ze, tint, light);
 			}
 		}
 		for (float z = z0; z < z1 - 1e-4f; z += 1f) {
 			float ze = Math.min(z1, z + 1);
-			sideXTile(vc, e, s, x0, z, ze, y0, y1, false, light, tint);
-			sideXTile(vc, e, s, x1, z, ze, y0, y1, true, light, tint);
+			sideXTile(vc, s, x0, z, ze, y0, y1, false, light, tint);
+			sideXTile(vc, s, x1, z, ze, y0, y1, true, light, tint);
 		}
 		for (float x = x0; x < x1 - 1e-4f; x += 1f) {
 			float xe = Math.min(x1, x + 1);
-			sideZTile(vc, e, s, z0, x, xe, y0, y1, false, light, tint);
-			sideZTile(vc, e, s, z1, x, xe, y0, y1, true, light, tint);
+			sideZTile(vc, s, z0, x, xe, y0, y1, false, light, tint);
+			sideZTile(vc, s, z1, x, xe, y0, y1, true, light, tint);
 		}
 	}
 
-	private static void sideXTile(VertexConsumer vc, MatrixStack.Entry e, Sprite s, float x, float z0, float z1, float y0, float y1, boolean pos, int light, float tint) {
+	private static void sideXTile(Sink vc, Sprite s, float x, float z0, float z1, float y0, float y1, boolean pos, int light, float tint) {
 		float u0 = s.getFrameU(0), u1 = s.getFrameU(Math.min(1f, z1 - z0));
 		for (float y = y0; y < y1 - 1e-4f; y += 1f) {
 			float ye = Math.min(y1, y + 1);
 			float v0 = s.getFrameV(0), v1 = s.getFrameV(Math.min(1f, ye - y));
 			float c = 0.6f * tint;
 			if (pos) {
-				v(vc, e, x, y, z0, u0, v1, c, light);
-				v(vc, e, x, ye, z0, u0, v0, c, light);
-				v(vc, e, x, ye, z1, u1, v0, c, light);
-				v(vc, e, x, y, z1, u1, v1, c, light);
+				v(vc, x, y, z0, u0, v1, c, light);
+				v(vc, x, ye, z0, u0, v0, c, light);
+				v(vc, x, ye, z1, u1, v0, c, light);
+				v(vc, x, y, z1, u1, v1, c, light);
 			} else {
-				v(vc, e, x, y, z0, u0, v1, c, light);
-				v(vc, e, x, y, z1, u1, v1, c, light);
-				v(vc, e, x, ye, z1, u1, v0, c, light);
-				v(vc, e, x, ye, z0, u0, v0, c, light);
+				v(vc, x, y, z0, u0, v1, c, light);
+				v(vc, x, y, z1, u1, v1, c, light);
+				v(vc, x, ye, z1, u1, v0, c, light);
+				v(vc, x, ye, z0, u0, v0, c, light);
 			}
 		}
 	}
 
-	private static void sideZTile(VertexConsumer vc, MatrixStack.Entry e, Sprite s, float z, float x0, float x1, float y0, float y1, boolean pos, int light, float tint) {
+	private static void sideZTile(Sink vc, Sprite s, float z, float x0, float x1, float y0, float y1, boolean pos, int light, float tint) {
 		float u0 = s.getFrameU(0), u1 = s.getFrameU(Math.min(1f, x1 - x0));
 		for (float y = y0; y < y1 - 1e-4f; y += 1f) {
 			float ye = Math.min(y1, y + 1);
 			float v0 = s.getFrameV(0), v1 = s.getFrameV(Math.min(1f, ye - y));
 			float c = 0.8f * tint;
 			if (pos) {
-				v(vc, e, x0, y, z, u0, v1, c, light);
-				v(vc, e, x1, y, z, u1, v1, c, light);
-				v(vc, e, x1, ye, z, u1, v0, c, light);
-				v(vc, e, x0, ye, z, u0, v0, c, light);
+				v(vc, x0, y, z, u0, v1, c, light);
+				v(vc, x1, y, z, u1, v1, c, light);
+				v(vc, x1, ye, z, u1, v0, c, light);
+				v(vc, x0, ye, z, u0, v0, c, light);
 			} else {
-				v(vc, e, x0, y, z, u0, v1, c, light);
-				v(vc, e, x0, ye, z, u0, v0, c, light);
-				v(vc, e, x1, ye, z, u1, v0, c, light);
-				v(vc, e, x1, y, z, u1, v1, c, light);
+				v(vc, x0, y, z, u0, v1, c, light);
+				v(vc, x0, ye, z, u0, v0, c, light);
+				v(vc, x1, ye, z, u1, v0, c, light);
+				v(vc, x1, y, z, u1, v1, c, light);
 			}
 		}
 	}

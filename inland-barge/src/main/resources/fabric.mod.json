@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "inlandbarge",
+  "version": "${version}",
+  "name": "Inland Barge",
+  "description": "A sailable Rhine-class inland barge you can walk on, load and steer. Black, white and dark blue.",
+  "authors": [
+    "jomairofx"
+  ],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.inlandbarge.InlandBarge"
+    ],
+    "client": [
+      "com.inlandbarge.client.InlandBargeClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "mixins": [
+    "inlandbarge.mixins.json",
+    {
+      "config": "inlandbarge.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "icon": "assets/inlandbarge/icon.png"
+}

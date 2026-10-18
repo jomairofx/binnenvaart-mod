@@ -21,6 +21,7 @@ public final class ClientSelfTest {
 	private static final List<String> log = new ArrayList<>();
 	private static boolean failed;
 	private static double ladderMax = -99;
+	private static double yaw0;
 
 	private static void check(String name, boolean ok, String detail) {
 		log.add((ok ? "PASS " : "FAIL ") + name + " - " + detail);
@@ -207,7 +208,14 @@ public final class ClientSelfTest {
 			check("varen vanaf het roer", ship.syncedSpeed() > 0.15, String.format("snelheid %.3f b/t", ship.syncedSpeed()));
 			shot(mc, "13_varen");
 		}
-		if (t == helm + 410) {
+		if (t == helm + 405) {
+			yaw0 = ship.shipYaw;
+			mc.options.leftKey.setPressed(true);
+		}
+		if (t == helm + 485) {
+			mc.options.leftKey.setPressed(false);
+			double d = Math.toDegrees(ship.shipYaw - yaw0);
+			check("roer (A-toets)", Math.abs(d) > 3 && ship.syncedRudder() < -0.5, String.format("koers %.1f graden veranderd, roer %.2f", d, ship.syncedRudder()));
 			BinnenvaartClient.testThrottle(0);
 			finish(mc, failed ? "RESULT FAIL" : "RESULT PASS");
 		}

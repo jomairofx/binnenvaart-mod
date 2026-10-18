@@ -361,7 +361,8 @@ public class ShipEntity extends Entity {
 		if (Math.abs(speed) < 1e-4 && target == 0) speed = 0;
 
 		rudder = approach(rudder, rudderInput, 0.04);
-		double wash = throttle > 0 ? 0.2 : (throttle < 0 ? -0.1 : 0.0);
+		// schroefwater langs het roer: ook bij stilstand draait het schip een beetje
+		double wash = throttle > 0 ? 0.3 : (throttle < 0 ? -0.15 : 0.15);
 		double targetTurn = rudder * MAX_TURN * (speed / V_FULL + wash);
 		yawRate += (targetTurn - yawRate) * 0.06;
 		double thrusterTarget = thrusterInput * THRUSTER_TURN * (1.0 - 0.7 * Math.min(1.0, Math.abs(speed) / 0.15));

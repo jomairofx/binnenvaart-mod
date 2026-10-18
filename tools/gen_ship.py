@@ -144,7 +144,7 @@ S(3, 3, 7, "white_stained_glass_pane")
 for z in (2, 3):
     S(4, 2, z, "smooth_quartz_slab[type=bottom]"); S(5, 2, z, "smooth_quartz_slab[type=bottom]")
 S(4, 2, 4, "barrel[facing=up]"); S(4, 3, 4, "lantern[hanging=false]")
-S(5, 2, 5, "barrel[facing=up]")
+# (ton weggehaald: blokkeerde de slaapkamerdeur)
 # badkamer
 S(4, 2, 7, "water_cauldron[level=3]"); S(4, 2, 8, "quartz_stairs[facing=west,half=bottom]")
 S(5, 2, 8, "light_blue_carpet")

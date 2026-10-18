@@ -1,5 +1,6 @@
 package nl.binnenvaart.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -7,9 +8,7 @@ import nl.binnenvaart.ship.ShipEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
@@ -26,7 +25,7 @@ public abstract class ServerPlayNetworkHandlerMixin {
 		if (ShipEntity.isNearAnyShip(entity)) cir.setReturnValue(false);
 	}
 
-	@ModifyConstant(method = "onPlayerMove", constant = @Constant(doubleValue = 0.0625), require = 0)
+	@ModifyExpressionValue(method = "onPlayerMove", at = @At(value = "CONSTANT", args = "doubleValue=0.0625"), require = 0)
 	private double binnenvaart$tolerateOnShip(double original) {
 		return ShipEntity.isNearAnyShip(this.player) ? Double.MAX_VALUE : original;
 	}

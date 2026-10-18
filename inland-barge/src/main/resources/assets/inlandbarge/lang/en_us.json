@@ -1,0 +1,10 @@
+{
+  "item.inlandbarge.inland_barge": "Inland Barge",
+  "entity.inlandbarge.inland_barge": "Inland Barge",
+  "block.inlandbarge.displaced_water": "Displaced Water",
+  "category.inlandbarge": "Inland Barge",
+  "key.inlandbarge.thruster_port": "Bow thruster port (left)",
+  "key.inlandbarge.thruster_starboard": "Bow thruster starboard (right)",
+  "key.inlandbarge.horn": "Ship horn",
+  "key.inlandbarge.hatches": "Open/close hatches"
+}

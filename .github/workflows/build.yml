@@ -52,6 +52,26 @@ jobs:
             run/logs/latest.log
             run/selftest.txt
             run/client_selftest.txt
+      - name: Inland Barge bouwen
+        working-directory: inland-barge
+        run: chmod +x gradlew && ./gradlew build --stacktrace
+      - name: Inland Barge servertest (met Binnenvaart samen)
+        working-directory: inland-barge
+        run: |
+          mkdir -p run/mods && cp ../build/libs/binnenvaart-1.0.0.jar run/mods/ && echo "eula=true" > run/eula.txt
+          cp ../run/server.properties run/server.properties
+          timeout 900 ./gradlew runTestServer --stacktrace > server_out.txt 2>&1 || true
+          cp run/logs/latest.log run/server.log || true
+          cat run/selftest.txt || echo "geen selftest.txt"
+      - name: Inland Barge clienttest
+        working-directory: inland-barge
+        run: |
+          rm -rf run/saves && mkdir -p run/saves && cp -r run/world run/saves/testwelt || true
+          cp ../run/options.txt run/options.txt
+          export LIBGL_ALWAYS_SOFTWARE=1
+          timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace > client_out.txt 2>&1 || true
+          cp run/logs/latest.log run/client.log || true
+          cat run/client_selftest.txt || echo "geen client_selftest.txt"
       - name: Resultaten naar branch
         if: always()
         run: |
@@ -59,9 +79,15 @@ jobs:
           cp -r run/screenshots /tmp/out/ 2>/dev/null || true
           cp run/*.txt run/*.log server_out.txt client_out.txt /tmp/out/ 2>/dev/null || true
           cp build/libs/binnenvaart-1.0.0.jar /tmp/out/ 2>/dev/null || true
+          mkdir -p /tmp/out/barge
+          cp -r inland-barge/run/screenshots /tmp/out/barge/ 2>/dev/null || true
+          cp inland-barge/run/*.txt inland-barge/run/*.log inland-barge/server_out.txt inland-barge/client_out.txt /tmp/out/barge/ 2>/dev/null || true
+          cp inland-barge/build/libs/inland-barge-1.0.0.jar /tmp/out/ 2>/dev/null || true
           curl -fsSL -o /tmp/out/fabric-api-0.116.4+1.21.1.jar "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.116.4%2B1.21.1/fabric-api-0.116.4%2B1.21.1.jar" || true
           cd /tmp/out && git init -q && git checkout -q -b ci-resultaten && git add -A
           git -c user.name=ci -c user.email=ci@localhost commit -qm "Resultaten ${GITHUB_SHA}"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" ci-resultaten
       - name: Uitslag
-        run: grep -q "RESULT PASS" run/selftest.txt && grep -q "RESULT PASS" run/client_selftest.txt
+        run: |
+          grep -q "RESULT PASS" run/selftest.txt && grep -q "RESULT PASS" run/client_selftest.txt
+          grep -q "RESULT PASS" inland-barge/run/selftest.txt && grep -q "RESULT PASS" inland-barge/run/client_selftest.txt

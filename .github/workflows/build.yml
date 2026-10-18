@@ -39,8 +39,9 @@ jobs:
         run: |
           sudo apt-get update -q && sudo apt-get install -y -q xvfb libgl1-mesa-dri mesa-utils > /dev/null
           rm -rf run/saves && mkdir -p run/saves && cp -r run/world run/saves/testwelt || true
-          printf 'onboardAccessibility:false\nrenderDistance:10\nsimulationDistance:10\npauseOnLostFocus:false\nnarrator:0\nguiScale:2\nskipMultiplayerWarning:true\njoinedFirstServer:true\ntutorialStep:none\nsoundCategory_master:0.0\nfov:0.15\n' > run/options.txt
+          printf 'onboardAccessibility:false\nrenderDistance:10\nsimulationDistance:10\npauseOnLostFocus:false\nnarrator:0\nguiScale:2\nskipMultiplayerWarning:true\njoinedFirstServer:true\ntutorialStep:none\nsoundCategory_master:1.0\nfov:0.15\n' > run/options.txt
           export LIBGL_ALWAYS_SOFTWARE=1
+          export ALSOFT_DRIVERS=null
           timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace > client_out.txt 2>&1 || true
           cp run/logs/latest.log run/client.log || true
           cat run/client_selftest.txt || echo "geen client_selftest.txt"
@@ -71,6 +72,7 @@ jobs:
           rm -rf run/saves && mkdir -p run/saves && cp -r run/world run/saves/testwelt || true
           cp ../run/options.txt run/options.txt
           export LIBGL_ALWAYS_SOFTWARE=1
+          export ALSOFT_DRIVERS=null
           timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace > client_out.txt 2>&1 || true
           cp run/logs/latest.log run/client.log || true
           cat run/client_selftest.txt || echo "geen client_selftest.txt"
@@ -94,6 +96,7 @@ jobs:
           cp ../run/options.txt run/options.txt
           sed -i 's/renderDistance:10/renderDistance:16/' run/options.txt
           export LIBGL_ALWAYS_SOFTWARE=1
+          export ALSOFT_DRIVERS=null
           timeout 1800 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace > client_out.txt 2>&1 || true
           cp run/logs/latest.log run/client.log || true
           cat run/client_selftest.txt || echo "geen client_selftest.txt"
@@ -115,6 +118,7 @@ jobs:
           rm -rf run/saves && mkdir -p run/saves && cp -r run/world run/saves/testwelt || true
           cp ../run/options.txt run/options.txt
           export LIBGL_ALWAYS_SOFTWARE=1
+          export ALSOFT_DRIVERS=null
           timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace > client_out.txt 2>&1 || true
           cp run/logs/latest.log run/client.log || true
           cat run/client_selftest.txt || echo "geen client_selftest.txt"

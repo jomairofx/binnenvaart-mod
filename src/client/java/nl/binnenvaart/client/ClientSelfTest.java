@@ -224,6 +224,28 @@ public final class ClientSelfTest {
 			BinnenvaartClient.thrusterRight.setPressed(false);
 			double d = Math.toDegrees(ship.shipYaw - yaw0);
 			check("boegschroef (pijltje rechts)", d > 0.5 && ship.syncedThruster() == 1, String.format("koers %.1f graden naar stuurboord, boegschroef %d", d, ship.syncedThruster()));
+			BinnenvaartClient.testThrottle(0);
+			srv.execute(() -> srv.getPlayerManager().getPlayerList().get(0).stopRiding());
+		}
+		if (t == helm + 590) {
+			cmd(srv, "gamemode survival @p");
+			mc.options.hudHidden = false;
+			tp(srv, ship, new double[]{40.5, 2.0 + 1.62, 0.5}, new double[]{40.5, 2.0, 0.5 - 6});
+		}
+		if (t == helm + 610) {
+			// over de rand het water in springen
+			Vec3d a = ship.toWorld(40.5, 2.0, 0.5), b = ship.toWorld(40.5, 2.0, 0.5 - 1);
+			Vec3d dir = b.subtract(a).normalize();
+			mc.player.setVelocity(dir.x * 0.45, 0.42, dir.z * 0.45);
+		}
+		if (t > helm + 610 && t < helm + 700 && t % 5 == 0) {
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			log.add(String.format("sprong t=%d lokaal (%.2f, %.2f, %.2f) water=%s", t - helm, l.x, l.y, l.z, mc.player.isTouchingWater()));
+		}
+		if (t == helm + 640) shot(mc, "30_sprong_water");
+		if (t == helm + 720) {
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			check("in het water springen", mc.player.isTouchingWater() || l.z < 0, String.format("speler op lokaal (%.2f, %.2f, %.2f), water %s", l.x, l.y, l.z, mc.player.isTouchingWater()));
 			finish(mc, failed ? "RESULT FAIL" : "RESULT PASS");
 		}
 	}

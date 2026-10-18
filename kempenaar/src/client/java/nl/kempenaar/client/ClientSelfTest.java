@@ -318,6 +318,25 @@ public final class ClientSelfTest {
 				for (int i = 0; i < s.hold(0).size(); i++) if (s.hold(0).getStack(i).isOf(net.minecraft.item.Items.SAND)) sand += s.hold(0).getStack(i).getCount();
 			check("laadkraan", sand >= 128, sand + " zand in ruim 1");
 			shot(mc, "23_kraan_ruim");
+		}
+		int jump = crane + 430;
+		if (t == jump) {
+			cmd(srv, "gamemode survival @p");
+			tp(srv, ship, new double[]{30.5, 2.0 + 1.62, 0.5}, new double[]{30.5, 2.0, -5.5});
+		}
+		if (t == jump + 20) {
+			Vec3d a = ship.toWorld(30.5, 2.0, 0.5), b = ship.toWorld(30.5, 2.0, -0.5);
+			Vec3d dir = b.subtract(a).normalize();
+			mc.player.setVelocity(dir.x * 0.45, 0.42, dir.z * 0.45);
+		}
+		if (t > jump + 20 && t < jump + 110 && t % 5 == 0) {
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			log.add(String.format("sprong t=%d lokaal (%.2f, %.2f, %.2f) water=%s", t - jump, l.x, l.y, l.z, mc.player.isTouchingWater()));
+		}
+		if (t == jump + 50) shot(mc, "30_sprong_water");
+		if (t == jump + 130) {
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			check("in het water springen", mc.player.isTouchingWater() || l.z < 0, String.format("speler op lokaal (%.2f, %.2f, %.2f), water %s", l.x, l.y, l.z, mc.player.isTouchingWater()));
 			finish(mc, failed ? "RESULT FAIL" : "RESULT PASS");
 		}
 	}

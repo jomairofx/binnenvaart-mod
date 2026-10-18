@@ -203,8 +203,8 @@ for (x, z) in [(HX0, HZ0), (HX0, HZ1), (HX1, HZ0), (HX1, HZ1)]: S(x, 7, z, WHITE
 S(HX1, 9, HZ0 - 1, "red_candle[candles=1,lit=true]"); S(HX1, 9, HZ1 + 1, "lime_candle[candles=1,lit=true]")   # boordlichten
 # inrichting: stuurstoel, scherm, joystick, kaartentafel
 S(14, 5, 4, "dark_oak_stairs[facing=west,half=bottom]")
-S(HX1, 6, 3, "black_carpet"); S(HX1, 6, 4, "black_carpet")
-S(HX1, 6, 5, "lightning_rod[facing=up]")
+S(HX1, 6, 3, "black_carpet"); S(HX1, 6, 5, "black_carpet")     # radar en kaartscherm, plat op de lessenaar
+S(15, 5, 5, "lever[face=floor,facing=east,powered=false]")      # gashendel naast de stoel, uit het zicht
 S(13, 5, 5, "cartography_table")
 # mast met radar en hoorn
 for y in R(9, 10): S(14, y, 4, "iron_bars")
@@ -247,7 +247,7 @@ for z in R(zr(69)[0], zr(69)[1]):
 S(69, 5, 4, "lantern[hanging=false]")
 # stuurstand voor
 for z in R(3, 5): S(65, 3, z, "polished_deepslate_slab[type=top]")
-S(65, 4, 3, "black_carpet"); S(65, 4, 4, "lightning_rod[facing=up]")
+S(65, 4, 3, "black_carpet"); S(64, 3, 5, "lever[face=floor,facing=east,powered=false]")
 # ankerlier met kettingen naar de ankers in hun kluis
 S(66, 3, 3, "grindstone[face=floor,facing=east]"); S(66, 3, 5, "grindstone[face=floor,facing=east]")
 S(66, 3, 2, "chain[axis=z]"); S(66, 3, 6, "chain[axis=z]")

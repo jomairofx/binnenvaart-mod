@@ -100,7 +100,7 @@ for z in (5, 6):
     S(4, 3, z, "spruce_stairs[facing=east,half=bottom]")
     S(5, 4, z, "spruce_stairs[facing=east,half=bottom]")
 S(4, 2, 7, "iron_bars"); S(5, 2, 7, "iron_bars"); S(5, 3, 7, "iron_bars")      # stalen trapboom
-S(3, 3, 7, "spruce_fence"); S(4, 4, 7, "spruce_fence"); S(5, 5, 7, "spruce_fence")
+S(4, 3, 7, "iron_bars"); S(5, 4, 7, "iron_bars"); S(3, 2, 7, "iron_bars")   # leuning langs de trap
 
 # ---------------- woning (x 6-17), vloer een blok verzonken ----------------
 WX0, WX1 = 6, 17

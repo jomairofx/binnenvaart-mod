@@ -229,7 +229,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		String port = "ZWARTSLUIS";
 		float w2 = tr.getWidth(port) * s2;
 		matrices.push();
-		matrices.translate(5.99f, 3.75f, ShipTemplate.CZ - w2 / 2f);
+		matrices.translate(5.99f, 3.55f, 8.6f - w2);
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-90f));
 		matrices.scale(s2, -s2, s2);
 		tr.draw(port, 0, 0, 0xFF1A1A1A, false, matrices.peek().getPositionMatrix(), consumers, TextRenderer.TextLayerType.POLYGON_OFFSET, 0, light);

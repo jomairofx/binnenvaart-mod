@@ -172,7 +172,7 @@ public final class ClientSelfTest {
 		if (t == t0 + 485) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
-				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(20.5, 0.5, 5.5), false);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(15.5, 2.5, 5.5), false);
 			});
 		}
 		if (t == t0 + 495) {

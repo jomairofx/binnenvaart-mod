@@ -105,7 +105,7 @@ public class BinnenvaartClient implements ClientModInitializer {
 		if (mc.player == null || mc.options.hudHidden) return;
 		if (!(mc.player.getVehicle() instanceof ShipEntity ship)) return;
 		TextRenderer tr = mc.textRenderer;
-		int w = 262, hgt = 104;
+		int w = 300, hgt = 104;
 		int x = 6, y = 6;
 		ctx.fill(x, y, x + w, y + hgt, 0xB0101820);
 		ctx.fill(x, y, x + w, y + 1, 0xFF3D7BD9);
@@ -131,7 +131,7 @@ public class BinnenvaartClient implements ClientModInitializer {
 		double heading = ((ship.shipYaw * 180 / Math.PI) - 90 + 180) % 360;
 		if (heading < 0) heading += 360;
 		ctx.drawTextWithShadow(tr, String.format("Snelheid %.1f km/u%s", kmh, ship.syncedSpeed() < -0.001 ? " achteruit" : ""), x + 6, y + 46, 0xFFFFFF);
-		ctx.drawTextWithShadow(tr, String.format("Koers %03.0f°", heading), x + 150, y + 46, 0xFFFFFF);
+		ctx.drawTextWithShadow(tr, String.format("Koers %03.0f°", heading), x + 170, y + 46, 0xFFFFFF);
 
 		// roerstand
 		float r = ship.syncedRudder();
@@ -146,9 +146,9 @@ public class BinnenvaartClient implements ClientModInitializer {
 		int th = ship.syncedThruster();
 		ctx.drawTextWithShadow(tr, "Boegschroef " + (th < 0 ? "<< BB" : th > 0 ? "SB >>" : "uit"), x + 6, y + 70, th == 0 ? 0x9AA5B0 : 0x7FD6FF);
 		String hatch = ship.hatchProgress >= 0.999f ? "dicht" : ship.hatchProgress <= 0.001f ? "open" : "bewegen...";
-		ctx.drawTextWithShadow(tr, "Luiken " + hatch, x + 150, y + 70, 0xFFFFFF);
+		ctx.drawTextWithShadow(tr, "Luiken " + hatch, x + 170, y + 70, 0xFFFFFF);
 		ctx.drawTextWithShadow(tr, String.format("Lading %d%%   Diepgang %.1f m", Math.round(ship.load() * 100), ship.draft()), x + 6, y + 81, 0xFFFFFF);
-		if (ship.isAground()) ctx.drawTextWithShadow(tr, "AAN DE GROND", x + 160, y + 81, 0xFF5555);
+		if (ship.isAground()) ctx.drawTextWithShadow(tr, "AAN DE GROND", x + 190, y + 81, 0xFF5555);
 		ctx.drawText(tr, "W/S telegraaf  A/D roer  Z/X boeg  H hoorn  L luiken", x + 6, y + 93, 0x7F8C99, false);
 	}
 }

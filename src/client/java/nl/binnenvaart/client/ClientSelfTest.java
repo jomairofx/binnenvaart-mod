@@ -169,6 +169,18 @@ public final class ClientSelfTest {
 			check("deur", open, "voordeur woning: " + st);
 			shot(mc, "15_deur_open");
 		}
+		if (t == t0 + 485) {
+			srv.execute(() -> {
+				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(20.5, 0.5, 5.5), false);
+			});
+		}
+		if (t == t0 + 495) {
+			boolean open = mc.currentScreen instanceof net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
+			check("laadruim openen", open, "scherm: " + (mc.currentScreen == null ? "geen" : mc.currentScreen.getTitle().getString()));
+			if (open) shot(mc, "17_laadruim");
+		}
+		if (t == t0 + 499 && mc.player.currentScreenHandler != mc.player.playerScreenHandler) mc.player.closeHandledScreen();
 		int helm = t0 + 500;
 		if (t == helm) {
 			cmd(srv, "gamemode creative @p");

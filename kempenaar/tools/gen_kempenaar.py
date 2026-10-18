@@ -66,10 +66,8 @@ for x in list(R(1, 5)) + [18] + list(R(58, 68)):
 # opstapje naar het verhoogde voorschip
 for z in R(1, 7): S(63, 2, z, "spruce_stairs[facing=east,half=bottom]")
 # berghout (houten wrijflijst) langs beide zijden
-for x in R(3, 64):
-    if x in (18, 58): continue
-    S(x, 1, -1, "dark_oak_trapdoor[facing=north,half=bottom,open=true]")
-    S(x, 1, 9, "dark_oak_trapdoor[facing=south,half=bottom,open=true]")
+for x in R(19, 57):
+    S(x, 2, 0, "white_carpet"); S(x, 2, 8, "white_carpet")
 
 # ---------------- machinekamer (x 1-5, onder het achterdek) ----------------
 for x in R(2, 5):
@@ -99,8 +97,9 @@ S(4, 2, 7, "grindstone[face=floor,facing=north]")
 # houten trap naar het woningdak, met leuning
 for z in (5, 6):
     S(3, 2, z, "spruce_stairs[facing=east,half=bottom]")
-    S(4, 2, z, "spruce_planks"); S(4, 3, z, "spruce_stairs[facing=east,half=bottom]")
-    S(5, 2, z, "spruce_planks"); S(5, 3, z, "spruce_planks"); S(5, 4, z, "spruce_stairs[facing=east,half=bottom]")
+    S(4, 3, z, "spruce_stairs[facing=east,half=bottom]")
+    S(5, 4, z, "spruce_stairs[facing=east,half=bottom]")
+S(4, 2, 7, "iron_bars"); S(5, 2, 7, "iron_bars"); S(5, 3, 7, "iron_bars")      # stalen trapboom
 S(3, 3, 7, "spruce_fence"); S(4, 4, 7, "spruce_fence"); S(5, 5, 7, "spruce_fence")
 
 # ---------------- woning (x 6-17), vloer een blok verzonken ----------------
@@ -131,9 +130,9 @@ S(7, 1, 4, "spruce_stairs[facing=west,half=bottom]")
 # gang (z=4) met kamers aan weerszijden, x 7-12
 for x in R(7, 12):
     for y in R(1, 3):
-        S(x, y, 3, WHITE); S(x, y, 5, WHITE)
+        S(x, y, 3, "birch_planks"); S(x, y, 5, "birch_planks")
 for z in (1, 2, 6, 7):
-    for y in R(1, 3): S(12, y, z, WHITE)
+    for y in R(1, 3): S(12, y, z, "birch_planks")
 for x in R(8, 12): S(x, 1, 4, "light_gray_carpet")
 S(10, 1, 3, "spruce_door[facing=north,half=lower,hinge=left,open=false]")
 S(10, 2, 3, "spruce_door[facing=north,half=upper,hinge=left,open=false]")
@@ -185,7 +184,7 @@ for x in R(HX0, HX1):
 for z in R(HZ0 + 1, HZ1 - 1): S(HX1, 5, z, "polished_deepslate_slab[type=top]")   # stuurlessenaar
 S(HX1, 5, HZ0, "spruce_planks"); S(HX1, 5, HZ1, "spruce_planks")
 for (x, z) in [(HX0, HZ0), (HX0, HZ1), (HX1, HZ0), (HX1, HZ1)]:
-    for y in (6, 7): S(x, y, z, "dark_oak_fence")
+    S(x, 6, z, "dark_oak_fence")
 for z in (3, 5):
     for y in (6, 7): S(HX0, y, z, WHITE)
 S(HX0, 7, 4, WHITE)
@@ -196,11 +195,16 @@ for x in R(HX0 - 1, HX1 + 1):
     S(x, 8, HZ0 - 1, "smooth_quartz_slab[type=top]"); S(x, 8, HZ1 + 1, "smooth_quartz_slab[type=top]")
 for z in R(HZ0, HZ1):
     S(HX0 - 1, 8, z, "smooth_quartz_slab[type=top]"); S(HX1 + 1, 8, z, "smooth_quartz_slab[type=top]")
-S(HX1, 8, HZ0 - 1, "red_concrete"); S(HX1, 8, HZ1 + 1, "lime_concrete")   # boordlichten
+for x in R(HX0, HX1):
+    for z in (HZ0, HZ1):
+        if (x, z) not in [(HX0, HZ0), (HX0, HZ1), (HX1, HZ0), (HX1, HZ1)]: S(x, 7, z, "smooth_quartz_slab[type=top]")
+for z in R(HZ0 + 1, HZ1 - 1): S(HX1, 7, z, "smooth_quartz_slab[type=top]")
+for (x, z) in [(HX0, HZ0), (HX0, HZ1), (HX1, HZ0), (HX1, HZ1)]: S(x, 7, z, WHITE)
+S(HX1, 9, HZ0 - 1, "red_candle[candles=1,lit=true]"); S(HX1, 9, HZ1 + 1, "lime_candle[candles=1,lit=true]")   # boordlichten
 # inrichting: stuurstoel, scherm, joystick, kaartentafel
 S(14, 5, 4, "dark_oak_stairs[facing=west,half=bottom]")
-S(HX1, 6, 3, "black_carpet"); S(HX1, 6, 5, "black_carpet")
-S(HX1, 6, 4, "lightning_rod[facing=up]")
+S(HX1, 6, 3, "black_carpet"); S(HX1, 6, 4, "black_carpet")
+S(HX1, 6, 5, "lightning_rod[facing=up]")
 S(13, 5, 5, "cartography_table")
 # mast met radar en hoorn
 for y in R(9, 10): S(14, y, 4, "iron_bars")
@@ -261,7 +265,7 @@ B = {k: v for k, v in B.items() if v != "minecraft:air"}
 
 # ---------------- verbindingen ----------------
 def base(s): return s.split("[")[0].replace("minecraft:", "")
-NONFULL = ("slab", "stairs", "pane", "bars", "fence", "wall", "trapdoor", "door", "ladder", "lantern", "carpet",
+NONFULL = ("candle", "slab", "stairs", "pane", "bars", "fence", "wall", "trapdoor", "door", "ladder", "lantern", "carpet",
            "rod", "chain", "potted", "cauldron", "lever", "campfire", "grindstone", "anvil")
 def is_full(s):
     if s is None: return False

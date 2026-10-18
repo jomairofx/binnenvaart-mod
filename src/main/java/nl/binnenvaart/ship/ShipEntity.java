@@ -956,6 +956,17 @@ public class ShipEntity extends Entity {
 		List<VoxelShape> shapes = new ArrayList<>();
 		gatherShapes(e, lb.stretch(lm).expand(0.1, step + 0.1, 0.1), shapes);
 		if (shapes.isEmpty()) return mv;
+		Vec3d lm0 = lm;
+		// Staat iemand een klein stukje ín een vloer (na teleport, uitstappen of omhoogkomend schip)? Dan omhoog duwen.
+		double lift = 0;
+		Box feet = lb.contract(0.05, 0, 0.05);
+		for (VoxelShape sh : shapes) {
+			for (Box bx : sh.getBoundingBoxes()) {
+				double d = bx.maxY - lb.minY;
+				if (d > 1e-6 && d <= 0.55 && bx.intersects(feet)) lift = Math.max(lift, d);
+			}
+		}
+		if (lift > 0 && lm.y < lift) lm = new Vec3d(lm.x, lift, lm.z);
 		Vec3d res = EntityInvoker.binnenvaart$adjust(lm, lb, shapes);
 		boolean hColl = res.x != lm.x || res.z != lm.z;
 		boolean ground = e.isOnGround() || (lm.y < 0 && res.y != lm.y);
@@ -970,8 +981,8 @@ public class ShipEntity extends Entity {
 				res = s1.add(EntityInvoker.binnenvaart$adjust(new Vec3d(0, -s1.y + lm.y, 0), lb.offset(s1), shapes));
 			}
 		}
-		if (res.equals(lm)) return mv;
-		if (res.x == lm.x && res.z == lm.z) return new Vec3d(mv.x, res.y, mv.z);
+		if (res.equals(lm0)) return mv;
+		if (res.x == lm0.x && res.z == lm0.z) return new Vec3d(mv.x, res.y, mv.z);
 		Vec3d wres = dirToWorld(res);
 		return new Vec3d(wres.x, res.y, wres.z);
 	}

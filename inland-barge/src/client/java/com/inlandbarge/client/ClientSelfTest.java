@@ -58,7 +58,7 @@ public final class ClientSelfTest {
 		double dx = g.x - e.x, dy = g.y - e.y, dz = g.z - e.z;
 		double yaw = Math.toDegrees(Math.atan2(-dx, dz));
 		double pitch = -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
-		cmd(srv, String.format(java.util.Locale.ROOT, "tp @p %.3f %.3f %.3f %.2f %.2f", e.x, e.y - 1.62, e.z, yaw, pitch));
+		cmd(srv, String.format(java.util.Locale.ROOT, "tp @p %.5f %.5f %.5f %.2f %.2f", e.x, e.y - 1.62 + 0.001, e.z, yaw, pitch));
 	}
 
 	private static void shot(MinecraftClient mc, String name) {

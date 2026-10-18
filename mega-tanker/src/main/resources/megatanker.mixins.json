@@ -7,8 +7,11 @@
     "EntityInvoker",
     "EntityMixin",
     "LivingEntityMixin",
+    "PlayerPickupMixin",
     "ServerPlayNetworkHandlerMixin",
     "WorldMixin"
   ],
-  "injectors": { "defaultRequire": 1 }
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

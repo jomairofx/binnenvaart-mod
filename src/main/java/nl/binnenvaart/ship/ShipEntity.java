@@ -125,6 +125,8 @@ public class ShipEntity extends Entity {
 	private int lastControlTick = -1000, hornCooldown, bumpCooldown;
 	private boolean aground;
 	private final LongOpenHashSet displaced = new LongOpenHashSet();
+	/** Zeewier en zeegras dat onder het schip moest wijken; komt terug als het schip verder vaart. */
+	private final it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<BlockState> plants = new it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<>();
 	private double dispX = Double.NaN, dispY, dispZ, dispYaw;
 	private int lastDisplaceTick = -100;
 
@@ -489,7 +491,8 @@ public class ShipEntity extends Entity {
 			}
 		} else {
 			list.addAll(world.getOtherEntities(this, getBoundingBox().expand(2, 4, 2),
-					e -> !(e instanceof ShipEntity) && !(e instanceof PlayerEntity) && !e.hasVehicle()));
+					e -> !(e instanceof ShipEntity) && !(e instanceof PlayerEntity) && !e.hasVehicle()
+							&& !(e instanceof net.minecraft.entity.ItemEntity && e.isTouchingWater())));
 		}
 		float dyaw = (float) Math.toDegrees(MathHelper.wrapDegrees(Math.toDegrees(shipYaw - oyaw)) * Math.PI / 180.0);
 		for (Entity e : list) {
@@ -837,7 +840,7 @@ public class ShipEntity extends Entity {
 			if (want.contains(p)) continue;
 			m.set(p);
 			if (!world.isChunkLoaded(m.getX() >> 4, m.getZ() >> 4)) continue;
-			if (world.getBlockState(m).isOf(Binnenvaart.DISPLACED_WATER)) world.setBlockState(m, Blocks.WATER.getDefaultState(), flags);
+			{ BlockState back = plants.remove(m.asLong()); if (world.getBlockState(m).isOf(Binnenvaart.DISPLACED_WATER)) world.setBlockState(m, back != null ? back : Blocks.WATER.getDefaultState(), flags); }
 			it.remove();
 		}
 		LongIterator wi = want.iterator();
@@ -850,6 +853,7 @@ public class ShipEntity extends Entity {
 			if (st.isOf(Binnenvaart.DISPLACED_WATER)) {
 				displaced.add(p);
 			} else if (isDisplaceable(world, m, st)) {
+				if (!st.isOf(Blocks.WATER)) plants.put(p, st);
 				world.setBlockState(m, marker, flags);
 				displaced.add(p);
 			}
@@ -863,9 +867,10 @@ public class ShipEntity extends Entity {
 		LongIterator it = displaced.iterator();
 		while (it.hasNext()) {
 			m.set(it.nextLong());
-			if (world.getBlockState(m).isOf(Binnenvaart.DISPLACED_WATER)) world.setBlockState(m, Blocks.WATER.getDefaultState(), flags);
+			{ BlockState back = plants.remove(m.asLong()); if (world.getBlockState(m).isOf(Binnenvaart.DISPLACED_WATER)) world.setBlockState(m, back != null ? back : Blocks.WATER.getDefaultState(), flags); }
 		}
 		displaced.clear();
+		plants.clear();
 	}
 
 	// =====================================================================

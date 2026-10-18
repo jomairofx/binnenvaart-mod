@@ -133,7 +133,7 @@ public class BinnenvaartClient implements ClientModInitializer {
 		var m = ctx.getMatrices();
 		m.push();
 		m.scale(sc, sc, 1f);
-		int w = 240, hgt = 114;
+		int w = 286, hgt = 114;
 		int x = Math.round(6 / sc), y = Math.round(ctx.getScaledWindowHeight() / 2f / sc - hgt / 2f);
 		ctx.fill(x, y, x + w, y + hgt, 0xB0101820);
 		ctx.fill(x, y, x + 2, y + hgt, 0xFF3D7BD9);

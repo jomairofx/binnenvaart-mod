@@ -81,6 +81,7 @@ public class ShipEntity extends Entity {
 	private static final double PIVOT_THRUSTER = -38.0;   // draaipunt bij boegschroef (bij de achtersteven)
 	public static final int HOLD_SLOTS = 54;
 	public static final int COVERS = 13;
+	public static final float COVER_STACK = 0.26f;
 
 	// ---- gesynchroniseerde gegevens ----
 	private static final TrackedData<Float> YAW = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.FLOAT);
@@ -909,11 +910,11 @@ public class ShipEntity extends Entity {
 		if (hatchProgress >= 0.999f) {
 			for (int i = 0; i < COVERS; i++) {
 				double x0 = 15 + 5 * i;
-				list.add(new Box(x0, 3.5, 0.95, x0 + 5, 3.85, 10.05));
-				list.add(new Box(x0, 3.85, 2.2, x0 + 5, 4.15, 8.8));
+				list.add(new Box(x0, 3.5, 0.95, x0 + 5, 3.75, 10.05));
+				list.add(new Box(x0, 3.75, 2.2, x0 + 5, 4.0, 8.8));
 			}
 		} else if (hatchProgress <= 0.001f) {
-			list.add(new Box(75, 3.5, 0.95, 80, 3.5 + 0.45 * COVERS, 10.05));
+			list.add(new Box(75, 3.5, 0.95, 80, 3.5 + COVER_STACK * COVERS + 0.5, 10.05));
 		}
 		return list;
 	}

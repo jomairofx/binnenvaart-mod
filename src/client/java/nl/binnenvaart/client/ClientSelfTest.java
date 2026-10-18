@@ -19,6 +19,13 @@ import java.util.List;
 public final class ClientSelfTest {
 	private static int t;
 	private static final List<String> log = new ArrayList<>();
+	private static boolean failed;
+
+	private static void check(String name, boolean ok, String detail) {
+		log.add((ok ? "PASS " : "FAIL ") + name + " - " + detail);
+		Binnenvaart.LOGGER.info("SELFTEST {} {} {}", ok ? "PASS" : "FAIL", name, detail);
+		if (!ok) failed = true;
+	}
 
 	private record Shot(String name, double[] eye, double[] target, boolean hud) {}
 
@@ -105,7 +112,51 @@ public final class ClientSelfTest {
 		}
 		if (t == afterShots + 200) shot(mc, "10_luiken_bewegen");
 		if (t == afterShots + 600) shot(mc, "11_luiken_dicht");
-		int helm = afterShots + 620;
+		int t0 = afterShots + 620;
+		if (t == t0) {
+			cmd(srv, "gamemode survival @p");
+			mc.options.hudHidden = true;
+			tp(srv, ship, new double[]{50.5, 3.62, 0.5}, new double[]{70, 3.6, 0.5});
+		}
+		if (t == t0 + 40) {
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			check("staan aan dek", Math.abs(l.y - 2.0) < 0.1, String.format("speler op lokaal (%.2f, %.2f, %.2f)", l.x, l.y, l.z));
+			srv.execute(() -> {
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.testControl(3, 0, 0);
+			});
+		}
+		if (t == t0 + 150) {
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			check("meevaren aan dek", Math.abs(l.x - 50.5) < 2 && Math.abs(l.y - 2.0) < 0.15,
+					String.format("speler op lokaal (%.2f, %.2f, %.2f), schip snelheid %.3f", l.x, l.y, l.z, ship.syncedSpeed()));
+			shot(mc, "14_aan_dek_varen");
+			srv.execute(() -> {
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.testControl(0, 0, 0);
+			});
+		}
+		if (t == t0 + 320) {
+			tp(srv, ship, new double[]{12.5, -1.0 + 1.62, -0.62}, new double[]{12.5, 0.6, 6});
+		}
+		if (t == t0 + 340) mc.options.forwardKey.setPressed(true);
+		if (t == t0 + 440) {
+			mc.options.forwardKey.setPressed(false);
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			check("ladder", l.y > 0.8, String.format("na klimmen op lokale y=%.2f", l.y));
+			tp(srv, ship, new double[]{12.7, 2.0 + 1.62, 5.5}, new double[]{11.5, 3.0, 5.5});
+		}
+		if (t == t0 + 460) {
+			srv.execute(() -> {
+				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(11.5, 2.5, 5.5), false);
+			});
+		}
+		if (t == t0 + 480) {
+			var st = ship.structure.get(11, 2, 5);
+			boolean open = st.contains(net.minecraft.state.property.Properties.OPEN) && st.get(net.minecraft.state.property.Properties.OPEN);
+			check("deur", open, "voordeur woning: " + st);
+			shot(mc, "15_deur_open");
+		}
+		int helm = t0 + 500;
 		if (t == helm) {
 			cmd(srv, "gamemode creative @p");
 			tp(srv, ship, new double[]{8.5, 9.62, 4.5}, new double[]{60, 8, 5.5});
@@ -114,24 +165,26 @@ public final class ClientSelfTest {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
 				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) {
+					s.testMode = false;
 					s.handleInteract(sp, new Vec3d(9.5, 9.5, 5.2), false);
 				}
 			});
 		}
 		if (t == helm + 50) {
-			log.add("rijdt mee: " + (mc.player.getVehicle() == ship));
+			check("aan het roer", mc.player.getVehicle() == ship, "speler zit aan het roer");
 			mc.options.hudHidden = false;
 			mc.player.setYaw((float) Math.toDegrees(ship.shipYaw) - 90f);
 			mc.player.setPitch(8f);
-			srv.execute(() -> {
-				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.testControl(3, 0, 0);
-			});
+			BinnenvaartClient.testThrottle(3);
 		}
 		if (t == helm + 100) shot(mc, "12_aan_het_roer");
-		if (t == helm + 400) shot(mc, "13_varen");
+		if (t == helm + 400) {
+			check("varen vanaf het roer", ship.syncedSpeed() > 0.15, String.format("snelheid %.3f b/t", ship.syncedSpeed()));
+			shot(mc, "13_varen");
+		}
 		if (t == helm + 410) {
-			log.add(String.format("snelheid op de client %.3f, lading %.2f", ship.syncedSpeed(), ship.load()));
-			finish(mc, "RESULT PASS");
+			BinnenvaartClient.testThrottle(0);
+			finish(mc, failed ? "RESULT FAIL" : "RESULT PASS");
 		}
 	}
 }

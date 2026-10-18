@@ -171,14 +171,14 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		for (int i = 0; i < n; i++) {
 			float p = MathHelper.clamp((t - stagger * i) / dur, 0f, 1f);
 			p = p * p * (3 - 2 * p);
-			float stackY = 3.5f + 0.45f * (n - 1 - i);
+			float stackY = 3.5f + ShipEntity.COVER_STACK * (n - 1 - i);
 			float drop = MathHelper.clamp((p - 0.8f) / 0.2f, 0f, 1f);
 			float x0 = MathHelper.lerp(p, 75f, 15f + 5f * i);
 			float y = MathHelper.lerp(drop, stackY, 3.5f);
 			if (p > 0 && p < 1) y += 0.15f * MathHelper.sin(p * MathHelper.PI);
-			box(vc, e, rim, x0 + 0.03f, y, 0.95f, x0 + 4.97f, y + 0.35f, 10.05f, light, 0.95f);
-			box(vc, e, s, x0 + 0.03f, y + 0.35f, 2.2f, x0 + 4.97f, y + 0.65f, 8.8f, light, 1f);
-			box(vc, e, s, x0 + 0.03f, y + 0.65f, 3.8f, x0 + 4.97f, y + 0.8f, 7.2f, light, 1f);
+			box(vc, e, rim, x0 + 0.03f, y, 0.95f, x0 + 4.97f, y + 0.25f, 10.05f, light, 0.95f);
+			box(vc, e, s, x0 + 0.03f, y + 0.25f, 2.2f, x0 + 4.97f, y + 0.5f, 8.8f, light, 1f);
+			box(vc, e, s, x0 + 0.03f, y + 0.5f, 3.8f, x0 + 4.97f, y + 0.62f, 7.2f, light, 1f);
 		}
 	}
 
@@ -187,33 +187,33 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 	private void renderName(ShipEntity ship, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
 		TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 		String name = ship.template.name;
-		float scale = 0.07f;
+		float scale = 0.1f;
 		float w = tr.getWidth(name) * scale;
 		// stuurboord (z+)
 		matrices.push();
-		matrices.translate(86.0f, 1.8f, 11.01f);
+		matrices.translate(85.0f, 1.9f, 11.01f);
 		matrices.scale(scale, -scale, scale);
 		draw(tr, name, matrices, consumers, light);
 		matrices.pop();
 		// bakboord (z-)
 		matrices.push();
-		matrices.translate(86.0f + w, 1.8f, -0.01f);
+		matrices.translate(85.0f + w, 1.9f, -0.01f);
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f));
 		matrices.scale(scale, -scale, scale);
 		draw(tr, name, matrices, consumers, light);
 		matrices.pop();
 		// spiegel (achterkant)
 		matrices.push();
-		matrices.translate(-0.01f, 1.9f, ShipTemplate.CZ - w / 2f);
+		matrices.translate(-0.01f, 1.95f, ShipTemplate.CZ - w / 2f);
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-90f));
 		matrices.scale(scale, -scale, scale);
 		draw(tr, name, matrices, consumers, light);
 		matrices.pop();
-		float s2 = 0.045f;
+		float s2 = 0.055f;
 		String port = "DORDRECHT";
 		float w2 = tr.getWidth(port) * s2;
 		matrices.push();
-		matrices.translate(-0.01f, 1.3f, ShipTemplate.CZ - w2 / 2f);
+		matrices.translate(-0.01f, 1.05f, ShipTemplate.CZ - w2 / 2f);
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-90f));
 		matrices.scale(s2, -s2, s2);
 		draw(tr, port, matrices, consumers, light);

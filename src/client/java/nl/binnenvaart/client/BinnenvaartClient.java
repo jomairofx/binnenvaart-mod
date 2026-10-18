@@ -48,6 +48,11 @@ public class BinnenvaartClient implements ClientModInitializer {
 		HudRenderCallback.EVENT.register((ctx, tickCounter) -> renderHud(ctx));
 	}
 
+	/** Alleen voor de automatische test. */
+	static void testThrottle(int t) {
+		throttle = t;
+	}
+
 	private static void tick(MinecraftClient mc) {
 		if (mc.player == null || mc.world == null) return;
 		// motorgeluid voor schepen in de buurt
@@ -100,8 +105,8 @@ public class BinnenvaartClient implements ClientModInitializer {
 		if (mc.player == null || mc.options.hudHidden) return;
 		if (!(mc.player.getVehicle() instanceof ShipEntity ship)) return;
 		TextRenderer tr = mc.textRenderer;
-		int w = 236, hgt = 104;
-		int x = 6, y = ctx.getScaledWindowHeight() - hgt - 6;
+		int w = 262, hgt = 104;
+		int x = 6, y = 6;
 		ctx.fill(x, y, x + w, y + hgt, 0xB0101820);
 		ctx.fill(x, y, x + w, y + 1, 0xFF3D7BD9);
 		String where = ship.isAtBowHelm(mc.player) ? "Stuurstand voor" : "Stuurhuis";

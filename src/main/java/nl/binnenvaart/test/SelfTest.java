@@ -104,7 +104,7 @@ public final class SelfTest {
 				ship.hold(0).markDirty();
 				for (int i = 0; i < 30; i++) ship.hold(1).setStack(i, new ItemStack(Items.SAND, 64));
 				ship.hold(1).markDirty();
-				for (int i = 0; i < 40; i++) ship.hold(2).setStack(i, new ItemStack(i % 2 == 0 ? Items.OAK_PLANKS : Items.BREAD, 64));
+				for (int i = 0; i < 40; i++) ship.hold(2).setStack(i, i % 2 == 0 ? new ItemStack(Items.BREAD, 64) : new ItemStack(Items.IRON_PICKAXE));
 				ship.hold(2).markDirty();
 			}
 			if (tick == 830) {

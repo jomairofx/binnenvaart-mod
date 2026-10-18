@@ -1,5 +1,7 @@
 name: build
 on: [push, workflow_dispatch]
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,7 +31,8 @@ jobs:
           simulation-distance=10
           PROPS
           sed -i 's/^ *//' run/server.properties
-          timeout 900 ./gradlew runTestServer --stacktrace || true
+          timeout 900 ./gradlew runTestServer --stacktrace > server_out.txt 2>&1 || true
+          cp run/logs/latest.log run/server.log || true
           cat run/selftest.txt || echo "geen selftest.txt"
       - name: Clienttest
         run: |
@@ -37,7 +40,8 @@ jobs:
           rm -rf run/saves && mkdir -p run/saves && cp -r run/world run/saves/testwelt || true
           printf 'onboardAccessibility:false\nrenderDistance:10\nsimulationDistance:10\npauseOnLostFocus:false\nnarrator:0\nguiScale:2\nskipMultiplayerWarning:true\njoinedFirstServer:true\ntutorialStep:none\nsoundCategory_master:0.0\nfov:0.15\n' > run/options.txt
           export LIBGL_ALWAYS_SOFTWARE=1
-          timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace || true
+          timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace > client_out.txt 2>&1 || true
+          cp run/logs/latest.log run/client.log || true
           cat run/client_selftest.txt || echo "geen client_selftest.txt"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -48,5 +52,15 @@ jobs:
             run/logs/latest.log
             run/selftest.txt
             run/client_selftest.txt
+      - name: Resultaten naar branch
+        if: always()
+        run: |
+          mkdir -p /tmp/out
+          cp -r run/screenshots /tmp/out/ 2>/dev/null || true
+          cp run/*.txt run/*.log server_out.txt client_out.txt /tmp/out/ 2>/dev/null || true
+          cp build/libs/*.jar /tmp/out/ 2>/dev/null || true
+          cd /tmp/out && git init -q && git checkout -q -b ci-resultaten && git add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -qm "Resultaten ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" ci-resultaten
       - name: Uitslag
         run: grep -q "RESULT PASS" run/selftest.txt && grep -q "RESULT PASS" run/client_selftest.txt

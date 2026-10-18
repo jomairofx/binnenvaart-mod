@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 public class BinnenvaartClient implements ClientModInitializer {
-	private static KeyBinding thrusterLeft, thrusterRight, horn, hatches;
+	static KeyBinding thrusterLeft, thrusterRight, horn, hatches;
 	private static boolean prevForward, prevBack;
 	private static int throttle;
 	private static int lastShipId = -1;
@@ -32,8 +32,8 @@ public class BinnenvaartClient implements ClientModInitializer {
 		EntityRendererRegistry.register(Binnenvaart.SHIP, ShipRenderer::new);
 		ShipEntity.clientSender = ClientPlayNetworking::send;
 
-		thrusterLeft = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.boeg_links", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_Z, "category.binnenvaart"));
-		thrusterRight = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.boeg_rechts", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_X, "category.binnenvaart"));
+		thrusterLeft = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.boeg_links", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_LEFT, "category.binnenvaart"));
+		thrusterRight = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.boeg_rechts", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT, "category.binnenvaart"));
 		horn = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.hoorn", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.binnenvaart"));
 		hatches = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.binnenvaart.luiken", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "category.binnenvaart"));
 
@@ -98,57 +98,80 @@ public class BinnenvaartClient implements ClientModInitializer {
 		ClientPlayNetworking.send(new ShipPayloads.Control(ship.getId(), throttle, rudder, thruster, h, l));
 	}
 
-	// ------------------------------------------------------------------ HUD
+	private static String keyName(KeyBinding kb) {
+		int code = KeyBindingHelper.getBoundKeyOf(kb).getCode();
+		if (code == GLFW.GLFW_KEY_LEFT) return "←";
+		if (code == GLFW.GLFW_KEY_RIGHT) return "→";
+		return kb.getBoundKeyLocalizedText().getString();
+	}
 
+	/** Compact paneel links in het midden van het scherm. */
 	private static void renderHud(DrawContext ctx) {
 		MinecraftClient mc = MinecraftClient.getInstance();
 		if (mc.player == null || mc.options.hudHidden) return;
 		if (!(mc.player.getVehicle() instanceof ShipEntity ship)) return;
 		TextRenderer tr = mc.textRenderer;
-		int w = 300, hgt = 104;
-		int x = 6, y = 6;
+		float sc = 0.75f;
+		var m = ctx.getMatrices();
+		m.push();
+		m.scale(sc, sc, 1f);
+		int w = 178, hgt = 104;
+		int x = Math.round(6 / sc), y = Math.round(ctx.getScaledWindowHeight() / 2f / sc - hgt / 2f);
 		ctx.fill(x, y, x + w, y + hgt, 0xB0101820);
-		ctx.fill(x, y, x + w, y + 1, 0xFF3D7BD9);
+		ctx.fill(x, y, x + 2, y + hgt, 0xFF3D7BD9);
+		int lx = x + 7;
 		String where = ship.isAtBowHelm(mc.player) ? "Stuurstand voor" : "Stuurhuis";
-		ctx.drawTextWithShadow(tr, ship.template.name + "  ·  " + where, x + 6, y + 5, 0xFFFFFF);
-
+		ctx.drawTextWithShadow(tr, ship.template.name + " · " + where, lx, y + 5, 0xFFFFFF);
 		// telegraaf
 		int thr = ship.syncedThrottle();
-		String[] labels = {"<<", "<", "STOP", ">", ">>", ">>>"};
-		int bx = x + 6, by = y + 18;
+		String[] labels = {"<<", "<", "■", ">", ">>", ">>>"};
+		int bx = lx, by = y + 17;
 		for (int i = 0; i < 6; i++) {
-			int bw = i == 2 ? 34 : 30;
+			int bw = 25;
 			boolean on = i == thr + 2;
 			int col = on ? (i < 2 ? 0xFFD9822B : i == 2 ? 0xFFB0B0B0 : 0xFF3DBE6A) : 0xFF2A333D;
-			ctx.fill(bx, by, bx + bw, by + 12, col);
+			ctx.fill(bx, by, bx + bw, by + 11, col);
 			int tw = tr.getWidth(labels[i]);
 			ctx.drawText(tr, labels[i], bx + (bw - tw) / 2, by + 2, on ? 0x101010 : 0x9AA5B0, false);
-			bx += bw + 3;
+			bx += bw + 2;
 		}
-		ctx.drawTextWithShadow(tr, ShipEntity.STEP_NAMES[thr + 2], x + 6, y + 33, 0xD8E0E8);
-
+		ctx.drawTextWithShadow(tr, ShipEntity.STEP_NAMES[thr + 2], lx, y + 31, 0xD8E0E8);
 		double kmh = Math.abs(ship.syncedSpeed()) * 20 * 3.6;
 		double heading = ((ship.shipYaw * 180 / Math.PI) - 90 + 180) % 360;
 		if (heading < 0) heading += 360;
-		ctx.drawTextWithShadow(tr, String.format("Snelheid %.1f km/u%s", kmh, ship.syncedSpeed() < -0.001 ? " achteruit" : ""), x + 6, y + 46, 0xFFFFFF);
-		ctx.drawTextWithShadow(tr, String.format("Koers %03.0f°", heading), x + 170, y + 46, 0xFFFFFF);
-
-		// roerstand
+		ctx.drawTextWithShadow(tr, String.format("%.1f km/u%s", kmh, ship.syncedSpeed() < -0.001 ? " achteruit" : ""), lx, y + 43, 0xFFFFFF);
+		ctx.drawTextWithShadow(tr, String.format("Koers %03.0f°", heading), lx + 100, y + 43, 0xFFFFFF);
+		// roer
 		float r = ship.syncedRudder();
-		int rx = x + 6, ry = y + 59, rw = 120;
-		ctx.fill(rx, ry, rx + rw, ry + 6, 0xFF2A333D);
-		ctx.fill(rx + rw / 2, ry - 1, rx + rw / 2 + 1, ry + 7, 0xFF8090A0);
-		int pos = rx + rw / 2 + Math.round(r * (rw / 2 - 2));
-		ctx.fill(pos - 2, ry - 2, pos + 2, ry + 8, 0xFFFFD34D);
+		int ry = y + 57, rw = 90;
+		ctx.fill(lx, ry, lx + rw, ry + 5, 0xFF2A333D);
+		ctx.fill(lx + rw / 2, ry - 1, lx + rw / 2 + 1, ry + 6, 0xFF8090A0);
+		int pos = lx + rw / 2 + Math.round(r * (rw / 2 - 2));
+		ctx.fill(pos - 2, ry - 2, pos + 2, ry + 7, 0xFFFFD34D);
 		int deg = Math.round(Math.abs(r) * 35);
-		ctx.drawTextWithShadow(tr, "Roer " + deg + "°" + (deg == 0 ? "" : r < 0 ? " BB" : " SB"), rx + rw + 6, ry - 1, 0xFFFFFF);
-
+		ctx.drawTextWithShadow(tr, "Roer " + deg + "°" + (deg == 0 ? "" : r < 0 ? " BB" : " SB"), lx + rw + 6, ry - 1, 0xFFFFFF);
+		// boegschroef: pijlen lichten op
 		int th = ship.syncedThruster();
-		ctx.drawTextWithShadow(tr, "Boegschroef " + (th < 0 ? "<< BB" : th > 0 ? "SB >>" : "uit"), x + 6, y + 70, th == 0 ? 0x9AA5B0 : 0x7FD6FF);
-		String hatch = ship.hatchProgress >= 0.999f ? "dicht" : ship.hatchProgress <= 0.001f ? "open" : "bewegen...";
-		ctx.drawTextWithShadow(tr, "Luiken " + hatch, x + 170, y + 70, 0xFFFFFF);
-		ctx.drawTextWithShadow(tr, String.format("Lading %d%%   Diepgang %.1f m", Math.round(ship.load() * 100), ship.draft()), x + 6, y + 81, 0xFFFFFF);
-		if (ship.isAground()) ctx.drawTextWithShadow(tr, "AAN DE GROND", x + 190, y + 81, 0xFF5555);
-		ctx.drawText(tr, "W/S telegraaf  A/D roer  Z/X boeg  H hoorn  L luiken", x + 6, y + 93, 0x7F8C99, false);
+		ctx.drawTextWithShadow(tr, "Boeg", lx, y + 69, 0xFFFFFF);
+		int ax = lx + tr.getWidth("Boeg") + 6;
+		ctx.fill(ax, y + 68, ax + 14, y + 78, th < 0 ? 0xFF3DBE6A : 0xFF2A333D);
+		ctx.drawText(tr, "◀", ax + 3, y + 69, th < 0 ? 0x101010 : 0x9AA5B0, false);
+		ctx.fill(ax + 16, y + 68, ax + 30, y + 78, th > 0 ? 0xFF3DBE6A : 0xFF2A333D);
+		ctx.drawText(tr, "▶", ax + 19, y + 69, th > 0 ? 0x101010 : 0x9AA5B0, false);
+		ctx.drawText(tr, th == 0 ? "uit" : "", ax + 34, y + 69, 0x9AA5B0, false);
+		String extra;
+		if (ShipEntity.COVERS > 0) {
+			extra = "Luiken " + (ship.hatchProgress >= 0.999f ? "dicht" : ship.hatchProgress <= 0.001f ? "open" : "beweegt");
+		} else {
+			StringBuilder sb = new StringBuilder("Tanks");
+			for (int i = 0; i < ship.template.holds.length; i++) sb.append(' ').append(Math.round(ship.fill(i) * 100)).append('%');
+			extra = sb.toString();
+		}
+		ctx.drawTextWithShadow(tr, extra, lx + 100, y + 69, 0xFFFFFF);
+		ctx.drawTextWithShadow(tr, String.format("Lading %d%%  Diepgang %.1f m", Math.round(ship.load() * 100), ship.draft()), lx, y + 81, 0xFFFFFF);
+		if (ship.isAground()) ctx.drawTextWithShadow(tr, "AAN DE GROND", lx + 120, y + 81, 0xFF5555);
+		String keys = String.format("W/S telegraaf  A/D roer  %s/%s boeg  H hoorn", keyName(thrusterLeft), keyName(thrusterRight)) + (ShipEntity.COVERS > 0 ? "  L luiken" : "");
+		ctx.drawText(tr, keys, lx, y + 93, 0x7F8C99, false);
+		m.pop();
 	}
 }

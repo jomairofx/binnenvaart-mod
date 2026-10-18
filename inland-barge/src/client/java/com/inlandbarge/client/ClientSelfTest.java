@@ -217,6 +217,13 @@ public final class ClientSelfTest {
 			double d = Math.toDegrees(ship.shipYaw - yaw0);
 			check("roer (A-toets)", Math.abs(d) > 3 && ship.syncedRudder() < -0.5, String.format("koers %.1f graden veranderd, roer %.2f", d, ship.syncedRudder()));
 			InlandBargeClient.testThrottle(0);
+			InlandBargeClient.thrusterRight.setPressed(true);
+		}
+		if (t == helm + 525) yaw0 = ship.shipYaw;
+		if (t == helm + 575) {
+			InlandBargeClient.thrusterRight.setPressed(false);
+			double d = Math.toDegrees(ship.shipYaw - yaw0);
+			check("boegschroef (pijltje rechts)", d > 0.5 && ship.syncedThruster() == 1, String.format("koers %.1f graden naar stuurboord, boegschroef %d", d, ship.syncedThruster()));
 			finish(mc, failed ? "RESULT FAIL" : "RESULT PASS");
 		}
 	}

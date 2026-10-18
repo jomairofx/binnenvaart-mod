@@ -75,7 +75,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		Vec3d cam = this.dispatcher.camera.getPos();
 		Vec3d shipPos = ship.getLerpedPos(tickDelta);
 		boolean shadow = IrisCompat.isShadowPass();
-		mesh.render(matrices, consumers, lastFrustum, shipPos, y, cam, shadow ? 2 : 0);
+		mesh.render(matrices, consumers, lastFrustum, shipPos, y, cam, shadow ? 1 : 0);
 
 		DynCache dc = caches.computeIfAbsent(ship, k -> new DynCache());
 		float hatch = MathHelper.lerp(tickDelta, ship.prevHatchProgress, ship.hatchProgress);

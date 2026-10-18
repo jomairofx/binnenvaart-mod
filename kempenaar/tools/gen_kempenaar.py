@@ -207,10 +207,11 @@ for z in R(HZ0 + 1, HZ1 - 1): S(HX1, 5, z, "polished_deepslate_slab[type=top]") 
 S(HX1, 5, HZ0, "spruce_planks"); S(HX1, 5, HZ1, "spruce_planks")
 for (x, z) in [(HX0, HZ0), (HX0, HZ1), (HX1, HZ0), (HX1, HZ1)]:
     S(x, 6, z, "dark_oak_fence")
-# achterwand: alleen onderpaneel, daarboven open zodat je ook naar achteren kunt kijken
-S(HX0, 7, 4, WHITE)
-S(HX0, 5, 4, "dark_oak_door[facing=west,half=lower,hinge=left,open=false]")
-S(HX0, 6, 4, "dark_oak_door[facing=west,half=upper,hinge=left,open=false]")
+# achterwand net als voor en opzij: houten onderpaneel, rondom open raamstrook met dunne stijlen,
+# in het midden een open doorgang met bovenlijst
+S(HX0, 5, 4, "air")
+for z in (3, 5): S(HX0, 7, z, "smooth_quartz_slab[type=top]")
+S(HX0, 7, 4, "smooth_quartz_slab[type=top]")
 # zonneklep rondom
 for x in R(HX0 - 1, HX1 + 1):
     S(x, 8, HZ0 - 1, "smooth_quartz_slab[type=top]"); S(x, 8, HZ1 + 1, "smooth_quartz_slab[type=top]")

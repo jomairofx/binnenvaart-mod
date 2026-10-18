@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "nl.binnenvaart.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "EntityInvoker",
+    "EntityMixin",
+    "LivingEntityMixin",
+    "ServerPlayNetworkHandlerMixin",
+    "WorldMixin"
+  ],
+  "injectors": { "defaultRequire": 1 }
+}

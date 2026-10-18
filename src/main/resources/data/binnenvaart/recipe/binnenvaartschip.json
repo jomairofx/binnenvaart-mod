@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " C ",
+    "IBI",
+    "III"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:chest"
+    },
+    "I": {
+      "item": "minecraft:iron_block"
+    },
+    "B": {
+      "tag": "minecraft:boats"
+    }
+  },
+  "result": {
+    "id": "binnenvaart:binnenvaartschip",
+    "count": 1
+  }
+}

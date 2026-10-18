@@ -1,0 +1,10 @@
+{
+  "item.binnenvaart.binnenvaartschip": "Binnenvaartschip",
+  "entity.binnenvaart.binnenvaartschip": "Binnenvaartschip",
+  "block.binnenvaart.verplaatst_water": "Verplaatst water",
+  "category.binnenvaart": "Binnenvaart",
+  "key.binnenvaart.boeg_links": "Boegschroef bakboord (links)",
+  "key.binnenvaart.boeg_rechts": "Boegschroef stuurboord (rechts)",
+  "key.binnenvaart.hoorn": "Scheepshoorn",
+  "key.binnenvaart.luiken": "Luiken open/dicht"
+}

@@ -4,17 +4,31 @@
   "version": "${version}",
   "name": "Binnenvaart",
   "description": "Een vaarbaar binnenvaartschip om op te lopen, te laden en te besturen.",
-  "authors": ["jomairofx"],
+  "authors": [
+    "jomairofx"
+  ],
   "license": "All-Rights-Reserved",
   "environment": "*",
   "entrypoints": {
-    "main": ["nl.binnenvaart.Binnenvaart"],
-    "client": ["nl.binnenvaart.client.BinnenvaartClient"]
+    "main": [
+      "nl.binnenvaart.Binnenvaart"
+    ],
+    "client": [
+      "nl.binnenvaart.client.BinnenvaartClient"
+    ]
   },
   "depends": {
     "fabricloader": ">=0.16.0",
     "minecraft": "~1.21.1",
     "java": ">=21",
     "fabric-api": "*"
-  }
+  },
+  "mixins": [
+    "binnenvaart.mixins.json",
+    {
+      "config": "binnenvaart.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "icon": "assets/binnenvaart/icon.png"
 }

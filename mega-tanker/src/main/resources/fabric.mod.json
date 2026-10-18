@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "megatanker",
+  "version": "${version}",
+  "name": "Mega Oil Tanker",
+  "description": "A gigantic crude oil tanker you can walk on, fill and steer.",
+  "authors": [
+    "jomairofx"
+  ],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.megatanker.MegaTanker"
+    ],
+    "client": [
+      "com.megatanker.client.MegaTankerClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "mixins": [
+    "megatanker.mixins.json",
+    {
+      "config": "megatanker.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "icon": "assets/megatanker/icon.png"
+}

@@ -20,6 +20,7 @@ public final class ClientSelfTest {
 	private static int t;
 	private static final List<String> log = new ArrayList<>();
 	private static boolean failed;
+	private static double ladderMax = -99;
 
 	private static void check(String name, boolean ok, String detail) {
 		log.add((ok ? "PASS " : "FAIL ") + name + " - " + detail);
@@ -138,6 +139,11 @@ public final class ClientSelfTest {
 			tp(srv, ship, new double[]{12.5, -1.0 + 1.62, -0.62}, new double[]{12.5, 0.6, 6});
 		}
 		if (t == t0 + 340) mc.options.forwardKey.setPressed(true);
+		if (t > t0 + 340 && t < t0 + 440) {
+			double ly = ship.toLocal(mc.player.getPos()).y;
+			if (ly > ladderMax) ladderMax = ly;
+			if (ly >= 1.95) mc.options.forwardKey.setPressed(false);
+		}
 		if (t > t0 + 330 && t < t0 + 440 && t % 10 == 0) {
 			Vec3d l = ship.toLocal(mc.player.getPos());
 			log.add(String.format("ladder t=%d lokaal (%.2f, %.2f, %.2f) climbing=%s hcoll=%s water=%s fwd=%.2f vel=%s",
@@ -148,7 +154,7 @@ public final class ClientSelfTest {
 		if (t == t0 + 440) {
 			mc.options.forwardKey.setPressed(false);
 			Vec3d l = ship.toLocal(mc.player.getPos());
-			check("ladder", l.y > 0.8, String.format("na klimmen op lokale y=%.2f", l.y));
+			check("ladder", ladderMax >= 1.95, String.format("vanuit het water geklommen tot lokale y=%.2f (dek = 2.0)", ladderMax));
 			tp(srv, ship, new double[]{12.7, 2.0 + 1.62, 5.5}, new double[]{11.5, 3.0, 5.5});
 		}
 		if (t == t0 + 460) {

@@ -138,6 +138,13 @@ public final class ClientSelfTest {
 			tp(srv, ship, new double[]{12.5, -1.0 + 1.62, -0.62}, new double[]{12.5, 0.6, 6});
 		}
 		if (t == t0 + 340) mc.options.forwardKey.setPressed(true);
+		if (t > t0 + 330 && t < t0 + 440 && t % 10 == 0) {
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			log.add(String.format("ladder t=%d lokaal (%.2f, %.2f, %.2f) climbing=%s hcoll=%s water=%s fwd=%.2f vel=%s",
+					t - t0, l.x, l.y, l.z, mc.player.isClimbing(), mc.player.horizontalCollision, mc.player.isTouchingWater(),
+					mc.player.input.movementForward, mc.player.getVelocity()));
+			if (t == t0 + 380) shot(mc, "16_ladder");
+		}
 		if (t == t0 + 440) {
 			mc.options.forwardKey.setPressed(false);
 			Vec3d l = ship.toLocal(mc.player.getPos());

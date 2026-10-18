@@ -44,7 +44,7 @@ public final class ShipMesh {
 	/** Sommige schepen (tanker) hebben dichte tanks: vlakken daarheen zijn nooit te zien. */
 	private static final boolean SEALED_CULL = false;
 	/** Afstanden (blokken) waaronder detailniveau 0 en 1 nog getekend worden. */
-	public static final double NEAR = 40, MID = 96;
+	public static final double NEAR = 32, MID = 80;
 
 	public final int version;
 	private final int sections;
@@ -59,19 +59,16 @@ public final class ShipMesh {
 
 	/**
 	 * Tekent de zichtbare plakken. {@code frustum} mag null zijn (dan alles), {@code shipPos}/{@code yaw}
-	 * zijn de wereldpositie en draaiing van het schip in dit beeld, {@code distance} de afstand van de camera tot het schip.
+	 * zijn de wereldpositie en draaiing van het schip in dit beeld. Het detailniveau wordt per plak gekozen
+	 * aan de hand van de afstand tot de camera; {@code minLevelAll} dwingt een grover niveau af (schaduwen).
 	 */
-	public void render(MatrixStack matrices, VertexConsumerProvider consumers, @Nullable Frustum frustum, Vec3d shipPos, double yaw, double distance) {
+	public void render(MatrixStack matrices, VertexConsumerProvider consumers, @Nullable Frustum frustum, Vec3d shipPos, double yaw, Vec3d cam, int minLevelAll) {
 		MatrixStack.Entry entry = matrices.peek();
 		Matrix4f m = entry.getPositionMatrix();
-		int minLevel = distance < NEAR ? 0 : distance < MID ? 1 : 2;
 		boolean[] visible = new boolean[sections];
+		int[] level = new int[sections];
 		double c = Math.cos(yaw), s = Math.sin(yaw);
 		for (int k = 0; k < sections; k++) {
-			if (frustum == null) {
-				visible[k] = true;
-				continue;
-			}
 			double x0 = ShipTemplate.MIN_X + k * SEC - ShipTemplate.CX, x1 = x0 + SEC;
 			double z0 = ShipTemplate.MIN_Z - ShipTemplate.CZ, z1 = z0 + ShipTemplate.SIZE_Z;
 			double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE, minZ = Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
@@ -84,14 +81,19 @@ public final class ShipMesh {
 					maxZ = Math.max(maxZ, wz);
 				}
 			Box b = new Box(minX, shipPos.y + ShipTemplate.MIN_Y, minZ, maxX, shipPos.y + ShipTemplate.MIN_Y + ShipTemplate.SIZE_Y, maxZ);
-			visible[k] = frustum.isVisible(b);
+			visible[k] = frustum == null || frustum.isVisible(b);
+			double dx = Math.max(0, Math.max(b.minX - cam.x, cam.x - b.maxX));
+			double dy = Math.max(0, Math.max(b.minY - cam.y, cam.y - b.maxY));
+			double dz = Math.max(0, Math.max(b.minZ - cam.z, cam.z - b.maxZ));
+			double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+			level[k] = Math.max(minLevelAll, d < NEAR ? 0 : d < MID ? 1 : 2);
 		}
 		for (int l = 0; l < layers.size(); l++) {
 			float[][] parts = data.get(l);
 			VertexConsumer vc = null;
 			for (int k = 0; k < sections; k++) {
 				if (!visible[k]) continue;
-				for (int lev = minLevel; lev < 3; lev++) {
+				for (int lev = level[k]; lev < 3; lev++) {
 					float[] d = parts[k * 3 + lev];
 					if (d == null || d.length == 0) continue;
 					if (vc == null) vc = consumers.getBuffer(layers.get(l));

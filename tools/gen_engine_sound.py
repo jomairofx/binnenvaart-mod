@@ -132,7 +132,8 @@ def idle():
     bark = circ(bp(150, 1400), exc * rng.standard_normal(N))
     x += 0.45 * bark / np.std(bark) * np.std(low)
     x += clatter(0.05) * np.std(low) / 0.05 * 0.12
-    x = balance(x, [0.52, 0.31, 0.12, 0.045, 0.005])
+    x = balance(x, [0.62, 0.29, 0.075, 0.015, 0.0])
+    x = circ(lp(700, 2), x)                       # dof: alsof je hem door het dek hoort
     return finish(x, 0.85)
 
 
@@ -153,7 +154,8 @@ def load():
     wash = circ(bp(120, 900), rng.standard_normal(N))
     x += 0.25 * wash / np.std(wash) * np.std(low)
     x += clatter(0.05) * np.std(low) / 0.05 * 0.08
-    x = balance(x, [0.47, 0.3, 0.15, 0.07, 0.01])
+    x = balance(x, [0.57, 0.3, 0.1, 0.03, 0.0])
+    x = circ(lp(900, 2), x)
     return finish(x, 0.9)
 
 

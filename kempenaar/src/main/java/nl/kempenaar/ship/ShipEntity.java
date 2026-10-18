@@ -1197,7 +1197,7 @@ public class ShipEntity extends Entity {
 				}
 			}
 		}
-		if (thr != 0) {
+		if (thr != 0 && (age & 1) == 0) {
 			for (double tz : new double[]{3.0, 6.0}) {
 				Vec3d p = toWorld(-0.5 - r.nextDouble() * 2, 0, tz + r.nextDouble() - 0.5);
 				world.addParticle(ParticleTypes.BUBBLE, p.x, wy - 0.6, p.z, 0, 0.05, 0);
@@ -1206,7 +1206,7 @@ public class ShipEntity extends Entity {
 		}
 		int smokeEvery = Math.max(2, 8 - Math.abs(thr) * 2);
 		if (thr != 0 && age % smokeEvery == 0) {
-			Vec3d c = toWorld(10.5, 8.6, 7.5);
+			Vec3d c = toWorld(10.5, 9.1, 7.5);
 			world.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, true, c.x, c.y, c.z, 0, 0.06, 0);
 			if (Math.abs(thr) >= 2) world.addParticle(ParticleTypes.LARGE_SMOKE, c.x, c.y, c.z, 0, 0.08, 0);
 		}

@@ -177,7 +177,7 @@ for z in (1, 2):
 S(3, 5, 3, "yellow_concrete"); S(3, 6, 3, "yellow_concrete"); S(3, 7, 3, "yellow_concrete"); S(3, 7, 2, "yellow_concrete")
 # schoorsteen
 for y in R(5, 8): S(4, y, 8, "polished_deepslate_wall")
-S(4, 9, 8, "campfire[lit=true,facing=north]")
+S(4, 9, 8, "cauldron")  # exhaust pipe (the smoke comes from the ship itself)
 # hefkolom stuurhuis
 for x in (7, 8):
     for z in R(4, 6):

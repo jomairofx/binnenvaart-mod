@@ -1200,7 +1200,7 @@ public class ShipEntity extends Entity {
 				}
 			}
 		}
-		if (thr != 0) {
+		if (thr != 0 && (age & 1) == 0) {
 			for (double tz : new double[]{11.0, 15.0, 19.0}) {
 				Vec3d p = toWorld(-0.5 - r.nextDouble() * 3, 0, tz + r.nextDouble() * 2 - 1);
 				world.addParticle(ParticleTypes.BUBBLE, p.x, wy - 0.6, p.z, 0, 0.05, 0);

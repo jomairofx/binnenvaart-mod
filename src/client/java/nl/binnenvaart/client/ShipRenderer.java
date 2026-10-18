@@ -74,10 +74,8 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		matrices.translate(-ShipTemplate.CX, 0, -ShipTemplate.CZ);
 		Vec3d cam = this.dispatcher.camera.getPos();
 		Vec3d shipPos = ship.getLerpedPos(tickDelta);
-		Box bb = ship.getBoundingBox();
-		double dx = Math.max(0, Math.max(bb.minX - cam.x, cam.x - bb.maxX)), dz = Math.max(0, Math.max(bb.minZ - cam.z, cam.z - bb.maxZ));
-		double dyy = Math.max(0, Math.max(bb.minY - cam.y, cam.y - bb.maxY));
-		mesh.render(matrices, consumers, lastFrustum, shipPos, y, Math.sqrt(dx * dx + dyy * dyy + dz * dz));
+		boolean shadow = IrisCompat.isShadowPass();
+		mesh.render(matrices, consumers, lastFrustum, shipPos, y, cam, shadow ? 2 : 0);
 
 		DynCache dc = caches.computeIfAbsent(ship, k -> new DynCache());
 		float hatch = MathHelper.lerp(tickDelta, ship.prevHatchProgress, ship.hatchProgress);
@@ -100,7 +98,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			renderBeds(ship, dc.sink, light);
 		}
 		dc.sink.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
-		renderName(ship, matrices, consumers, light);
+		if (!shadow) renderName(ship, matrices, consumers, light);
 		matrices.pop();
 		super.render(ship, yaw, tickDelta, matrices, consumers, light);
 	}

@@ -17,8 +17,10 @@ def R(a, b):
 
 L = 110
 def zr(x):
-    if x == 0 or x == L - 1: return (2, 8)
-    if x == 1 or x == L - 2: return (1, 9)
+    # vol achterschip zoals bij echte motorvrachtschepen: alleen de hoeken van de spiegel afgerond
+    if x == 0: return (1, 9)
+    if x == L - 1: return (2, 8)
+    if x == L - 2: return (1, 9)
     return (0, 10)
 def bot(x):
     if x <= 4: return -1
@@ -176,7 +178,7 @@ for z in R(1, 9):
     if z != 3: S(X0, 5, z, "iron_bars")
 # chimney
 for y in R(5, 8): S(4, y, 8, "polished_blackstone_wall")
-S(4, 9, 8, "campfire[lit=true,facing=north]")
+S(4, 9, 8, "cauldron")  # exhaust pipe (the smoke comes from the ship itself)
 # lifting column + wheelhouse
 for x in (7, 8):
     for z in R(4, 6):
@@ -207,9 +209,8 @@ for p in [(6, 12, 3), (6, 12, 7)]: S(*p, "lightning_rod[facing=up]")
 S(10, 12, 6, "white_wool")                    # satellite dome
 
 # aft deck
-for z in R(2, 8):
+for z in R(1, 9):
     if z != 5: S(0, 2, z, "iron_bars")
-S(1, 2, 1, "iron_bars"); S(1, 2, 9, "iron_bars")
 for y in R(2, 5): S(0, y, 5, "birch_fence")
 S(0, 6, 5, "end_rod[facing=up]")
 for z in (3, 4):

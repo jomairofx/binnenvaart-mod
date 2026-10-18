@@ -56,7 +56,7 @@ public class ShipEngineSound extends MovingSoundInstance {
 		float push = Math.max(0f, ship.engineTarget() - l); // gas geven: even wat harder
 		// telegraaf op Stop = motor uit; anders zwaar en vrij zacht, zodat hij niet overheerst
 		float targetVol = !running ? 0f : loadLayer ? 0.02f + 0.5f * l + 0.18f * push : 0.3f * (1f - 0.5f * l);
-		float targetPitch = (0.7f + 0.48f * l + 0.04f * push) * PITCH_FACTOR;
+		float targetPitch = (0.64f + 0.42f * l + 0.04f * push) * PITCH_FACTOR;
 		this.volume += (targetVol - this.volume) * (running ? 0.08f : 0.035f);
 		if (!running) targetPitch = this.pitch + (0.55f * PITCH_FACTOR - this.pitch) * 0.04f; // uitlopen
 		this.pitch = targetPitch;

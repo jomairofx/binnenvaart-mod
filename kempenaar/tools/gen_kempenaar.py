@@ -194,7 +194,7 @@ for z in R(0, 8):
 S(7, 5, 2, "oak_stairs[facing=west,half=bottom]"); S(8, 5, 2, "oak_slab[type=bottom]"); S(9, 5, 2, "oak_slab[type=bottom]"); S(10, 5, 2, "oak_stairs[facing=east,half=bottom]")
 # uitlaat
 for y in R(5, 7): S(10, y, 7, "polished_blackstone_wall")
-S(10, 8, 7, "campfire[lit=true,facing=north]")
+S(10, 8, 7, "cauldron")  # exhaust pipe (the smoke comes from the ship itself)
 
 # ---------------- stuurhuis (x 12-16, z 2-6) op het woningdak ----------------
 HX0, HX1, HZ0, HZ1 = 12, 16, 2, 6
@@ -207,8 +207,7 @@ for z in R(HZ0 + 1, HZ1 - 1): S(HX1, 5, z, "polished_deepslate_slab[type=top]") 
 S(HX1, 5, HZ0, "spruce_planks"); S(HX1, 5, HZ1, "spruce_planks")
 for (x, z) in [(HX0, HZ0), (HX0, HZ1), (HX1, HZ0), (HX1, HZ1)]:
     S(x, 6, z, "dark_oak_fence")
-for z in (3, 5):
-    for y in (6, 7): S(HX0, y, z, WHITE)
+# achterwand: alleen onderpaneel, daarboven open zodat je ook naar achteren kunt kijken
 S(HX0, 7, 4, WHITE)
 S(HX0, 5, 4, "dark_oak_door[facing=west,half=lower,hinge=left,open=false]")
 S(HX0, 6, 4, "dark_oak_door[facing=west,half=upper,hinge=left,open=false]")
@@ -268,7 +267,6 @@ for x in R(58, 69):
         S(x, yb, z, BLACK); S(x, yb + 1, z, CAP)
 for z in R(zr(69)[0], zr(69)[1]):
     S(69, 3, z, BLACK); S(69, 4, z, CAP)
-S(69, 5, 4, "lantern[hanging=false]")
 # stuurstand voor
 for z in R(3, 5): S(65, 3, z, "polished_deepslate_slab[type=top]")
 S(65, 4, 3, "black_carpet"); S(64, 3, 5, "lever[face=floor,facing=east,powered=false]")

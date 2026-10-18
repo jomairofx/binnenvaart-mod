@@ -141,6 +141,8 @@ public class ShipEntity extends Entity {
 	public final float[] displayFill = new float[4];
 	public final float[] prevDisplayFill = new float[4];
 	public Object renderCache; // ShipMesh op de client
+	/** Client: hoe hard de motor draait (0 = stationair, 1 = vol vermogen). */
+	public float engineLoad;
 	/** Alleen voor de automatische test: besturing zonder roerganger. */
 	public boolean testMode;
 
@@ -260,6 +262,11 @@ public class ShipEntity extends Entity {
 
 	public float waterSurfaceY() {
 		return dataTracker.get(WATER_Y);
+	}
+
+	public float engineTarget() {
+		int t = syncedThrottle();
+		return t > 0 ? t / 3f : -t / 2f * 0.85f;
 	}
 
 	public float syncedSpeed() {
@@ -1170,6 +1177,8 @@ public class ShipEntity extends Entity {
 		World world = getWorld();
 		float spd = syncedSpeed();
 		int thr = syncedThrottle();
+		// motortoerental loopt in een paar seconden op of af
+		engineLoad += (engineTarget() - engineLoad) * (engineTarget() > engineLoad ? 0.02f : 0.035f);
 		double wy = waterSurfaceY();
 		var r = this.random;
 		if (Math.abs(spd) > 0.03) {

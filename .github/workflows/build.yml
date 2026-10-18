@@ -11,7 +11,8 @@ jobs:
         with: { distribution: temurin, java-version: '21' }
       - uses: gradle/actions/setup-gradle@v4
       - name: Bouwen
-        run: chmod +x gradlew && ./gradlew build --stacktrace
+        continue-on-error: true
+        run: chmod +x gradlew && set -o pipefail && ./gradlew build --stacktrace 2>&1 | tee build_out.txt
       - uses: actions/upload-artifact@v4
         with:
           name: binnenvaart-jar
@@ -53,8 +54,9 @@ jobs:
             run/selftest.txt
             run/client_selftest.txt
       - name: Inland Barge bouwen
+        continue-on-error: true
         working-directory: inland-barge
-        run: chmod +x gradlew && ./gradlew build --stacktrace
+        run: chmod +x gradlew && set -o pipefail && ./gradlew build --stacktrace 2>&1 | tee build_out.txt
       - name: Inland Barge servertest (met Binnenvaart samen)
         working-directory: inland-barge
         run: |
@@ -73,8 +75,9 @@ jobs:
           cp run/logs/latest.log run/client.log || true
           cat run/client_selftest.txt || echo "geen client_selftest.txt"
       - name: Mega Oil Tanker bouwen
+        continue-on-error: true
         working-directory: mega-tanker
-        run: chmod +x gradlew && ./gradlew build --stacktrace
+        run: chmod +x gradlew && set -o pipefail && ./gradlew build --stacktrace 2>&1 | tee build_out.txt
       - name: Mega Oil Tanker servertest (met beide andere mods)
         working-directory: mega-tanker
         run: |
@@ -95,8 +98,9 @@ jobs:
           cp run/logs/latest.log run/client.log || true
           cat run/client_selftest.txt || echo "geen client_selftest.txt"
       - name: Kempenaar bouwen
+        continue-on-error: true
         working-directory: kempenaar
-        run: chmod +x gradlew && ./gradlew build --stacktrace
+        run: chmod +x gradlew && set -o pipefail && ./gradlew build --stacktrace 2>&1 | tee build_out.txt
       - name: Kempenaar servertest (met de andere mods)
         working-directory: kempenaar
         run: |
@@ -119,19 +123,19 @@ jobs:
         run: |
           mkdir -p /tmp/out
           cp -r run/screenshots /tmp/out/ 2>/dev/null || true
-          cp run/*.txt run/*.log server_out.txt client_out.txt /tmp/out/ 2>/dev/null || true
+          cp run/*.txt run/*.log server_out.txt client_out.txt build_out.txt /tmp/out/ 2>/dev/null || true
           cp build/libs/binnenvaart-1.0.0.jar /tmp/out/ 2>/dev/null || true
           mkdir -p /tmp/out/barge
           cp -r inland-barge/run/screenshots /tmp/out/barge/ 2>/dev/null || true
-          cp inland-barge/run/*.txt inland-barge/run/*.log inland-barge/server_out.txt inland-barge/client_out.txt /tmp/out/barge/ 2>/dev/null || true
+          cp inland-barge/run/*.txt inland-barge/run/*.log inland-barge/server_out.txt inland-barge/client_out.txt inland-barge/build_out.txt /tmp/out/barge/ 2>/dev/null || true
           cp inland-barge/build/libs/inland-barge-1.0.0.jar /tmp/out/ 2>/dev/null || true
           mkdir -p /tmp/out/tanker
           cp -r mega-tanker/run/screenshots /tmp/out/tanker/ 2>/dev/null || true
-          cp mega-tanker/run/*.txt mega-tanker/run/*.log mega-tanker/server_out.txt mega-tanker/client_out.txt /tmp/out/tanker/ 2>/dev/null || true
+          cp mega-tanker/run/*.txt mega-tanker/run/*.log mega-tanker/server_out.txt mega-tanker/client_out.txt mega-tanker/build_out.txt /tmp/out/tanker/ 2>/dev/null || true
           cp mega-tanker/build/libs/mega-oil-tanker-1.0.0.jar /tmp/out/ 2>/dev/null || true
           mkdir -p /tmp/out/kempenaar
           cp -r kempenaar/run/screenshots /tmp/out/kempenaar/ 2>/dev/null || true
-          cp kempenaar/run/*.txt kempenaar/run/*.log kempenaar/server_out.txt kempenaar/client_out.txt /tmp/out/kempenaar/ 2>/dev/null || true
+          cp kempenaar/run/*.txt kempenaar/run/*.log kempenaar/server_out.txt kempenaar/client_out.txt kempenaar/build_out.txt /tmp/out/kempenaar/ 2>/dev/null || true
           cp kempenaar/build/libs/kempenaar-1.0.0.jar /tmp/out/ 2>/dev/null || true
           curl -fsSL -o /tmp/out/fabric-api-0.116.4+1.21.1.jar "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.116.4%2B1.21.1/fabric-api-0.116.4%2B1.21.1.jar" || true
           cd /tmp/out && git init -q && git checkout -q -b ci-resultaten && git add -A

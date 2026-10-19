@@ -29,6 +29,15 @@ def patch(f, pairs, regex=False):
     open(f, "w").write(s)
 
 
+def raise_carry_top(f):
+    s = open(f).read()
+    s2, n = re.subn(r"(hullBottom\[xi\] - 0\.5 \|\| l\.y > )(\d+)", lambda m: m.group(1) + str(max(int(m.group(2)), 24)), s, count=1)
+    if n == 0: raise SystemExit("MISSING carry volume top in " + f)
+    open(f, "w").write(s2)
+
+
+raise_carry_top(SHIP)
+
 # ------------------------------------------------------------------ template
 patch(TPL, [
     ("	private static double[] vec(JsonArray a) {", """	/** Hefbare stuurhut: {x0,y0,z0,x1,y1,z1} (sjablooncoördinaten) of null als het schip er geen heeft. */
@@ -240,7 +249,6 @@ patch(SHIP, [
 			if (!insideCarryVolume(l)) continue;""", """			Vec3d l = toLocal(ox, oy, oz, oyaw, e.getX(), e.getY(), e.getZ());
 			if (!insideCarryVolume(l)) continue;
 			if (dl != 0 && template.inLiftXZ(l.x, l.z) && l.y >= template.liftRegion[1] + (lNow - dl) - 0.6) l = l.add(0, dl, 0);"""),
-    ("if (l.y < template.hullBottom[xi] - 0.5 || l.y > 15) return false;", "if (l.y < template.hullBottom[xi] - 0.5 || l.y > 24) return false;"),
     ("		Vec3d w = toWorld(seat[0], seat[1], seat[2]);\n", "		Vec3d w = toWorld(seat[0], seat[1] + liftAt(seat[0], seat[1], seat[2]), seat[2]);\n"),
     ("""		Vec3d t = toLocal(w);
 		Action a = actionAt(t);

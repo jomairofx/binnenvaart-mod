@@ -99,6 +99,64 @@ public final class ShipTemplate {
 		JsonObject zones = json.getAsJsonObject("helmZones");
 		helmAft = ints(zones.getAsJsonArray("aft"));
 		helmBow = ints(zones.getAsJsonArray("bow"));
+		readExtras(json);
+	}
+
+	/** Hefbare stuurhut: {x0,y0,z0,x1,y1,z1} (sjablooncoördinaten) of null als het schip er geen heeft. */
+	public int[] liftRegion;
+	public double liftMax;
+	/** Hydraulische kolom onder de stuurhut: {x0,z0,x1,z1}. */
+	public int[] liftColumn;
+	/** Posities (BlockPos.asLong) van alle lampen, voor het licht aan/uit. */
+	public long[] lightPositions = new long[0];
+
+	/** Kolommen (x, z) binnen het gebied die niet meebewegen, bijvoorbeeld een ladder door de vloer. */
+	public int[][] liftExclude = new int[0][];
+
+	public boolean inLift(int x, int y, int z) {
+		int[] r = liftRegion;
+		if (r == null || x < r[0] || x > r[3] || y < r[1] || y > r[4] || z < r[2] || z > r[5]) return false;
+		for (int[] e : liftExclude) if (e[0] == x && e[1] == z) return false;
+		return true;
+	}
+
+	public boolean inLiftXZ(double x, double z) {
+		int[] r = liftRegion;
+		if (r == null || x < r[0] || x >= r[3] + 1 || z < r[2] || z >= r[5] + 1) return false;
+		int fx = (int) Math.floor(x), fz = (int) Math.floor(z);
+		for (int[] e : liftExclude) if (e[0] == fx && e[1] == fz) return false;
+		return true;
+	}
+
+	/** Hoe een lamp eruitziet als het licht uit staat. */
+	public static BlockState lightOff(BlockState s) {
+		if (s.contains(net.minecraft.state.property.Properties.LIT)) return s.with(net.minecraft.state.property.Properties.LIT, false);
+		if (s.isOf(Blocks.SEA_LANTERN) || s.isOf(Blocks.GLOWSTONE) || s.isOf(Blocks.SHROOMLIGHT)) return Blocks.WHITE_CONCRETE.getDefaultState();
+		return s;
+	}
+
+	private void readExtras(JsonObject json) {
+		if (json.has("lift")) {
+			JsonObject lift = json.getAsJsonObject("lift");
+			liftRegion = ints(lift.getAsJsonArray("region"));
+			liftMax = lift.get("max").getAsDouble();
+			liftColumn = ints(lift.getAsJsonArray("column"));
+			if (lift.has("exclude")) {
+				JsonArray ex = lift.getAsJsonArray("exclude");
+				liftExclude = new int[ex.size()][];
+				for (int i = 0; i < ex.size(); i++) liftExclude[i] = ints(ex.get(i).getAsJsonArray());
+			}
+		}
+		it.unimi.dsi.fastutil.longs.LongArrayList lp = new it.unimi.dsi.fastutil.longs.LongArrayList();
+		for (int x = MIN_X; x < MIN_X + SIZE_X; x++)
+			for (int y = MIN_Y; y < MIN_Y + SIZE_Y; y++)
+				for (int z = MIN_Z; z < MIN_Z + SIZE_Z; z++) {
+					BlockState s = getState(x, y, z);
+					if (s == null || s.isAir()) continue;
+					boolean lit = s.contains(net.minecraft.state.property.Properties.LIT) && s.get(net.minecraft.state.property.Properties.LIT);
+					if (s.getLuminance() > 0 || lit) lp.add(net.minecraft.util.math.BlockPos.asLong(x, y, z));
+				}
+		lightPositions = lp.toLongArray();
 	}
 
 	private static double[] vec(JsonArray a) {

@@ -120,6 +120,18 @@ public final class SelfTest {
 			}
 			if (tick == 1000) {
 				check("stilstand", Math.abs(ship.currentSpeed()) < 0.01, String.format("snelheid %.4f", ship.currentSpeed()));
+				ship.testSetLift(3.0);
+			}
+			if (tick == 1100) {
+				check("stuurhut omhoog", ship.liftOffset() > 1.9, String.format("stuurhut staat %.2f blok omhoog", ship.liftOffset()));
+				ship.setLights(false);
+				var lamp = ship.structure.get(13, 4, 2);
+				check("licht uit", !ship.lightsOn() && !lamp.isOf(net.minecraft.block.Blocks.SEA_LANTERN), "lamp nu " + lamp);
+				ship.setLights(true);
+				check("licht aan", ship.lightsOn() && ship.structure.get(13, 4, 2).isOf(net.minecraft.block.Blocks.SEA_LANTERN), "lamp weer " + ship.structure.get(13, 4, 2));
+				ship.testSetLift(0);
+			}
+			if (tick == 1000) {
 				int restored = 0;
 				log.add("Schip ligt op " + ship.getBlockPos().toShortString() + " koers " + Math.toDegrees(ship.shipYaw));
 				for (int i = 0; i < ShipEntity.HOLD_SLOTS; i++) ship.hold(0).setStack(i, ItemStack.EMPTY);

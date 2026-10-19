@@ -182,7 +182,7 @@ S(4, 9, 8, "cauldron")  # exhaust pipe (the smoke comes from the ship itself)
 for x in (7, 8):
     for z in R(4, 6):
         for y in (5, 6): S(x, y, z, "polished_andesite")
-for y in R(5, 7): S(6, y, 5, "ladder[facing=west]")
+for y in R(5, 10): S(6, y, 5, "ladder[facing=west]")  # reaches the raised wheelhouse too
 # stuurhuis x=5..10, z=2..8, vloer 7, wanden 8-10, dak 11
 for x in R(5, 10):
     for z in R(2, 8):
@@ -323,6 +323,7 @@ out = {
         "aft": {"pos": [7.5, 8.45, 5.5], "yaw": 0},
         "bow": {"pos": [85.5, 2.0, 5.5], "yaw": 0}
     },
+    "lift": {"region": [4, 7, 1, 11, 13, 9], "max": 3.0, "column": [7, 4, 8, 6], "exclude": [[6, 5]]},
     "helmZones": {
         "aft": [7, 8, 3, 9, 10, 7],
         "bow": [85, 2, 4, 86, 3, 6]

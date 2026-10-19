@@ -47,13 +47,15 @@ public final class ShipMesh {
 	public static final double NEAR = 100, MID = 220;
 
 	public final int version;
+	public final boolean lights;
 	private final int sections;
 	private final List<RenderLayer> layers = new ArrayList<>();
 	/** [laag][sectie * 3 + niveau] */
 	private final List<float[][]> data = new ArrayList<>();
 
-	private ShipMesh(int version) {
+	private ShipMesh(int version, boolean lights) {
 		this.version = version;
+		this.lights = lights;
 		this.sections = (ShipTemplate.SIZE_X + SEC - 1) / SEC;
 	}
 
@@ -131,14 +133,19 @@ public final class ShipMesh {
 	}
 
 	public static ShipMesh build(ShipStructure s) {
-		ShipMesh mesh = new ShipMesh(s.version);
+		return build(s, 0, true);
+	}
+
+	/** part: 0 = alles, 1 = alles behalve de hefbare stuurhut, 2 = alleen de stuurhut. */
+	public static ShipMesh build(ShipStructure s, int part, boolean lightsOn) {
+		ShipMesh mesh = new ShipMesh(s.version, lightsOn);
 		MinecraftClient mc = MinecraftClient.getInstance();
 		var brm = mc.getBlockRenderManager();
 		var colors = mc.getBlockColors();
 		int[] sky = new int[ShipTemplate.SIZE_X * ShipTemplate.SIZE_Y * ShipTemplate.SIZE_Z];
 		int[] blk = new int[sky.length];
 		boolean[] opaque = new boolean[sky.length];
-		computeLight(s, sky, blk, opaque);
+		computeLight(s, sky, blk, opaque, lightsOn);
 		boolean[] outside = floodOutside(opaque);
 
 		Map<RenderLayer, FloatList[]> buffers = new HashMap<>();
@@ -150,6 +157,8 @@ public final class ShipMesh {
 				for (int x = ShipTemplate.MIN_X; x < ShipTemplate.MIN_X + ShipTemplate.SIZE_X; x++) {
 					BlockState st = s.get(x, y, z);
 					if (st.isAir() || st.getRenderType() != BlockRenderType.MODEL) continue;
+					if (part == 1 && s.template.inLift(x, y, z)) continue;
+					if (part == 2 && !s.template.inLift(x, y, z)) continue;
 					pos.set(x, y, z);
 					BakedModel model = brm.getModel(st);
 					RenderLayer layer = RenderLayers.getEntityBlockLayer(st, false);
@@ -265,7 +274,7 @@ public final class ShipMesh {
 	}
 
 	/** Eenvoudige lichtberekening binnen het schip: daglicht van boven en licht van lampen. */
-	private static void computeLight(ShipStructure s, int[] sky, int[] blk, boolean[] opaque) {
+	private static void computeLight(ShipStructure s, int[] sky, int[] blk, boolean[] opaque, boolean lightsOn) {
 		int sx = ShipTemplate.SIZE_X, sy = ShipTemplate.SIZE_Y, sz = ShipTemplate.SIZE_Z;
 		BlockPos.Mutable p = new BlockPos.Mutable();
 		ArrayDeque<Integer> qs = new ArrayDeque<>();
@@ -278,7 +287,7 @@ public final class ShipMesh {
 					BlockState st = s.get(x, y, z);
 					p.set(x, y, z);
 					opaque[i] = !st.isAir() && st.isOpaqueFullCube(s, p);
-					int lum = st.getLuminance();
+					int lum = lightsOn ? st.getLuminance() : 0;
 					if (lum > 0) {
 						blk[i] = lum;
 						qb.add(i);

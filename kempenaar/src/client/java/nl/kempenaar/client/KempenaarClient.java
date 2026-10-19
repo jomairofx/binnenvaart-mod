@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 public class KempenaarClient implements ClientModInitializer {
-	static KeyBinding thrusterLeft, thrusterRight, horn, hatches;
-	private static boolean prevForward, prevBack, prevHornKey, prevHatchKey;
+	static KeyBinding thrusterLeft, thrusterRight, horn, hatches, liftUp, liftDown, lights;
+	private static boolean prevForward, prevBack, prevHornKey, prevHatchKey, prevLightKey;
 	private static int throttle;
 	private static int lastShipId = -1;
 	private static final Map<ShipEntity, ShipEngineSound> SOUNDS = new WeakHashMap<>();
@@ -38,6 +38,9 @@ public class KempenaarClient implements ClientModInitializer {
 		thrusterRight = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.kempenaar.boeg_rechts_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT, "category.kempenaar"));
 		horn = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.kempenaar.hoorn_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_H, "category.kempenaar"));
 		hatches = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.kempenaar.luiken_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_L, "category.kempenaar"));
+		liftUp = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.kempenaar.lift_up", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_PAGE_UP, "category.kempenaar"));
+		liftDown = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.kempenaar.lift_down", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_PAGE_DOWN, "category.kempenaar"));
+		lights = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.kempenaar.lights", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_K, "category.kempenaar"));
 
 		ClientPlayNetworking.registerGlobalReceiver(ShipPayloads.Blocks.ID, (payload, context) -> {
 			var world = context.client().world;
@@ -49,6 +52,9 @@ public class KempenaarClient implements ClientModInitializer {
 		ClientSelfTest.register();
 		HudRenderCallback.EVENT.register((ctx, tickCounter) -> renderHud(ctx));
 	}
+
+	static int testLift;
+	static boolean testLights;
 
 	/** Alleen voor de automatische test. */
 	static void testThrottle(int t) {
@@ -73,6 +79,7 @@ public class KempenaarClient implements ClientModInitializer {
 			// toetsen niet laten opstapelen
 			while (horn.wasPressed()) { }
 			while (hatches.wasPressed()) { }
+			while (lights.wasPressed()) { }
 			prevHornKey = held(mc, horn);
 			prevHatchKey = held(mc, hatches);
 			return;
@@ -108,7 +115,22 @@ public class KempenaarClient implements ClientModInitializer {
 		if (lk && !prevHatchKey) l = true;
 		prevHornKey = hk;
 		prevHatchKey = lk;
-		ClientPlayNetworking.send(new ShipPayloads.Control(ship.getId(), throttle, rudder, thruster, h, l));
+		int liftDir = 0;
+		boolean lt = false;
+		if (mc.currentScreen == null) {
+			if (held(mc, liftUp)) liftDir += 1;
+			if (held(mc, liftDown)) liftDir -= 1;
+		}
+		if (testLift != 0) liftDir = testLift;
+		while (lights.wasPressed()) lt = true;
+		boolean lightKey = mc.currentScreen == null && held(mc, lights);
+		if (lightKey && !prevLightKey) lt = true;
+		prevLightKey = lightKey;
+		if (testLights) {
+			lt = true;
+			testLights = false;
+		}
+		ClientPlayNetworking.send(new ShipPayloads.Control(ship.getId(), throttle, rudder, thruster, h, l, liftDir, lt));
 	}
 
 	/** Is de toets ingedrukt, ook als een andere mod dezelfde toets heeft. */
@@ -136,7 +158,7 @@ public class KempenaarClient implements ClientModInitializer {
 		var m = ctx.getMatrices();
 		m.push();
 		m.scale(sc, sc, 1f);
-		int w = 318, hgt = 114;
+		int w = 318, hgt = 126;
 		int x = Math.round(6 / sc), y = Math.round(ctx.getScaledWindowHeight() / 2f / sc - hgt / 2f);
 		ctx.fill(x, y, x + w, y + hgt, 0xB0101820);
 		ctx.fill(x, y, x + 2, y + hgt, 0xFF3D7BD9);
@@ -194,6 +216,8 @@ public class KempenaarClient implements ClientModInitializer {
 		String keys = String.format("W/S telegraph  A/D rudder  %s/%s thruster  H horn", keyName(thrusterLeft), keyName(thrusterRight)) + (ShipEntity.COVERS > 0 ? "  L hatches" : "");
 		ctx.drawText(tr, keys, lx, y + 93, 0x7F8C99, false);
 		ctx.drawText(tr, "F5 camera  (scroll wheel: zoom)", lx, y + 103, 0x7F8C99, false);
+		String liftTxt = ship.template.liftRegion != null ? String.format("Wheelhouse %s/%s (%.1f m)  ", keyName(liftUp), keyName(liftDown), ship.liftOffset()) : "";
+		ctx.drawText(tr, liftTxt + "Lights " + keyName(lights) + ": " + (ship.lightsOn() ? "on" : "off"), lx, y + 115, 0x7F8C99, false);
 		m.pop();
 	}
 }

@@ -213,10 +213,10 @@ S(HX0, 5, 4, "air")
 for z in (3, 5): S(HX0, 7, z, "smooth_quartz_slab[type=top]")
 S(HX0, 7, 4, "smooth_quartz_slab[type=top]")
 # zonneklep rondom
-for x in R(HX0 - 1, HX1 + 1):
+for x in R(HX0, HX1):
     S(x, 8, HZ0 - 1, "smooth_quartz_slab[type=top]"); S(x, 8, HZ1 + 1, "smooth_quartz_slab[type=top]")
 for z in R(HZ0, HZ1):
-    S(HX0 - 1, 8, z, "smooth_quartz_slab[type=top]"); S(HX1 + 1, 8, z, "smooth_quartz_slab[type=top]")
+    if z != 4: S(HX0 - 1, 8, z, "smooth_quartz_slab[type=top]")
 for x in R(HX0, HX1):
     for z in (HZ0, HZ1):
         if (x, z) not in [(HX0, HZ0), (HX0, HZ1), (HX1, HZ0), (HX1, HZ1)]: S(x, 7, z, "smooth_quartz_slab[type=top]")
@@ -234,6 +234,14 @@ S(14, 11, 4, "end_rod[facing=up]")
 for z in R(3, 5): S(14, 12, z, "polished_blackstone_slab[type=bottom]")
 S(13, 9, 3, "lightning_rod[facing=up]"); S(13, 9, 5, "lightning_rod[facing=up]")
 S(15, 9, 4, "lantern[hanging=false]")
+# lifting wheelhouse: own floor, hydraulic column below, ladder on a mast at the rear doorway
+for x in R(HX0 + 1, HX1 - 1):
+    for z in R(HZ0 + 1, HZ1 - 1):
+        if (x, z) not in [(14, 4), (13, 5)]: S(x, 5, z, "spruce_slab[type=bottom]")
+S(HX0, 5, 4, "spruce_slab[type=bottom]")                         # threshold of the rear doorway
+S(15, 6, 5, "lever[face=floor,facing=east,powered=false]")      # throttle lever now on the floor slab
+for y in R(5, 8): S(10, y, 4, "polished_andesite_wall")
+for y in R(5, 8): S(11, y, 4, "ladder[facing=east]")
 
 # ---------------- looppad x=18 en ladders langs de romp ----------------
 for y in R(-2, 1):
@@ -335,6 +343,7 @@ out = {
         "aft": {"pos": [14.5, 5.45, 4.5], "yaw": 0},
         "bow": {"pos": [64.5, 3.0, 4.5], "yaw": 0}
     },
+    "lift": {"region": [11, 5, 1, 16, 12, 7], "max": 2.0, "column": [13, 3, 15, 5], "exclude": [[11, 4]]},
     "helmZones": {
         "aft": [14, 5, 3, 16, 6, 5],
         "bow": [64, 3, 3, 65, 4, 5]

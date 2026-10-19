@@ -6,5 +6,8 @@
   "key.inlandbarge.thruster_port": "Bow thruster port (left)",
   "key.inlandbarge.thruster_starboard": "Bow thruster starboard (right)",
   "key.inlandbarge.horn": "Ship horn",
-  "key.inlandbarge.hatches": "Open/close hatches"
+  "key.inlandbarge.hatches": "Open/close hatches",
+  "key.inlandbarge.lift_up": "Wheelhouse up",
+  "key.inlandbarge.lift_down": "Wheelhouse down",
+  "key.inlandbarge.lights": "Ship lights on/off"
 }

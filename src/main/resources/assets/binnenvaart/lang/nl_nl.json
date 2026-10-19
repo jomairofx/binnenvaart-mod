@@ -6,5 +6,8 @@
   "key.binnenvaart.boeg_links_v2": "Bow thruster port (left)",
   "key.binnenvaart.boeg_rechts_v2": "Bow thruster starboard (right)",
   "key.binnenvaart.hoorn_v2": "Ship horn",
-  "key.binnenvaart.luiken_v2": "Open/close hatches"
+  "key.binnenvaart.luiken_v2": "Open/close hatches",
+  "key.binnenvaart.lift_up": "Wheelhouse up",
+  "key.binnenvaart.lift_down": "Wheelhouse down",
+  "key.binnenvaart.lights": "Ship lights on/off"
 }

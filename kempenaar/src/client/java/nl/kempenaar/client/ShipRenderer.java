@@ -61,11 +61,15 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 
 	@Override
 	public void render(ShipEntity ship, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
-		ShipMesh mesh = ship.renderCache instanceof ShipMesh m ? m : null;
-		if (mesh == null || mesh.version != ship.structure.version) {
-			mesh = ShipMesh.build(ship.structure);
-			ship.renderCache = mesh;
+		ShipMesh[] meshes = ship.renderCache instanceof ShipMesh[] mm ? mm : null;
+		boolean lightsOn = ship.lightsOn();
+		if (meshes == null || meshes[0].version != ship.structure.version || meshes[0].lights != lightsOn) {
+			meshes = ship.template.liftRegion != null
+					? new ShipMesh[]{ShipMesh.build(ship.structure, 1, lightsOn), ShipMesh.build(ship.structure, 2, lightsOn)}
+					: new ShipMesh[]{ShipMesh.build(ship.structure, 0, lightsOn)};
+			ship.renderCache = meshes;
 		}
+		ShipMesh mesh = meshes[0];
 		double dy = MathHelper.wrapDegrees(Math.toDegrees(ship.shipYaw - ship.prevShipYaw));
 		double y = ship.prevShipYaw + Math.toRadians(dy) * tickDelta;
 
@@ -76,6 +80,20 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		Vec3d shipPos = ship.getLerpedPos(tickDelta);
 		boolean shadow = IrisCompat.isShadowPass();
 		mesh.render(matrices, consumers, lastFrustum, shipPos, y, cam, shadow ? 1 : 0);
+		if (meshes.length > 1) {
+			float lift = ship.liftLerp(tickDelta);
+			matrices.push();
+			matrices.translate(0, lift, 0);
+			meshes[1].render(matrices, consumers, lastFrustum, shipPos.add(0, lift, 0), y, cam, shadow ? 1 : 0);
+			matrices.pop();
+			if (lift > 0.01f) {
+				int[] r = ship.template.liftRegion, c = ship.template.liftColumn;
+				Sink ps = new Sink();
+				box(ps, sprites(Blocks.GRAY_CONCRETE.getDefaultState())[0], c[0] + 0.1f, r[1], c[1] + 0.1f, c[2] + 0.9f, r[1] + lift, c[3] + 0.9f, light, 0.9f);
+				box(ps, sprites(Blocks.IRON_BLOCK.getDefaultState())[0], c[0] + 0.35f, r[1], c[1] + 0.35f, c[2] + 0.65f, r[1] + lift + 0.01f, c[3] + 0.65f, light, 1f);
+				ps.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
+			}
+		}
 
 		DynCache dc = caches.computeIfAbsent(ship, k -> new DynCache());
 		float hatch = MathHelper.lerp(tickDelta, ship.prevHatchProgress, ship.hatchProgress);

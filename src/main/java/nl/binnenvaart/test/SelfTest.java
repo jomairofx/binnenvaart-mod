@@ -116,6 +116,18 @@ public final class SelfTest {
 			}
 			if (tick == 1000) {
 				check("stilstand", Math.abs(ship.currentSpeed()) < 0.01, String.format("snelheid %.4f", ship.currentSpeed()));
+				ship.testSetLift(3.0);
+			}
+			if (tick == 1180) {
+				check("stuurhut omhoog", ship.liftOffset() > 2.9, String.format("stuurhut staat %.2f blok omhoog", ship.liftOffset()));
+				ship.setLights(false);
+				var lamp = ship.structure.get(7, 11, 5);
+				check("licht uit", !ship.lightsOn() && !lamp.isOf(net.minecraft.block.Blocks.SEA_LANTERN), "lamp nu " + lamp);
+				ship.setLights(true);
+				check("licht aan", ship.lightsOn() && ship.structure.get(7, 11, 5).isOf(net.minecraft.block.Blocks.SEA_LANTERN), "lamp weer " + ship.structure.get(7, 11, 5));
+				ship.testSetLift(0);
+			}
+			if (tick == 1200) {
 				int restored = 0;
 				log.add("Schip ligt op " + ship.getBlockPos().toShortString() + " koers " + Math.toDegrees(ship.shipYaw));
 				Files.writeString(Path.of("selftest.txt"), String.join("\n", log) + "\n" + (failed ? "RESULT FAIL" : "RESULT PASS") + "\n");

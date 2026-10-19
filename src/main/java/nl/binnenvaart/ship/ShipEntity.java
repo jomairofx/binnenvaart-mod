@@ -98,6 +98,8 @@ public class ShipEntity extends Entity {
 	private static final TrackedData<Integer> SEAT_BOW = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.INTEGER);
 	private static final TrackedData<Boolean> HATCHES_CLOSED = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final TrackedData<Boolean> AGROUND = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Float> LIFT = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.FLOAT);
+	private static final TrackedData<Boolean> LIGHTS = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	@SuppressWarnings("unchecked")
 	private static final TrackedData<Float>[] FILL = new TrackedData[4];
 	@SuppressWarnings("unchecked")
@@ -221,6 +223,8 @@ public class ShipEntity extends Entity {
 		builder.add(SEAT_BOW, -1);
 		builder.add(HATCHES_CLOSED, false);
 		builder.add(AGROUND, false);
+		builder.add(LIFT, 0f);
+		builder.add(LIGHTS, true);
 		for (int i = 0; i < 4; i++) {
 			builder.add(FILL[i], 0f);
 			builder.add(MATERIAL[i], 0);
@@ -268,6 +272,94 @@ public class ShipEntity extends Entity {
 		int t = syncedThrottle();
 		return t > 0 ? t / 3f : -t / 2f * 0.85f;
 	}
+
+	// ---- hefbare stuurhut en verlichting ----
+	private double liftTarget, liftCur, carriedLift;
+	public float liftClient, prevLiftClient;
+
+	/** Hoe ver de stuurhut nu omhoog staat (blokken). */
+	public float liftOffset() {
+		return getWorld().isClient ? liftClient : (float) liftCur;
+	}
+
+	public float liftLerp(float tickDelta) {
+		return MathHelper.lerp(tickDelta, prevLiftClient, liftClient);
+	}
+
+	public boolean lightsOn() {
+		return dataTracker.get(LIGHTS);
+	}
+
+	/** Punt in sjablooncoördinaten zoals je het ziet (met de stuurhut omhoog) terug naar het sjabloon. */
+	public Vec3d unlift(Vec3d t) {
+		double L = liftOffset();
+		if (L <= 0.001 || template.liftRegion == null) return t;
+		if (template.inLiftXZ(t.x, t.z) && t.y >= template.liftRegion[1] + L - 0.001) return new Vec3d(t.x, t.y - L, t.z);
+		return t;
+	}
+
+	private double liftAt(double x, double y, double z) {
+		return template.inLift(MathHelper.floor(x), MathHelper.floor(y), MathHelper.floor(z)) ? liftOffset() : 0;
+	}
+
+	/** Alleen voor de automatische test. */
+	public void testSetLift(double target) {
+		liftTarget = MathHelper.clamp(target, 0, template.liftMax);
+	}
+
+	public void setLights(boolean on) {
+		if (getWorld().isClient || lightsOn() == on) return;
+		dataTracker.set(LIGHTS, on);
+		long[] lp = template.lightPositions;
+		int[] st = new int[lp.length];
+		for (int i = 0; i < lp.length; i++) {
+			BlockPos p = BlockPos.fromLong(lp[i]);
+			BlockState orig = template.getState(p.getX(), p.getY(), p.getZ());
+			BlockState now = on ? orig : ShipTemplate.lightOff(orig);
+			structure.set(p.getX(), p.getY(), p.getZ(), now);
+			st[i] = Block.getRawIdFromState(now);
+		}
+		ShipPayloads.Blocks payload = new ShipPayloads.Blocks(getId(), lp, st);
+		for (ServerPlayerEntity p : PlayerLookup.tracking(this)) ServerPlayNetworking.send(p, payload);
+	}
+
+	/** Een BlockView van alleen de stuurhut (onlyLift) of alles behalve de stuurhut. */
+	private final class LiftView implements net.minecraft.world.BlockView {
+		private final boolean onlyLift;
+
+		LiftView(boolean onlyLift) {
+			this.onlyLift = onlyLift;
+		}
+
+		@Override
+		public BlockState getBlockState(BlockPos pos) {
+			if (template.inLift(pos.getX(), pos.getY(), pos.getZ()) != onlyLift) return Blocks.AIR.getDefaultState();
+			return structure.get(pos.getX(), pos.getY(), pos.getZ());
+		}
+
+		@Override
+		public net.minecraft.fluid.FluidState getFluidState(BlockPos pos) {
+			return net.minecraft.fluid.Fluids.EMPTY.getDefaultState();
+		}
+
+		@Nullable
+		@Override
+		public net.minecraft.block.entity.BlockEntity getBlockEntity(BlockPos pos) {
+			return null;
+		}
+
+		@Override
+		public int getHeight() {
+			return structure.getHeight();
+		}
+
+		@Override
+		public int getBottomY() {
+			return structure.getBottomY();
+		}
+	}
+
+	private final LiftView baseView = new LiftView(false), liftView = new LiftView(true);
 
 	public float syncedSpeed() {
 		return dataTracker.get(SPEED);
@@ -337,6 +429,10 @@ public class ShipEntity extends Entity {
 	}
 
 	private void clientTick() {
+		prevLiftClient = liftClient;
+		float lt = dataTracker.get(LIFT);
+		liftClient += (lt - liftClient) * 0.5f;
+		if (Math.abs(lt - liftClient) < 0.002f) liftClient = lt;
 		if (lerpSteps > 0) {
 			double nx = getX() + (lerpX - getX()) / lerpSteps;
 			double ny = getY() + (lerpY - getY()) / lerpSteps;
@@ -435,6 +531,15 @@ public class ShipEntity extends Entity {
 		dataTracker.set(THROTTLE, throttle);
 		dataTracker.set(THRUSTER, thrusterInput);
 		dataTracker.set(AGROUND, aground);
+		if (template.liftRegion != null) {
+			double before = liftCur;
+			liftCur = approach(liftCur, liftTarget, 0.025);
+			dataTracker.set(LIFT, (float) liftCur);
+			if (before != liftCur && age % 10 == 0) {
+				Vec3d hp = toWorld(template.liftColumn[0] + 1, template.liftRegion[1], template.liftColumn[1] + 1);
+				getWorld().playSound(null, hp.x, hp.y, hp.z, SoundEvents.BLOCK_PISTON_EXTEND, SoundCategory.NEUTRAL, 0.25f, 0.4f);
+			}
+		}
 		dataTracker.set(WATER_Y, waterLayerY + 0.889f);
 
 		// Water verplaatsen kost de spelers veel rekenwerk (elk gewijzigd blok laat de wereld opnieuw opbouwen).
@@ -487,7 +592,9 @@ public class ShipEntity extends Entity {
 	// =====================================================================
 
 	private void carryEntities(double ox, double oy, double oz, double oyaw) {
-		if (ox == getX() && oy == getY() && oz == getZ() && oyaw == shipYaw) return;
+		double lNow = liftOffset(), dl = lNow - carriedLift;
+		carriedLift = lNow;
+		if (ox == getX() && oy == getY() && oz == getZ() && oyaw == shipYaw && dl == 0) return;
 		World world = getWorld();
 		List<Entity> list = new ArrayList<>();
 		if (world.isClient) {
@@ -503,6 +610,7 @@ public class ShipEntity extends Entity {
 		for (Entity e : list) {
 			Vec3d l = toLocal(ox, oy, oz, oyaw, e.getX(), e.getY(), e.getZ());
 			if (!insideCarryVolume(l)) continue;
+			if (dl != 0 && template.inLiftXZ(l.x, l.z) && l.y >= template.liftRegion[1] + (lNow - dl) - 0.6) l = l.add(0, dl, 0);
 			Vec3d w = toWorld(getX(), getY(), getZ(), shipYaw, l.x, l.y, l.z);
 			e.setPosition(w.x, w.y, w.z);
 			if (dyaw != 0) {
@@ -517,7 +625,7 @@ public class ShipEntity extends Entity {
 
 	private boolean insideCarryVolume(Vec3d l) {
 		int xi = MathHelper.clamp(MathHelper.floor(l.x), 0, LENGTH - 1);
-		if (l.y < template.hullBottom[xi] - 0.5 || l.y > 15) return false;
+		if (l.y < template.hullBottom[xi] - 0.5 || l.y > 24) return false;
 		return template.insideOutline(l.x, l.z, 1.2);
 	}
 
@@ -567,7 +675,7 @@ public class ShipEntity extends Entity {
 	protected void updatePassengerPosition(Entity passenger, PositionUpdater positionUpdater) {
 		if (!hasPassenger(passenger)) return;
 		double[] seat = isAtBowHelm(passenger) ? template.seatBow : template.seatAft;
-		Vec3d w = toWorld(seat[0], seat[1], seat[2]);
+		Vec3d w = toWorld(seat[0], seat[1] + liftAt(seat[0], seat[1], seat[2]), seat[2]);
 		positionUpdater.accept(passenger, w.x, w.y, w.z);
 		float dyaw = (float) Math.toDegrees(MathHelper.wrapDegrees(Math.toDegrees(shipYaw - prevShipYaw)) * Math.PI / 180.0);
 		if (dyaw != 0) {
@@ -582,7 +690,7 @@ public class ShipEntity extends Entity {
 	@Override
 	public Vec3d updatePassengerForDismount(LivingEntity passenger) {
 		boolean bow = isAtBowHelm(passenger);
-		return bow ? toWorld(84.5, 2.0, 5.5) : toWorld(8.5, 8.0, 3.5);
+		return bow ? toWorld(84.5, 2.0, 5.5) : toWorld(8.5, 8.0 + liftOffset(), 3.5);
 	}
 
 	@Override
@@ -600,8 +708,16 @@ public class ShipEntity extends Entity {
 		throttle = MathHelper.clamp(c.throttle(), -2, 3);
 		rudderInput = MathHelper.clamp(c.rudder(), -1, 1);
 		thrusterInput = MathHelper.clamp(c.thruster(), -1, 1);
+		if (template.liftRegion != null && c.lift() != 0)
+			liftTarget = MathHelper.clamp(liftTarget + Math.signum(c.lift()) * 0.06, 0, template.liftMax);
+		if (c.toggleLights()) {
+			setLights(!lightsOn());
+			Vec3d lp = getPos();
+			getWorld().playSound(null, lp.x, lp.y, lp.z, SoundEvents.BLOCK_LEVER_CLICK, SoundCategory.BLOCKS, 0.6f, lightsOn() ? 0.6f : 0.5f);
+			player.sendMessage(Text.literal(lightsOn() ? "Lights on" : "Lights off").formatted(Formatting.GRAY), true);
+		}
 		if (c.horn() && hornCooldown == 0) {
-			Vec3d h = toWorld(8.0, 12.0, 5.5);
+			Vec3d h = toWorld(8.0, 12.0 + liftOffset(), 5.5);
 			getWorld().playSound(null, h.x, h.y, h.z, SoundEvents.EVENT_RAID_HORN, SoundCategory.NEUTRAL, 8.0f, 0.75f);
 			hornCooldown = 60;
 		}
@@ -671,7 +787,7 @@ public class ShipEntity extends Entity {
 	public ActionResult interactAt(PlayerEntity player, Vec3d hitPos, Hand hand) {
 		if (hand != Hand.MAIN_HAND) return ActionResult.PASS;
 		Vec3d w = getPos().add(hitPos).add(player.getRotationVec(1f).multiply(0.05));
-		Vec3d t = toLocal(w);
+		Vec3d t = unlift(toLocal(w));
 		Action a = actionAt(t);
 		if (a == Action.NONE) return ActionResult.PASS;
 		if (getWorld().isClient) {
@@ -1079,10 +1195,30 @@ public class ShipEntity extends Entity {
 				for (int z = z0; z <= z1; z++) {
 					BlockState s = structure.get(x, y, z);
 					if (s.isAir()) continue;
+					if (template.liftRegion != null && template.inLift(x, y, z)) continue;
 					m.set(x, y, z);
 					VoxelShape shape = s.getCollisionShape(structure, m, ctx);
 					if (!shape.isEmpty()) out.add(shape.offset(x, y, z));
 				}
+		if (template.liftRegion != null) {
+			double L = liftOffset();
+			int ly0 = MathHelper.floor(localQuery.minY - L) - 1, ly1 = MathHelper.floor(localQuery.maxY - L) + 1;
+			int[] r = template.liftRegion;
+			for (int x = Math.max(x0, r[0]); x <= Math.min(x1, r[3]); x++)
+				for (int y = Math.max(ly0, r[1]); y <= Math.min(ly1, r[4]); y++)
+					for (int z = Math.max(z0, r[2]); z <= Math.min(z1, r[5]); z++) {
+						BlockState s = structure.get(x, y, z);
+						if (s.isAir()) continue;
+						m.set(x, y, z);
+						VoxelShape shape = s.getCollisionShape(structure, m, ctx);
+						if (!shape.isEmpty()) out.add(shape.offset(x, y + L, z));
+					}
+			if (L > 0.01) {
+				int[] c = template.liftColumn;
+				Box col = new Box(c[0], r[1], c[1], c[2] + 1, r[1] + L, c[3] + 1);
+				if (col.intersects(localQuery)) out.add(VoxelShapes.cuboid(col));
+			}
+		}
 		for (Box b : coverBoxes()) if (b.intersects(localQuery)) out.add(VoxelShapes.cuboid(b));
 	}
 
@@ -1144,7 +1280,7 @@ public class ShipEntity extends Entity {
 	public static boolean isClimbing(Entity e) {
 		for (ShipEntity s : ShipHolder.of(e.getWorld())) {
 			if (!s.getBoundingBox().contains(e.getPos())) continue;
-			Vec3d l = s.toLocal(e.getPos());
+			Vec3d l = s.unlift(s.toLocal(e.getPos()));
 			BlockState st = s.structure.get(MathHelper.floor(l.x), MathHelper.floor(l.y), MathHelper.floor(l.z));
 			if (st.isIn(BlockTags.CLIMBABLE)) return true;
 		}
@@ -1155,9 +1291,20 @@ public class ShipEntity extends Entity {
 	@Nullable
 	public Vec3d raycast(Vec3d startW, Vec3d endW, Entity e) {
 		Vec3d a = toLocal(startW), b = toLocal(endW);
-		BlockHitResult r = structure.raycast(new RaycastContext(a, b, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, e));
-		Vec3d best = r.getType() == HitResult.Type.MISS ? null : r.getPos();
-		double bestD = best == null ? Double.MAX_VALUE : best.squaredDistanceTo(a);
+		Vec3d best;
+		double bestD;
+		if (template.liftRegion == null) {
+			BlockHitResult r = structure.raycast(new RaycastContext(a, b, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, e));
+			best = r.getType() == HitResult.Type.MISS ? null : r.getPos();
+		} else {
+			double L = liftOffset();
+			BlockHitResult r1 = baseView.raycast(new RaycastContext(a, b, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, e));
+			BlockHitResult r2 = liftView.raycast(new RaycastContext(a.add(0, -L, 0), b.add(0, -L, 0), RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, e));
+			Vec3d p1 = r1.getType() == HitResult.Type.MISS ? null : r1.getPos();
+			Vec3d p2 = r2.getType() == HitResult.Type.MISS ? null : r2.getPos().add(0, L, 0);
+			best = p1 == null ? p2 : p2 == null ? p1 : (p1.squaredDistanceTo(a) <= p2.squaredDistanceTo(a) ? p1 : p2);
+		}
+		bestD = best == null ? Double.MAX_VALUE : best.squaredDistanceTo(a);
 		for (Box box : coverBoxes()) {
 			var h = box.raycast(a, b);
 			if (h.isPresent() && h.get().squaredDistanceTo(a) < bestD) {
@@ -1242,6 +1389,10 @@ public class ShipEntity extends Entity {
 
 	@Override
 	protected void readCustomDataFromNbt(NbtCompound nbt) {
+		liftTarget = nbt.getDouble("LiftTarget");
+		liftCur = nbt.getDouble("Lift");
+		dataTracker.set(LIFT, (float) liftCur);
+		dataTracker.set(LIGHTS, !nbt.contains("Lights") || nbt.getBoolean("Lights"));
 		shipYaw = prevShipYaw = nbt.getDouble("ShipYaw");
 		waterLayerY = nbt.getInt("WaterLayer");
 		throttle = MathHelper.clamp(nbt.getInt("Throttle"), -2, 3);
@@ -1271,6 +1422,9 @@ public class ShipEntity extends Entity {
 
 	@Override
 	protected void writeCustomDataToNbt(NbtCompound nbt) {
+		nbt.putDouble("LiftTarget", liftTarget);
+		nbt.putDouble("Lift", liftCur);
+		nbt.putBoolean("Lights", lightsOn());
 		nbt.putDouble("ShipYaw", shipYaw);
 		nbt.putInt("WaterLayer", waterLayerY);
 		nbt.putInt("Throttle", throttle);

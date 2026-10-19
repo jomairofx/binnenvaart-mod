@@ -10,7 +10,7 @@ public final class ShipPayloads {
 	private ShipPayloads() {}
 
 	/** Bediening vanaf het roer: telegraafstand, roer, boegschroef en knoppen. */
-	public record Control(int entityId, int throttle, int rudder, int thruster, boolean horn, boolean toggleHatches) implements CustomPayload {
+	public record Control(int entityId, int throttle, int rudder, int thruster, boolean horn, boolean toggleHatches, int lift, boolean toggleLights) implements CustomPayload {
 		public static final Id<Control> ID = new Id<>(Identifier.of("megatanker", "control"));
 		public static final PacketCodec<RegistryByteBuf, Control> CODEC = PacketCodec.of(Control::write, Control::read);
 
@@ -21,10 +21,12 @@ public final class ShipPayloads {
 			buf.writeByte(thruster);
 			buf.writeBoolean(horn);
 			buf.writeBoolean(toggleHatches);
+			buf.writeByte(lift);
+			buf.writeBoolean(toggleLights);
 		}
 
 		private static Control read(RegistryByteBuf buf) {
-			return new Control(buf.readVarInt(), buf.readByte(), buf.readByte(), buf.readByte(), buf.readBoolean(), buf.readBoolean());
+			return new Control(buf.readVarInt(), buf.readByte(), buf.readByte(), buf.readByte(), buf.readBoolean(), buf.readBoolean(), buf.readByte(), buf.readBoolean());
 		}
 
 		@Override

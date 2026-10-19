@@ -120,9 +120,9 @@ public class ModernBulkClient implements ClientModInitializer {
 		}
 		if (testLift != 0) liftDir = testLift;
 		while (lights.wasPressed()) lt = true;
-		boolean lk = mc.currentScreen == null && held(mc, lights);
-		if (lk && !prevLightKey) lt = true;
-		prevLightKey = lk;
+		boolean lightKey = mc.currentScreen == null && held(mc, lights);
+		if (lightKey && !prevLightKey) lt = true;
+		prevLightKey = lightKey;
 		if (testLights) {
 			lt = true;
 			testLights = false;

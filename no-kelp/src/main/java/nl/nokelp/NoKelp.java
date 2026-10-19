@@ -10,6 +10,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.Items;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
@@ -28,6 +31,7 @@ import java.util.WeakHashMap;
  * Haalt kelp uit het spel.
  * 1) Nieuwe wereld: de kelp-features worden uit alle biomen gehaald, dus er groeit nergens meer kelp.
  * 2) Bestaande wereld: als een chunk laadt, wordt kelp die er al stond vervangen door water (zonder dat er iets valt).
+ * 3) Losse kelp-items die in het water drijven worden opgeruimd (die kosten fps en hopen zich op rond schepen).
  */
 public class NoKelp implements ModInitializer {
 	public static final String MOD_ID = "nokelp";
@@ -75,7 +79,21 @@ public class NoKelp implements ModInitializer {
 		if (found != null) QUEUE.computeIfAbsent(world, w -> new ArrayDeque<>()).add(found);
 	}
 
+	private static int tickCount;
+
+	/** Ruimt drijvende kelp-items op. Kelp in inventarissen, kisten of op het droge blijft gewoon bestaan. */
+	public static int clearFloatingKelp(ServerWorld world) {
+		java.util.List<ItemEntity> remove = new java.util.ArrayList<>();
+		for (Entity e : world.iterateEntities()) {
+			if (e instanceof ItemEntity it && it.getStack().isOf(Items.KELP) && (it.isTouchingWater() || it.isSubmergedInWater()))
+				remove.add(it);
+		}
+		for (ItemEntity it : remove) it.discard();
+		return remove.size();
+	}
+
 	private static void process(MinecraftServer server) {
+		if (++tickCount % 20 == 0) for (ServerWorld world : server.getWorlds()) clearFloatingKelp(world);
 		for (ServerWorld world : server.getWorlds()) {
 			ArrayDeque<LongArrayList> q = QUEUE.get(world);
 			if (q == null || q.isEmpty()) continue;

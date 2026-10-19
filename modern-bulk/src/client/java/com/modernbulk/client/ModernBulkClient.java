@@ -207,7 +207,7 @@ public class ModernBulkClient implements ClientModInitializer {
 			for (int i = 0; i < ship.template.holds.length; i++) sb.append(' ').append(Math.round(ship.fill(i) * 100)).append('%');
 			extra = sb.toString();
 		}
-		ctx.drawTextWithShadow(tr, extra, lx + 100, y + 69, 0xFFFFFF);
+		ctx.drawTextWithShadow(tr, extra, lx + 112, y + 69, 0xFFFFFF);
 		ctx.drawTextWithShadow(tr, String.format("Cargo %d%%  Draught %.1f m", Math.round(ship.load() * 100), ship.draft()), lx, y + 81, 0xFFFFFF);
 		if (ship.isAground()) ctx.drawTextWithShadow(tr, "AGROUND", lx + 120, y + 81, 0xFF5555);
 		String keys = String.format("W/S telegraph  A/D rudder  %s/%s thruster  H horn", keyName(thrusterLeft), keyName(thrusterRight)) + (ShipEntity.COVERS > 0 ? "  L hatches" : "");

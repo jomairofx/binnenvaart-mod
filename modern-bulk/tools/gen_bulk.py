@@ -50,7 +50,7 @@ AFT_END, HOLD_START, HOLD_END, FORE_START = 22, 23, 102, 103
 def side_colour(x, y):
     if y <= -1: return HULL
     if x <= AFT_END or x >= FORE_START: return BLUE      # light blue painted bow and stern
-    return DARK if y == 0 else BLUE                      # light blue sheer strake along the cargo section
+    return HULL if y == 0 else BLUE                      # dark hull, light blue sheer strake along the cargo section
 
 # ---------------- hull ----------------
 for x in range(L):
@@ -226,8 +226,6 @@ for x in R(WX0, WX1):
             S(x, WY + 3, z, "smooth_quartz_slab[type=top]")               # header above the windows
 for (x, z) in [(WX0, WZ0), (WX0, WZ1), (WX1, WZ0), (WX1, WZ1)]:
     S(x, WY + 2, z, "dark_oak_fence")                                     # slim corner posts
-for z in (7, 9):
-    S(WX1, WY + 2, z, "dark_oak_fence")
 # visor + roof gear
 for x in R(WX0, WX1 + 1):
     S(x, WY + 4, WZ0 - 1, "smooth_quartz_slab[type=bottom]"); S(x, WY + 4, WZ1 + 1, "smooth_quartz_slab[type=bottom]")
@@ -240,11 +238,12 @@ S(WX0, WY + 1, ZC, "air"); S(WX0, WY + 2, ZC, "air")
 for y in R(6, WY + 3): S(11, y, ZC, "polished_andesite_wall")
 for y in R(6, WY + 3): S(12, y, ZC, "ladder[facing=east]")
 # helm console (dark grey, wrap-around like the photo), black chair, screens, joysticks
-for z in R(5, 11): S(18, WY + 1, z, "polished_deepslate_slab[type=top]")
-for z in (5, 6, 10, 11): S(17, WY + 1, z, "polished_deepslate_slab[type=top]")
-for z in (5, 7, 9, 11): S(18, WY + 2, z, "black_carpet")                  # screens on the desk
-S(18, WY + 2, 6, "lever[face=floor,facing=west,powered=false]")
-S(18, WY + 2, 10, "lever[face=floor,facing=west,powered=false]")
+# low desk so the view over the bow stays free
+for z in R(5, 11): S(18, WY + 1, z, "polished_deepslate_slab[type=bottom]")
+for z in (5, 6, 10, 11): S(17, WY + 1, z, "polished_deepslate_slab[type=bottom]")
+S(18, WY + 2, 7, "black_carpet"); S(18, WY + 2, 9, "black_carpet")   # flat screens
+S(17, WY + 2, 6, "lever[face=floor,facing=west,powered=false]")        # joysticks
+S(17, WY + 2, 10, "lever[face=floor,facing=west,powered=false]")
 S(16, WY + 1, ZC, "polished_blackstone_stairs[facing=west,half=bottom]")   # black helm chair
 S(14, WY + 1, 5, "cartography_table"); S(14, WY + 1, 11, "barrel[facing=up]")
 S(15, WY + 4, ZC, "sea_lantern")

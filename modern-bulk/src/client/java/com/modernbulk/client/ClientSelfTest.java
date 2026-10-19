@@ -43,7 +43,7 @@ public final class ClientSelfTest {
 			new Shot("07b_slaapkamer", new double[]{12.4, 3.62, 5.6}, new double[]{9.0, 2.5, 3.5}, false),
 			new Shot("08_onderwater", new double[]{60, -8, 32}, new double[]{60, -3, 8.5}, false),
 			new Shot("09_stuurhuis_binnen", new double[]{14.6, 10.62, 8.5}, new double[]{60, 6, 8.5}, false),
-			new Shot("09b_achterdek_auto", new double[]{11.5, 6.5, 4.0}, new double[]{3.5, 2.5, 10.5}, false),
+			new Shot("09b_achterdek_auto", new double[]{-7.0, 8.0, 4.0}, new double[]{4.0, 2.5, 10.5}, false),
 	};
 
 

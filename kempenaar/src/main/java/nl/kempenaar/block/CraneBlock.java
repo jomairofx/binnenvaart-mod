@@ -61,7 +61,7 @@ public class CraneBlock extends BlockWithEntity {
 	public static int placeStorage(World world, BlockPos pos) {
 		int n = 0, bin = 1;
 		for (Direction d : new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}) {
-			BlockPos p = pos.offset(d);
+			BlockPos p = pos.offset(d, 2);
 			if (world.getBlockState(p).isReplaceable()) {
 				world.setBlockState(p, Kempenaar.CRANE_STORAGE.getDefaultState().with(CraneStorageBlock.BIN, bin));
 				n++;

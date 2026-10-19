@@ -36,15 +36,29 @@ public class CraneStorageBlock extends BlockWithEntity {
 		builder.add(BIN);
 	}
 
+	/** Groot: 1,8 x 1,8 blokken en 2 hoog (de bunker steekt aan alle kanten iets buiten het blok uit). */
+	private static final net.minecraft.util.shape.VoxelShape SHAPE = net.minecraft.block.Block.createCuboidShape(-6.4, 0, -6.4, 22.4, 32, 22.4);
+
+	@Override
+	protected net.minecraft.util.shape.VoxelShape getOutlineShape(BlockState state, net.minecraft.world.BlockView world, BlockPos pos, net.minecraft.block.ShapeContext context) {
+		return SHAPE;
+	}
+
 	@Override
 	protected BlockRenderType getRenderType(BlockState state) {
-		return BlockRenderType.MODEL;
+		return BlockRenderType.ENTITYBLOCK_ANIMATED;
 	}
 
 	@Nullable
 	@Override
 	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
 		return new CraneStorageBlockEntity(pos, state);
+	}
+
+	@Nullable
+	@Override
+	public <T extends BlockEntity> net.minecraft.block.entity.BlockEntityTicker<T> getTicker(World world, BlockState state, net.minecraft.block.entity.BlockEntityType<T> type) {
+		return world.isClient ? null : validateTicker(type, nl.kempenaar.Kempenaar.CRANE_STORAGE_BE, CraneStorageBlockEntity::tick);
 	}
 
 	@Override

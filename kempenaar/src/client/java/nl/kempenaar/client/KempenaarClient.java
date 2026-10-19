@@ -31,6 +31,7 @@ public class KempenaarClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		EntityRendererRegistry.register(Kempenaar.SHIP, ShipRenderer::new);
 		net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(Kempenaar.CRANE_BE, CraneRenderer::new);
+		net.minecraft.client.render.block.entity.BlockEntityRendererFactories.register(Kempenaar.CRANE_STORAGE_BE, BinRenderer::new);
 		ShipEntity.clientSender = ClientPlayNetworking::send;
 
 		thrusterLeft = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.kempenaar.boeg_links_v2", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_LEFT, "category.kempenaar"));

@@ -56,6 +56,49 @@ public class CraneStorageBlockEntity extends BlockEntity implements Inventory, N
 		return n;
 	}
 
+	// voor de weergave: hoe vol en met welk blok (raw state id + 1), bijgehouden op de client
+	public float shownFill;
+	public int shownMat;
+	private int syncCooldown;
+
+	@Override
+	public void markDirty() {
+		super.markDirty();
+		if (world != null && !world.isClient && syncCooldown <= 0) {
+			syncCooldown = 10;
+			world.updateListeners(pos, getCachedState(), getCachedState(), net.minecraft.block.Block.NOTIFY_LISTENERS);
+		}
+	}
+
+	public static void tick(net.minecraft.world.World world, BlockPos pos, BlockState state, CraneStorageBlockEntity be) {
+		if (be.syncCooldown > 0 && --be.syncCooldown == 0) world.updateListeners(pos, state, state, net.minecraft.block.Block.NOTIFY_LISTENERS);
+	}
+
+	private float fillFraction() {
+		int used = 0;
+		for (ItemStack s : items) if (!s.isEmpty()) used++;
+		return used / (float) SLOTS;
+	}
+
+	private int material() {
+		for (ItemStack s : items)
+			if (s.getItem() instanceof net.minecraft.item.BlockItem bi) return net.minecraft.block.Block.getRawIdFromState(bi.getBlock().getDefaultState()) + 1;
+		return 0;
+	}
+
+	@Override
+	public net.minecraft.network.packet.Packet<net.minecraft.network.listener.ClientPlayPacketListener> toUpdatePacket() {
+		return net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket.create(this);
+	}
+
+	@Override
+	public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
+		NbtCompound n = new NbtCompound();
+		n.putFloat("ShownFill", fillFraction());
+		n.putInt("ShownMat", material());
+		return n;
+	}
+
 	@Override
 	protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
 		super.writeNbt(nbt, registries);
@@ -65,8 +108,14 @@ public class CraneStorageBlockEntity extends BlockEntity implements Inventory, N
 	@Override
 	protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
 		super.readNbt(nbt, registries);
-		for (int i = 0; i < SLOTS; i++) items.set(i, ItemStack.EMPTY);
-		Inventories.readNbt(nbt, items, registries);
+		if (nbt.contains("ShownFill")) {
+			shownFill = nbt.getFloat("ShownFill");
+			shownMat = nbt.getInt("ShownMat");
+		}
+		if (nbt.contains("Items")) {
+			for (int i = 0; i < SLOTS; i++) items.set(i, ItemStack.EMPTY);
+			Inventories.readNbt(nbt, items, registries);
+		}
 	}
 
 	@Override public int size() { return SLOTS; }

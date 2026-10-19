@@ -48,7 +48,7 @@ import java.util.UUID;
  */
 public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScreenHandlerFactory {
 	public static final int SLOTS = 54, CYCLE = 230, AT_SHIP = 115, STACKS_PER_RUN = 2;
-	public static final double REACH = 42, HOME_R = 3.0, HOOK_TOP = 20.0, HOME_LOW = 0.05, TOWER = 22;
+	public static final double REACH = 42, HOME_R = 2.0, HOOK_TOP = 20.0, HOME_LOW = 2.3, TOWER = 22;
 
 	private final DefaultedList<ItemStack> items = DefaultedList.ofSize(SLOTS, ItemStack.EMPTY);
 	private final DefaultedList<ItemStack> carried = DefaultedList.ofSize(STACKS_PER_RUN, ItemStack.EMPTY);
@@ -302,7 +302,8 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		java.util.List<CraneStorageBlockEntity> list = new java.util.ArrayList<>();
 		if (world == null) return list;
 		for (Direction d : new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST})
-			if (world.getBlockEntity(pos.offset(d)) instanceof CraneStorageBlockEntity b) list.add(b);
+			for (int dist = 1; dist <= 2; dist++)
+				if (world.getBlockEntity(pos.offset(d, dist)) instanceof CraneStorageBlockEntity b) list.add(b);
 		return list;
 	}
 

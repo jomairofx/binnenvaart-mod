@@ -288,6 +288,7 @@ public final class ClientSelfTest {
 				net.minecraft.util.math.BlockPos bp = net.minecraft.util.math.BlockPos.ofFloored(cp.x, Math.floor(s.waterSurfaceY()), cp.z);
 				var w = srv.getOverworld();
 				w.setBlockState(bp, Kempenaar.CRANE.getDefaultState().with(nl.kempenaar.block.CraneBlock.FACING, net.minecraft.util.math.Direction.NORTH));
+				nl.kempenaar.block.CraneBlock.placeStorage(w, bp);
 				if (w.getBlockEntity(bp) instanceof nl.kempenaar.block.CraneBlockEntity c)
 					for (int i = 0; i < 12; i++) c.setStack(i, new net.minecraft.item.ItemStack(net.minecraft.item.Items.SAND, 64));
 			});
@@ -297,6 +298,9 @@ public final class ClientSelfTest {
 		}
 		if (t == crane + 175) shot(mc, "21_kraan");
 		if (t == crane + 228) shot(mc, "22_kraan_storten");
+		if (t == crane + 240) tp(srv, ship, new double[]{24.0, 4.5, -10.5}, new double[]{28.5, 2.0, -3.5});
+		if (t == crane + 262) shot(mc, "22b_kraan_bunkers");
+		if (t == crane + 265) tp(srv, ship, new double[]{24.5, 17, -36}, new double[]{30.5, 9, 3});
 		if (t == crane + 380) {
 			tp(srv, ship, new double[]{60.5, 2.0 + 1.62, 2.5}, new double[]{61.5, 1.5, 1.5});
 		}

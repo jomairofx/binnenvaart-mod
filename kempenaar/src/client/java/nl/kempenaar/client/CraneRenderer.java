@@ -73,8 +73,6 @@ public class CraneRenderer implements BlockEntityRenderer<CraneBlockEntity> {
 	private void buildTower() {
 		Geo g = new Geo();
 		// voet: kruisbalken en ballastblokken
-		g.box(gray, -1.6f, 0, 0.2f, 2.6f, 0.35f, 0.8f, 0.9f);
-		g.box(gray, 0.2f, 0, -1.6f, 0.8f, 0.35f, 2.6f, 0.9f);
 		for (float[] c : new float[][]{{-1.5f, -1.5f}, {1.5f, -1.5f}, {-1.5f, 1.5f}, {1.5f, 1.5f}})
 			g.box(concrete, c[0], 0, c[1], c[0] + 1f, 0.9f, c[1] + 1f, 1f);
 		// vakwerktoren 1,6 x 1,6

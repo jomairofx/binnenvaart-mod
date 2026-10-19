@@ -50,6 +50,27 @@ public class CraneBlock extends BlockWithEntity {
 		return getDefaultState().with(FACING, ctx.getHorizontalPlayerFacing());
 	}
 
+	/** Bij het neerzetten komen er vier opslagbunkers rond de voet (waar plek is). */
+	@Override
+	public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable net.minecraft.entity.LivingEntity placer, net.minecraft.item.ItemStack stack) {
+		super.onPlaced(world, pos, state, placer, stack);
+		if (world.isClient) return;
+		placeStorage(world, pos);
+	}
+
+	public static int placeStorage(World world, BlockPos pos) {
+		int n = 0, bin = 1;
+		for (Direction d : new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}) {
+			BlockPos p = pos.offset(d);
+			if (world.getBlockState(p).isReplaceable()) {
+				world.setBlockState(p, Kempenaar.CRANE_STORAGE.getDefaultState().with(CraneStorageBlock.BIN, bin));
+				n++;
+			}
+			bin++;
+		}
+		return n;
+	}
+
 	@Override
 	protected BlockRenderType getRenderType(BlockState state) {
 		return BlockRenderType.MODEL;

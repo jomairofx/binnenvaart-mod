@@ -70,6 +70,12 @@ public class Kempenaar implements ModInitializer {
 	public static final BlockEntityType<CraneBlockEntity> CRANE_BE = Registry.register(Registries.BLOCK_ENTITY_TYPE, id("laadkraan"),
 			BlockEntityType.Builder.create(CraneBlockEntity::new, CRANE).build(null));
 
+	public static final Block CRANE_STORAGE = Registry.register(Registries.BLOCK, id("kraanopslag"),
+			new nl.kempenaar.block.CraneStorageBlock(AbstractBlock.Settings.create().mapColor(MapColor.GRAY).strength(3.0f, 6.0f).sounds(BlockSoundGroup.METAL)));
+	public static final Item CRANE_STORAGE_ITEM = Registry.register(Registries.ITEM, id("kraanopslag"), new BlockItem(CRANE_STORAGE, new Item.Settings()));
+	public static final BlockEntityType<nl.kempenaar.block.CraneStorageBlockEntity> CRANE_STORAGE_BE = Registry.register(Registries.BLOCK_ENTITY_TYPE, id("kraanopslag"),
+			BlockEntityType.Builder.create(nl.kempenaar.block.CraneStorageBlockEntity::new, CRANE_STORAGE).build(null));
+
 	/** Slaapplaats aan boord: schip, bed en laatst bekende plek. Blijft bewaard na doodgaan. */
 	public static final AttachmentType<NbtCompound> SHIP_BED = AttachmentRegistry.<NbtCompound>builder()
 			.persistent(NbtCompound.CODEC).copyOnDeath().buildAndRegister(id("scheepsbed"));
@@ -127,7 +133,10 @@ public class Kempenaar implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> entries.add(SHIP_ITEM));
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> entries.add(CRANE_ITEM));
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(entries -> {
+			entries.add(CRANE_ITEM);
+			entries.add(CRANE_STORAGE_ITEM);
+		});
 
 		// slapen in de bedden aan boord (die staan niet echt in de wereld)
 		EntitySleepEvents.ALLOW_BED.register((entity, pos, state, vanilla) ->

@@ -62,7 +62,7 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 
 	@Nullable
 	private UUID shipId;
-	private int holdIndex = -1, idle, waitMsg;
+	private int holdIndex = -1, idle, waitMsg, spot = 1;
 
 	public CraneBlockEntity(BlockPos pos, BlockState state) {
 		super(Kempenaar.CRANE_BE, pos, state);
@@ -155,12 +155,21 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 				carried.set(taken++, s);
 				items.set(i, ItemStack.EMPTY);
 			}
+			for (CraneStorageBlockEntity bin : bins()) {
+				for (int i = 0; i < bin.size() && taken < STACKS_PER_RUN; i++) {
+					ItemStack s = bin.getStack(i);
+					if (s.isEmpty()) continue;
+					carried.set(taken++, s);
+					bin.setStack(i, ItemStack.EMPTY);
+				}
+			}
 			if (taken == 0) return;
 			carryMat = matOf(carried.get(0));
 		} else {
 			carryMat = 0;
 		}
 		shipId = tg.ship.entity().getUuid();
+		spot++;
 		holdIndex = tg.hold;
 		targetYaw = tg.yaw;
 		targetR = tg.radius;
@@ -203,12 +212,15 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 	/** Is er in dit ruim iets te doen (ruimte bij laden, lading bij lossen)? */
 	private boolean work(ShipAccess s, int hold) {
 		SimpleInventory inv = s.hold(hold);
-		if (unloading) return !inv.isEmpty() && hasEmptySlot();
+		if (unloading) return !inv.isEmpty() && (hasEmptySlot() || binsHaveRoom());
 		ItemStack first = ItemStack.EMPTY;
 		for (ItemStack st : items) if (!st.isEmpty()) {
 			first = st;
 			break;
 		}
+		if (first.isEmpty())
+			for (CraneStorageBlockEntity b : bins())
+				for (int i = 0; i < b.size() && first.isEmpty(); i++) if (!b.getStack(i).isEmpty()) first = b.getStack(i);
 		if (first.isEmpty()) return false;
 		for (int i = 0; i < inv.size(); i++) {
 			ItemStack h = inv.getStack(i);
@@ -222,8 +234,10 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		Vec3d l = s.toLocal(c);
 		int[] hb = s.holds()[hold];
 		int a = hb[0], b = hb[1];
-		double tx = MathHelper.clamp(l.x, a + 1.5, b - 0.5);
-		double tz = MathHelper.clamp(l.z, s.holdZ0() + 0.7, s.holdZ1() + 0.3);
+		// altijd op de hartlijn van het ruim, afwisselend voor, midden en achter, zodat de stort mooi verdeeld wordt
+		double len = b - a + 1, mid = (a + b + 1) / 2.0;
+		double tx = mid + ((spot % 3) - 1) * len * 0.25;
+		double tz = (s.holdZ0() + s.holdZ1() + 1) / 2.0;
 		Vec3d p = s.toWorld(tx, s.coamingTopY(), tz);
 		double dx = p.x - c.x, dz = p.z - c.z, d = Math.sqrt(dx * dx + dz * dz);
 		if (d > REACH || d < 2.5) return null;
@@ -283,8 +297,32 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		return false;
 	}
 
-	/** Gedragen lading terug in de kraan zetten (voor zover er plek is). */
+	/** De vier opslagbunkers rond de voet. */
+	private java.util.List<CraneStorageBlockEntity> bins() {
+		java.util.List<CraneStorageBlockEntity> list = new java.util.ArrayList<>();
+		if (world == null) return list;
+		for (Direction d : new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST})
+			if (world.getBlockEntity(pos.offset(d)) instanceof CraneStorageBlockEntity b) list.add(b);
+		return list;
+	}
+
+	private boolean binsHaveRoom() {
+		for (CraneStorageBlockEntity b : bins()) if (b.hasEmptySlot()) return true;
+		return false;
+	}
+
+	/** Gedragen lading wegzetten: bij lossen eerst in de opslagbunkers, anders (of als die vol zijn) in de kraan zelf. */
 	private void depositCarried() {
+		if (unloading) {
+			for (int i = 0; i < carried.size(); i++) {
+				ItemStack st = carried.get(i);
+				for (CraneStorageBlockEntity b : bins()) {
+					if (st.isEmpty()) break;
+					st = b.insert(st);
+				}
+				carried.set(i, st);
+			}
+		}
 		for (int i = 0; i < carried.size(); i++) {
 			ItemStack st = carried.get(i);
 			if (st.isEmpty()) continue;
@@ -332,7 +370,9 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		unloading = !unloading;
 		markDirty();
 		sync();
-		player.sendMessage(Text.literal(unloading ? "Cargo crane: UNLOADING (from the hold into the crane)" : "Cargo crane: LOADING (from the crane into the hold)").formatted(Formatting.AQUA), true);
+		if (bins().isEmpty() && world != null && CraneBlock.placeStorage(world, pos) > 0)
+			player.sendMessage(Text.literal("Storage bins placed around the crane").formatted(Formatting.GRAY), false);
+		player.sendMessage(Text.literal(unloading ? "Cargo crane: UNLOADING — from the hold into the 4 storage bins" : "Cargo crane: LOADING — from the crane (and its bins) into the hold").formatted(Formatting.AQUA), true);
 	}
 
 	/** Alleen voor de automatische test. */
@@ -451,6 +491,12 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 	public int countItems() {
 		int n = 0;
 		for (ItemStack s : items) n += s.getCount();
+		return n;
+	}
+
+	public int countBinItems() {
+		int n = 0;
+		for (CraneStorageBlockEntity b : bins()) n += b.countItems();
 		return n;
 	}
 

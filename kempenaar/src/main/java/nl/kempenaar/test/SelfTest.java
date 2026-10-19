@@ -128,6 +128,7 @@ public final class SelfTest {
 				cranePos = BlockPos.ofFloored(cp.x, waterTop, cp.z);
 				w.setBlockState(cranePos, Kempenaar.CRANE.getDefaultState());
 				crane = (nl.kempenaar.block.CraneBlockEntity) w.getBlockEntity(cranePos);
+				nl.kempenaar.block.CraneBlock.placeStorage(w, cranePos);
 				for (int i = 0; i < 10; i++) crane.setStack(i, new ItemStack(Items.SAND, 64));
 			}
 			if (tick == 1001) {
@@ -162,11 +163,12 @@ public final class SelfTest {
 			}
 			if (tick > 1640 && switchTick == 0 && !crane.running) {
 				crane.testSetUnloading(true);
-				craneBefore = crane.countItems();
+				craneBefore = crane.countItems() + crane.countBinItems();
 				switchTick = tick;
 			}
 			if (switchTick > 0 && tick == switchTick + 520) {
-				check("laadkraan lossen", crane.countItems() >= craneBefore + 128, "kraan had " + craneBefore + ", nu " + crane.countItems());
+				check("laadkraan lossen", crane.countItems() + crane.countBinItems() >= craneBefore + 128 && crane.countBinItems() >= 128,
+						"kraan + bunkers hadden " + craneBefore + ", nu " + (crane.countItems() + crane.countBinItems()) + " (in de bunkers " + crane.countBinItems() + ")");
 				Files.writeString(Path.of("selftest.txt"), String.join("\n", log) + "\n" + (failed ? "RESULT FAIL" : "RESULT PASS") + "\n");
 				server.saveAll(false, true, true);
 				server.stop(false);

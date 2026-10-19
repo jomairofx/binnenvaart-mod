@@ -7,5 +7,6 @@
   "key.kempenaar.boeg_links_v2": "Bow thruster port (left)",
   "key.kempenaar.boeg_rechts_v2": "Bow thruster starboard (right)",
   "key.kempenaar.hoorn_v2": "Ship horn",
-  "key.kempenaar.luiken_v2": "Open/close hatches"
+  "key.kempenaar.luiken_v2": "Open/close hatches",
+  "block.kempenaar.kraanopslag": "Crane Storage Bin"
 }

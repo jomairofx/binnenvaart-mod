@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "bin=1": {
+      "model": "kempenaar:block/kraanopslag_1"
+    },
+    "bin=2": {
+      "model": "kempenaar:block/kraanopslag_2"
+    },
+    "bin=3": {
+      "model": "kempenaar:block/kraanopslag_3"
+    },
+    "bin=4": {
+      "model": "kempenaar:block/kraanopslag_4"
+    }
+  }
+}

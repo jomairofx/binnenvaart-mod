@@ -19,10 +19,10 @@ import java.nio.charset.StandardCharsets;
  */
 public final class ShipTemplate {
 	public static final int MIN_X = -3, MIN_Y = -7, MIN_Z = -3;
-	public static final int SIZE_X = 126, SIZE_Y = 27, SIZE_Z = 23;
+	public static final int SIZE_X = 146, SIZE_Y = 27, SIZE_Z = 23;
 
 	/** Draaipunt (midden van het schip) in sjablooncoördinaten. */
-	public static final double CX = 60.0, CZ = 8.5;
+	public static final double CX = 70.0, CZ = 8.5;
 
 	public final String name;
 	public final int length;

@@ -98,8 +98,8 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		DynCache dc = caches.computeIfAbsent(ship, k -> new DynCache());
 		float hatch = MathHelper.lerp(tickDelta, ship.prevHatchProgress, ship.hatchProgress);
 		boolean dirty = Math.abs(dc.hatch - hatch) > 1e-4f || dc.light != light;
-		float[] fills = new float[4];
-		for (int h = 0; h < 4; h++) {
+		float[] fills = new float[ShipEntity.HOLD_COUNT];
+		for (int h = 0; h < ShipEntity.HOLD_COUNT; h++) {
 			fills[h] = MathHelper.lerp(tickDelta, ship.prevDisplayFill[h], ship.displayFill[h]);
 			if (Math.abs(dc.fill[h] - fills[h]) > 1e-4f || dc.mat[h] != ship.material(h)) dirty = true;
 		}
@@ -107,7 +107,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			dc.sink.n = 0;
 			dc.hatch = hatch;
 			dc.light = light;
-			for (int h = 0; h < 4; h++) {
+			for (int h = 0; h < ShipEntity.HOLD_COUNT; h++) {
 				dc.fill[h] = fills[h];
 				dc.mat[h] = ship.material(h);
 			}
@@ -159,7 +159,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		float noise = ((hsh >> 16) & 15) / 15f - 0.5f;
 		float hgt = f * (9.4f - 3.0f * dx * dx - 2.2f * dz * dz) + noise * 0.3f * f;
 		float c = cap;
-		if (x >= 96) c = Math.min(c, 8.3f);
+		if (x >= 115) c = Math.min(c, 8.3f);
 		return MathHelper.clamp(hgt, 0.05f, c);
 	}
 
@@ -213,8 +213,8 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 	// ---------------------------------------------------------------- luiken
 
 	private void renderCovers(float t, Sink vc, int light) {
-		Sprite s = sprites(Blocks.WHITE_CONCRETE.getDefaultState())[0];
-		Sprite rim = sprites(Blocks.LIGHT_GRAY_CONCRETE.getDefaultState())[0];
+		Sprite s = sprites(Blocks.LIGHT_GRAY_CONCRETE.getDefaultState())[0];
+		Sprite rim = sprites(Blocks.GRAY_CONCRETE.getDefaultState())[0];
 		int n = ShipEntity.COVERS;
 		float stagger = 0.06f, dur = 1f - stagger * (n - 1);
 		for (int i = 0; i < n; i++) {
@@ -282,13 +282,13 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		float w = tr.getWidth(name) * scale;
 		// stuurboord (z+)
 		matrices.push();
-		matrices.translate(106.0f, 1.95f, 17.01f);
+		matrices.translate(126.0f, 1.95f, 17.01f);
 		matrices.scale(scale, -scale, scale);
 		draw(tr, name, matrices, consumers, light);
 		matrices.pop();
 		// bakboord (z-)
 		matrices.push();
-		matrices.translate(106.0f + w, 1.95f, -0.01f);
+		matrices.translate(126.0f + w, 1.95f, -0.01f);
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f));
 		matrices.scale(scale, -scale, scale);
 		draw(tr, name, matrices, consumers, light);
@@ -348,8 +348,8 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 	static final class DynCache {
 		final Sink sink = new Sink();
 		float hatch = -1;
-		final float[] fill = {-1, -1, -1, -1};
-		final int[] mat = new int[4];
+		final float[] fill = {-1, -1, -1, -1, -1};
+		final int[] mat = new int[ShipEntity.HOLD_COUNT];
 		int light = -1;
 	}
 

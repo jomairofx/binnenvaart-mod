@@ -32,9 +32,9 @@ public final class ClientSelfTest {
 	private record Shot(String name, double[] eye, double[] target, boolean hud) {}
 
 	private static final Shot[] SHOTS = {
-			new Shot("01_overzicht", new double[]{20, 34, 62}, new double[]{60, 0, 8.5}, false),
-			new Shot("02_zijkant", new double[]{60, 4, 72}, new double[]{60, 2, 8.5}, false),
-			new Shot("03_boeg", new double[]{140, 9, 34}, new double[]{112, 2, 8.5}, false),
+			new Shot("01_overzicht", new double[]{25, 40, 78}, new double[]{70, 0, 8.5}, false),
+			new Shot("02_zijkant", new double[]{70, 4, 88}, new double[]{70, 2, 8.5}, false),
+			new Shot("03_boeg", new double[]{160, 9, 34}, new double[]{132, 2, 8.5}, false),
 			new Shot("04_achterkant", new double[]{-26, 13, -18}, new double[]{9, 6, 8.5}, false),
 			new Shot("05_ruim", new double[]{70, 8.5, 8.5}, new double[]{20, 6, 8.5}, false),
 			new Shot("06_woonkamer", new double[]{13.6, 3.62, 12.0}, new double[]{8.5, 3.0, 12.0}, false),

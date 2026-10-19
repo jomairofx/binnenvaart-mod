@@ -41,7 +41,7 @@ public class ShipItem extends Item {
 		ShipEntity ship = new ShipEntity(ModernBulk.SHIP, world);
 		ship.place(x, top.getY(), z, yaw);
 		if (ship.hullBlocked(ship.getX(), ship.getY(), ship.getZ(), ship.shipYaw)) {
-			user.sendMessage(Text.literal("The ship does not fit here: it is 120 blocks long, 17 wide and needs at least 6 blocks of deep water. Look out over open water.").formatted(Formatting.RED), false);
+			user.sendMessage(Text.literal("The ship does not fit here: it is 140 blocks long, 17 wide and needs at least 6 blocks of deep water. Look out over open water.").formatted(Formatting.RED), false);
 			return TypedActionResult.fail(stack);
 		}
 		world.spawnEntity(ship);

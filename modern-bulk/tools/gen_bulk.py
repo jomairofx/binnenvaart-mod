@@ -1,11 +1,11 @@
-"""Builds the ZEELANDIA template (120 x 17) for the Modern Bulk Carrier mod.
+"""Builds the ZEELANDIA template (140 x 17) for the Modern Bulk Carrier mod.
 
 A modern Dutch inland bulk carrier (motorvrachtschip): dark hull with light blue bow and stern,
 white accommodation aft, a hydraulic lifting wheelhouse on a column, a car with its crane on the aft deck,
-one long cargo space with high grey coamings (blue top rail) split by transverse beams into four holds,
+one long cargo space with high grey coamings (blue top rail) split by transverse beams into five holds,
 rolling hatch covers, and a raised foredeck with anchor winches, A-mast and bow steering position.
 
-Template axes: x = length (0 = stern, 119 = bow), z = beam (0 = port, 16 = starboard), y = height.
+Template axes: x = length (0 = stern, 139 = bow), z = beam (0 = port, 16 = starboard), y = height.
 Deck plating is layer y=1 (top = 2.0). Output: src/main/resources/modernbulk/zeelandia.json
 """
 import json, os
@@ -18,34 +18,34 @@ def S(x, y, z, s):
 def R(a, b):
     return range(a, b + 1)
 
-L = 120
+L = 140
 W_BEAM = 17
 ZC = 8                      # centre line
 def zr(x):
     if x == 0: return (2, 14)
     if x == 1: return (1, 15)
-    bow = {113: (1, 15), 114: (1, 15), 115: (2, 14), 116: (3, 13), 117: (4, 12), 118: (5, 11), 119: (6, 10)}
+    bow = {133: (1, 15), 134: (1, 15), 135: (2, 14), 136: (3, 13), 137: (4, 12), 138: (5, 11), 139: (6, 10)}
     return bow.get(x, (0, 16))
 def bot(x):
     if x <= 3: return -2
     if x == 4: return -3
     if x == 5: return -4
-    if x <= 105: return -5
-    if x <= 109: return -4
-    if x <= 113: return -3
-    if x <= 116: return -2
+    if x <= 125: return -5
+    if x <= 129: return -4
+    if x <= 133: return -3
+    if x <= 136: return -2
     return -1
 
 HULL = "black_concrete"
 DARK = "gray_concrete"
-BLUE = "light_blue_concrete"
+BLUE = "cyan_concrete"            # darker turquoise-blue paint
 NAVY = "blue_concrete"
 WHITE = "white_concrete"
-DECK = "light_gray_concrete"
-COAM = "light_gray_concrete"
-CAP = "smooth_quartz_slab[type=bottom]"
+DECK = "gray_concrete"
+COAM = "gray_concrete"
+CAP = "polished_andesite_slab[type=bottom]"
 INNER = "light_gray_concrete"
-AFT_END, HOLD_START, HOLD_END, FORE_START = 22, 23, 102, 103
+AFT_END, HOLD_START, HOLD_END, FORE_START = 22, 23, 121, 122
 
 def side_colour(x, y):
     if y <= -1: return HULL
@@ -123,7 +123,7 @@ for x in R(HX0, HX1):
         for y in R(2, 4):
             S(x, y, z, WHITE if edge else "air")
         S(x, 1, z, "spruce_planks")
-        S(x, 5, z, BLUE if edge else "light_gray_concrete")       # roof with light blue rim
+        S(x, 5, z, BLUE if edge else "gray_concrete")       # roof with light blue rim
 # side decks along the house (z=1 / z=15 walk, white bulwark at z=0 / z=16)
 for x in R(8, AFT_END):
     S(x, 2, 0, WHITE); S(x, 2, 16, WHITE)
@@ -249,8 +249,8 @@ S(14, WY + 1, 5, "cartography_table"); S(14, WY + 1, 11, "barrel[facing=up]")
 S(15, WY + 4, ZC, "sea_lantern")
 
 # ---------------- cargo space with four holds ----------------
-HOLDS = [(24, 42), (44, 61), (63, 80), (82, 101)]
-BEAMS = [43, 62, 81]
+HOLDS = [(24, 42), (44, 61), (63, 80), (82, 99), (101, 120)]
+BEAMS = [43, 62, 81, 100]
 for x in R(HOLD_START, HOLD_END):
     for y in R(-4, 1):
         S(x, y, 1, INNER); S(x, y, 15, INNER)
@@ -279,30 +279,30 @@ for z in R(zr(L - 1)[0], zr(L - 1)[1]): S(L - 1, 2, z, BLUE)
 for z in R(zr(L - 2)[0], zr(L - 2)[1]): S(L - 2, 2, z, BLUE)
 # anchor winches and chain pipes
 for z in (5, 11):
-    S(112, 2, z, "iron_block"); S(111, 2, z, "anvil[facing=north]"); S(113, 2, z, "chain[axis=x]")
-    S(114, 2, z, "chain[axis=x]")
+    S(132, 2, z, "iron_block"); S(131, 2, z, "anvil[facing=north]"); S(133, 2, z, "chain[axis=x]")
+    S(134, 2, z, "chain[axis=x]")
 # bow thruster room hatch with ladder
-S(106, 1, 3, "spruce_trapdoor[facing=south,half=top,open=false]")
-for y in R(-3, 0): S(106, y, 3, "ladder[facing=south]")
+S(126, 1, 3, "spruce_trapdoor[facing=south,half=top,open=false]")
+for y in R(-3, 0): S(126, y, 3, "ladder[facing=south]")
 for z in R(1, 15):
-    for y in R(-4, 0): S(104, y, z, INNER)
-S(108, -3, ZC, "iron_block"); S(109, -3, ZC, "iron_block"); S(108, -2, ZC, "lightning_rod[facing=up]")
-S(110, 0, ZC, "lantern[hanging=true]")
+    for y in R(-4, 0): S(124, y, z, INNER)
+S(128, -3, ZC, "iron_block"); S(129, -3, ZC, "iron_block"); S(128, -2, ZC, "lightning_rod[facing=up]")
+S(130, 0, ZC, "lantern[hanging=true]")
 # bow steering position (behind the A-mast)
-for z in R(7, 9): S(108, 2, z, "polished_deepslate_slab[type=top]")
-S(108, 3, 7, "black_carpet"); S(108, 3, 9, "black_carpet"); S(108, 3, 8, "lever[face=floor,facing=west,powered=false]")
-S(107, 2, ZC, "polished_blackstone_stairs[facing=west,half=bottom]")
+for z in R(7, 9): S(128, 2, z, "polished_deepslate_slab[type=top]")
+S(128, 3, 7, "black_carpet"); S(128, 3, 9, "black_carpet"); S(128, 3, 8, "lever[face=floor,facing=west,powered=false]")
+S(127, 2, ZC, "polished_blackstone_stairs[facing=west,half=bottom]")
 # A-mast with crossbar, lights and flags (as on the photo)
 for y in R(2, 8):
-    S(115, y, 4, "iron_bars"); S(115, y, 12, "iron_bars")
-for z in R(4, 12): S(115, 9, z, "iron_bars")
-S(115, 10, ZC, "lantern[hanging=false]")
-for z in (5, 11): S(115, 8, z, "lantern[hanging=true]")
-S(115, 8, 6, "light_blue_wool"); S(115, 7, 6, "white_wool")
-S(115, 8, 10, "yellow_wool"); S(115, 7, 10, "blue_wool")
+    S(135, y, 4, "iron_bars"); S(135, y, 12, "iron_bars")
+for z in R(4, 12): S(135, 9, z, "iron_bars")
+S(135, 10, ZC, "lantern[hanging=false]")
+for z in (5, 11): S(135, 8, z, "lantern[hanging=true]")
+S(135, 8, 6, "light_blue_wool"); S(135, 7, 6, "white_wool")
+S(135, 8, 10, "yellow_wool"); S(135, 7, 10, "blue_wool")
 # boarding ladders on the hull, reaching below the waterline
 for y in R(-4, 1):
-    for x in (24, 101):
+    for x in (24, 121):
         S(x, y, -1, "ladder[facing=north]"); S(x, y, 17, "ladder[facing=south]")
 
 B = {k: v for k, v in B.items() if v != "minecraft:air"}
@@ -350,11 +350,11 @@ out = {
     "holdZ": [2, 14], "holdFloorY": -3, "coamingTopY": 5.5,
     "seats": {
         "aft": {"pos": [16.5, WY + 1.45, 8.5], "yaw": 0},
-        "bow": {"pos": [107.5, 2.45, 8.5], "yaw": 0}
+        "bow": {"pos": [127.5, 2.45, 8.5], "yaw": 0}
     },
     "helmZones": {
         "aft": [16, WY + 1, 5, 18, WY + 2, 11],
-        "bow": [107, 2, 7, 108, 3, 9]
+        "bow": [127, 2, 7, 128, 3, 9]
     },
     "lift": LIFT,
 }

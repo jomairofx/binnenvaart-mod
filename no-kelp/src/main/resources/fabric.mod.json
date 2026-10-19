@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "nokelp",
+  "version": "${version}",
+  "name": "No Kelp",
+  "description": "Removes kelp from the game: no kelp in newly generated oceans and rivers, and existing kelp turns into water as chunks load (no item drops).",
+  "authors": ["jomairofx"],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": { "main": ["nl.nokelp.NoKelp"] },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

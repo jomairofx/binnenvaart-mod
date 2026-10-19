@@ -146,6 +146,17 @@ public class CraneRenderer implements BlockEntityRenderer<CraneBlockEntity> {
 
 	@Override
 	public void render(CraneBlockEntity be, float tickDelta, MatrixStack m, VertexConsumerProvider v, int light, int overlay) {
+		MatrixStack own = new MatrixStack();
+		own.peek().getPositionMatrix().set(m.peek().getPositionMatrix());
+		own.peek().getNormalMatrix().set(m.peek().getNormalMatrix());
+		try {
+			renderSafe(be, tickDelta, own, v, light, overlay);
+		} catch (RuntimeException ex) {
+			nl.kempenaar.ship.ShipEntity.reportError("crane render", ex);
+		}
+	}
+
+	private void renderSafe(CraneBlockEntity be, float tickDelta, MatrixStack m, VertexConsumerProvider v, int light, int overlay) {
 		World w = be.getWorld();
 		if (w == null) return;
 		ensureBuilt();

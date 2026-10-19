@@ -27,7 +27,13 @@ public abstract class GameRendererMixin {
 		ShipEntity bestShip = null;
 		Vec3d bestPos = null;
 		for (ShipEntity ship : ships) {
-			Vec3d hit = ship.raycast(eye, end, camera);
+			Vec3d hit;
+			try {
+				hit = ship.raycast(eye, end, camera);
+			} catch (RuntimeException ex) {
+				ShipEntity.reportError("raycast", ex);
+				continue;
+			}
 			if (hit != null) {
 				double d = hit.squaredDistanceTo(eye);
 				if (d < best) {

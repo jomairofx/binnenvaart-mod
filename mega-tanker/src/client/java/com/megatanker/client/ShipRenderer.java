@@ -61,6 +61,18 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 
 	@Override
 	public void render(ShipEntity ship, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
+		// eigen kopie van de matrixstapel: als er iets misgaat blijft die van Minecraft heel
+		MatrixStack own = new MatrixStack();
+		own.peek().getPositionMatrix().set(matrices.peek().getPositionMatrix());
+		own.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
+		try {
+			renderSafe(ship, yaw, tickDelta, own, consumers, light);
+		} catch (RuntimeException ex) {
+			ShipEntity.reportError("render", ex);
+		}
+	}
+
+	private void renderSafe(ShipEntity ship, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
 		ShipMesh[] meshes = ship.renderCache instanceof ShipMesh[] mm ? mm : null;
 		boolean lightsOn = ship.lightsOn();
 		if (meshes == null || meshes[0].version != ship.structure.version || meshes[0].lights != lightsOn) {
@@ -228,7 +240,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		Sprite s = sprites(Blocks.WHITE_CONCRETE.getDefaultState())[0];
 		Sprite rim = sprites(Blocks.LIGHT_GRAY_CONCRETE.getDefaultState())[0];
 		int n = ShipEntity.COVERS;
-		float stagger = 0.06f, dur = 1f - stagger * (n - 1);
+		float stagger = Math.min(0.06f, 0.45f / Math.max(1, n - 1)), dur = 1f - stagger * (n - 1);
 		for (int i = 0; i < n; i++) {
 			float p = MathHelper.clamp((t - stagger * i) / dur, 0f, 1f);
 			p = p * p * (3 - 2 * p);
@@ -432,6 +444,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			for (float z = z0; z < z1 - 1e-4f; z += 1f) {
 				float ze = Math.min(z1, z + 1);
 				quadUp(vc, s, x, y1, z, xe, ze, tint, light);
+				quadDown(vc, s, x, y0, z, xe, ze, tint * 0.6f, light);
 			}
 		}
 		for (float z = z0; z < z1 - 1e-4f; z += 1f) {

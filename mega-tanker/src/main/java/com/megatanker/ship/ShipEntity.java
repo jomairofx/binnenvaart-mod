@@ -411,6 +411,33 @@ public class ShipEntity extends Entity {
 
 	@Override
 	public void tick() {
+		try {
+			tickSafe();
+		} catch (RuntimeException ex) {
+			reportError("tick", ex);
+		}
+	}
+
+	/** Fout in de scheepscode: in het logboek zetten (één keer per 10 s) in plaats van het spel te laten crashen. */
+	public static void reportError(String where, Throwable ex) {
+		long now = System.currentTimeMillis();
+		if (now - lastError < 10_000) return;
+		lastError = now;
+		org.slf4j.LoggerFactory.getLogger("com.megatanker").error("Ship error in " + where + " (game keeps running) - please send this log", ex);
+	}
+
+	private static long lastError;
+
+	/** Voert iets uit en vangt fouten af. */
+	public static void safely(String where, Runnable r) {
+		try {
+			r.run();
+		} catch (RuntimeException ex) {
+			reportError(where, ex);
+		}
+	}
+
+	private void tickSafe() {
 		if (!registered) {
 			ShipHolder.of(getWorld()).add(this);
 			registered = true;
@@ -969,13 +996,13 @@ public class ShipEntity extends Entity {
 	@Nullable
 	public static BedRef findBed(World world, BlockPos sleepPos) {
 		BedRef best = null;
-		double bestD = 2.5 * 2.5;
+		double bestD = 3.5 * 3.5;
 		Vec3d c = new Vec3d(sleepPos.getX() + 0.5, sleepPos.getY() + 0.6875, sleepPos.getZ() + 0.5);
 		for (ShipEntity s : ShipHolder.of(world)) {
 			if (!s.getBoundingBox().expand(3).contains(c)) continue;
 			for (int[] h : s.bedHeads()) {
 				Vec3d p = s.bedSpot(h);
-				if (Math.abs(p.y - c.y) > 1.6) continue;
+				if (Math.abs(p.y - c.y) > 2.5) continue;
 				double d = (p.x - c.x) * (p.x - c.x) + (p.z - c.z) * (p.z - c.z);
 				if (d < bestD) {
 					bestD = d;
@@ -985,6 +1012,32 @@ public class ShipEntity extends Entity {
 		}
 		return best;
 	}
+
+	/** Slapers in een scheepsbed: slaappositie en lichaam bewegen mee met het schip, zodat je niet uit bed valt. */
+	public static void keepSleepers(net.minecraft.server.MinecraftServer server) {
+		for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+			try {
+				if (!p.isSleeping()) continue;
+				var sp = p.getSleepingPosition();
+				if (sp.isEmpty() || p.getWorld().getBlockState(sp.get()).getBlock() instanceof BedBlock) continue;
+				BedRef ref = findBed(p.getWorld(), sp.get());
+				if (ref == null) ref = findBed(p.getWorld(), BlockPos.ofFloored(p.getX(), p.getY() - 0.5, p.getZ()));
+				if (ref == null) continue;
+				Vec3d spot = ref.ship().bedSpot(ref.head());
+				BlockPos bp = BlockPos.ofFloored(spot.x, spot.y - 0.6875 + 0.01, spot.z);
+				if (!bp.equals(sp.get())) p.setSleepingPosition(bp);
+				double d = p.getPos().squaredDistanceTo(spot);
+				if (d > 1e-4) {
+					p.setPosition(spot.x, spot.y, spot.z);
+					if (d > 0.04) p.networkHandler.requestTeleport(spot.x, spot.y, spot.z, p.getYaw(), p.getPitch());
+				}
+			} catch (RuntimeException ex) {
+				LOGGER_SAFE.warn("ship bed keeper", ex);
+			}
+		}
+	}
+
+	private static final org.slf4j.Logger LOGGER_SAFE = org.slf4j.LoggerFactory.getLogger("ship-beds");
 
 	private void useBed(ServerPlayerEntity player, int x, int y, int z) {
 		int[] h = bedHead(x, y, z);
@@ -1273,6 +1326,15 @@ public class ShipEntity extends Entity {
 	}
 
 	public static Vec3d collideAll(Entity e, Vec3d mv) {
+		try {
+			return collideAllSafe(e, mv);
+		} catch (RuntimeException ex) {
+			reportError("collision", ex);
+			return mv;
+		}
+	}
+
+	private static Vec3d collideAllSafe(Entity e, Vec3d mv) {
 		if (e instanceof ShipEntity || e.noClip) return mv;
 		List<ShipEntity> ships = ShipHolder.of(e.getWorld());
 		if (ships.isEmpty()) return mv;
@@ -1286,6 +1348,15 @@ public class ShipEntity extends Entity {
 	}
 
 	public static boolean isClimbing(Entity e) {
+		try {
+			return isClimbingSafe(e);
+		} catch (RuntimeException ex) {
+			reportError("ladder", ex);
+			return false;
+		}
+	}
+
+	private static boolean isClimbingSafe(Entity e) {
 		for (ShipEntity s : ShipHolder.of(e.getWorld())) {
 			if (!s.getBoundingBox().contains(e.getPos())) continue;
 			Vec3d l = s.unlift(s.toLocal(e.getPos()));

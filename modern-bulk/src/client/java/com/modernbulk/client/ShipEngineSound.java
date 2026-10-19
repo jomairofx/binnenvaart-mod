@@ -32,7 +32,7 @@ public class ShipEngineSound extends MovingSoundInstance {
 	}
 
 	private void updatePos() {
-		Vec3d p = ship.toWorld(14, -2, 8.5);
+		Vec3d p = ship.toWorld(14, -2, 9.5);
 		this.x = p.x;
 		this.y = p.y;
 		this.z = p.z;

@@ -74,21 +74,23 @@ import java.util.List;
  */
 public class ShipEntity extends Entity {
 	// ---- constanten ----
-	public static final int LENGTH = 140;
-	public static final int HOLD_COUNT = 5;
+	public static final int LENGTH = 178;
+	public static final int HOLD_COUNT = 7;
 	public static final double EMPTY_RISE = 2.0;          // zoveel blokken ligt een leeg schip hoger
 	public static final double[] STEP_SPEED = {-0.15, -0.075, 0.0, 0.11, 0.23, 0.36}; // blokken per tick
 	public static final String[] STEP_NAMES = {"Full astern", "Slow astern", "Stop", "Slow ahead", "Half ahead", "Full ahead"};
 	public static final double V_FULL = 0.36;
 	private static final double MAX_TURN = Math.toRadians(0.8);
 	private static final double THRUSTER_TURN = Math.toRadians(0.3);
-	private static final double PIVOT_RUDDER = 14.0;      // draaipunt bij roeren (lokaal, t.o.v. midden)
-	private static final double PIVOT_THRUSTER = -56.0;   // draaipunt bij boegschroef (bij de achtersteven)
+	private static final double PIVOT_RUDDER = 18.0;      // draaipunt bij roeren (lokaal, t.o.v. midden)
+	private static final double PIVOT_THRUSTER = -75.0;   // draaipunt bij boegschroef (bij de achtersteven)
 	public static final int HOLD_SLOTS = 54;
-	public static final int COVERS = 22;
-	public static final float COVER_X0 = 24f, COVER_LEN = 97f / 22f, STACK_X = 116.5f, COVER_Y = 5.5f;
+	public static final int COVERS = 28;
+	/** Luiken per stapel: elk ruim heeft vier luiken die bij openen boven de voorste dwarsbalk op elkaar schuiven. */
+	public static final int COVER_GROUP = 4;
+	public static final float COVER_X0 = 24f, COVER_LEN = 134f / 28f, STACK_X = 153.4f, COVER_Y = 4.5f, COVER_Z0 = 1.95f, COVER_Z1 = 17.05f;
 	public static final double LOADED_OFFSET = -0.61; // fully loaded: side deck only half a block above the water
-	public static final float COVER_STACK = 0.26f;
+	public static final float COVER_STACK = 0.42f;
 
 	// ---- gesynchroniseerde gegevens ----
 	private static final TrackedData<Float> YAW = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.FLOAT);
@@ -107,11 +109,14 @@ public class ShipEntity extends Entity {
 	private static final TrackedData<Float>[] FILL = new TrackedData[HOLD_COUNT];
 	@SuppressWarnings("unchecked")
 	private static final TrackedData<Integer>[] MATERIAL = new TrackedData[HOLD_COUNT];
+	@SuppressWarnings("unchecked")
+	private static final TrackedData<Float>[] BOXED = new TrackedData[HOLD_COUNT];
 
 	static {
 		for (int i = 0; i < HOLD_COUNT; i++) {
 			FILL[i] = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.FLOAT);
 			MATERIAL[i] = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.INTEGER);
+			BOXED[i] = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.FLOAT);
 		}
 	}
 
@@ -198,7 +203,7 @@ public class ShipEntity extends Entity {
 	protected Box calculateBoundingBox() {
 		double c = Math.cos(shipYaw), s = Math.sin(shipYaw);
 		double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE, minZ = Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
-		double[][] corners = {{-1.5, -1.5}, {141.5, -1.5}, {-1.5, 18.5}, {141.5, 18.5}};
+		double[][] corners = {{-2.5, -2.5}, {179.5, -2.5}, {-2.5, 20.5}, {179.5, 20.5}};
 		for (double[] k : corners) {
 			double lx = k[0] - ShipTemplate.CX, lz = k[1] - ShipTemplate.CZ;
 			double wx = getX() + lx * c - lz * s, wz = getZ() + lx * s + lz * c;
@@ -231,6 +236,7 @@ public class ShipEntity extends Entity {
 		for (int i = 0; i < HOLD_COUNT; i++) {
 			builder.add(FILL[i], 0f);
 			builder.add(MATERIAL[i], 0);
+			builder.add(BOXED[i], 0f);
 		}
 	}
 
@@ -392,6 +398,11 @@ public class ShipEntity extends Entity {
 		return dataTracker.get(FILL[hold]);
 	}
 
+	/** Deel van de lading in dit ruim dat in containers zit (0..1). */
+	public float containerShare(int hold) {
+		return dataTracker.get(BOXED[hold]);
+	}
+
 	public int material(int hold) {
 		return dataTracker.get(MATERIAL[hold]);
 	}
@@ -413,6 +424,33 @@ public class ShipEntity extends Entity {
 
 	@Override
 	public void tick() {
+		try {
+			tickSafe();
+		} catch (RuntimeException ex) {
+			reportError("tick", ex);
+		}
+	}
+
+	/** Fout in de scheepscode: in het logboek zetten (één keer per 10 s) in plaats van het spel te laten crashen. */
+	public static void reportError(String where, Throwable ex) {
+		long now = System.currentTimeMillis();
+		if (now - lastError < 10_000) return;
+		lastError = now;
+		org.slf4j.LoggerFactory.getLogger("com.modernbulk").error("Ship error in " + where + " (game keeps running) - please send this log", ex);
+	}
+
+	private static long lastError;
+
+	/** Voert iets uit en vangt fouten af. */
+	public static void safely(String where, Runnable r) {
+		try {
+			r.run();
+		} catch (RuntimeException ex) {
+			reportError(where, ex);
+		}
+	}
+
+	private void tickSafe() {
 		if (!registered) {
 			ShipHolder.of(getWorld()).add(this);
 			registered = true;
@@ -562,7 +600,7 @@ public class ShipEntity extends Entity {
 		// zonder roerganger zet de machine zich bij een aanvaring zelf op stop
 		if (getHelmsman() == null && !testMode) throttle = 0;
 		if (bumpCooldown == 0 && Math.abs(speed) > 0.02) {
-			Vec3d bow = toWorld(speed > 0 ? 139 : 1, 0.5, 8.5);
+			Vec3d bow = toWorld(speed > 0 ? 177 : 1, 0.5, 9.5);
 			getWorld().playSound(null, bow.x, bow.y, bow.z, SoundEvents.ENTITY_IRON_GOLEM_DAMAGE, SoundCategory.NEUTRAL, 1.5f, 0.5f);
 			bumpCooldown = 20;
 		}
@@ -693,7 +731,7 @@ public class ShipEntity extends Entity {
 	@Override
 	public Vec3d updatePassengerForDismount(LivingEntity passenger) {
 		boolean bow = isAtBowHelm(passenger);
-		return bow ? toWorld(126.5, 2.0, 8.5) : toWorld(15.5, 9.0 + liftOffset(), 6.5);
+		return bow ? toWorld(164.5, 2.0, 9.5) : toWorld(15.5, 7.0 + liftOffset(), 7.5);
 	}
 
 	@Override
@@ -720,7 +758,7 @@ public class ShipEntity extends Entity {
 			player.sendMessage(Text.literal(lightsOn() ? "Lights on" : "Lights off").formatted(Formatting.GRAY), true);
 		}
 		if (c.horn() && hornCooldown == 0) {
-			Vec3d h = toWorld(16.0, 15.0, 8.5);
+			Vec3d h = toWorld(17.0, 12.0 + liftOffset(), 9.5);
 			getWorld().playSound(null, h.x, h.y, h.z, SoundEvents.EVENT_RAID_HORN, SoundCategory.NEUTRAL, 8.0f, 0.75f);
 			hornCooldown = 60;
 		}
@@ -728,7 +766,7 @@ public class ShipEntity extends Entity {
 			if (hatchProgress > 0.001f && hatchProgress < 0.999f) return;
 			boolean closed = !hatchesClosed();
 			dataTracker.set(HATCHES_CLOSED, closed);
-			Vec3d h = toWorld(118, 6, 8.5);
+			Vec3d h = toWorld(157, 5, 9.5);
 			getWorld().playSound(null, h.x, h.y, h.z, SoundEvents.BLOCK_PISTON_EXTEND, SoundCategory.NEUTRAL, 1.5f, 0.5f);
 			player.sendMessage(Text.literal(closed ? "Hatches closing" : "Hatches opening").formatted(Formatting.GRAY), true);
 		}
@@ -968,13 +1006,13 @@ public class ShipEntity extends Entity {
 	@Nullable
 	public static BedRef findBed(World world, BlockPos sleepPos) {
 		BedRef best = null;
-		double bestD = 2.5 * 2.5;
+		double bestD = 3.5 * 3.5;
 		Vec3d c = new Vec3d(sleepPos.getX() + 0.5, sleepPos.getY() + 0.6875, sleepPos.getZ() + 0.5);
 		for (ShipEntity s : ShipHolder.of(world)) {
 			if (!s.getBoundingBox().expand(3).contains(c)) continue;
 			for (int[] h : s.bedHeads()) {
 				Vec3d p = s.bedSpot(h);
-				if (Math.abs(p.y - c.y) > 1.6) continue;
+				if (Math.abs(p.y - c.y) > 2.5) continue;
 				double d = (p.x - c.x) * (p.x - c.x) + (p.z - c.z) * (p.z - c.z);
 				if (d < bestD) {
 					bestD = d;
@@ -984,6 +1022,32 @@ public class ShipEntity extends Entity {
 		}
 		return best;
 	}
+
+	/** Slapers in een scheepsbed: slaappositie en lichaam bewegen mee met het schip, zodat je niet uit bed valt. */
+	public static void keepSleepers(net.minecraft.server.MinecraftServer server) {
+		for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+			try {
+				if (!p.isSleeping()) continue;
+				var sp = p.getSleepingPosition();
+				if (sp.isEmpty() || p.getWorld().getBlockState(sp.get()).getBlock() instanceof BedBlock) continue;
+				BedRef ref = findBed(p.getWorld(), sp.get());
+				if (ref == null) ref = findBed(p.getWorld(), BlockPos.ofFloored(p.getX(), p.getY() - 0.5, p.getZ()));
+				if (ref == null) continue;
+				Vec3d spot = ref.ship().bedSpot(ref.head());
+				BlockPos bp = BlockPos.ofFloored(spot.x, spot.y - 0.6875 + 0.01, spot.z);
+				if (!bp.equals(sp.get())) p.setSleepingPosition(bp);
+				double d = p.getPos().squaredDistanceTo(spot);
+				if (d > 1e-4) {
+					p.setPosition(spot.x, spot.y, spot.z);
+					if (d > 0.04) p.networkHandler.requestTeleport(spot.x, spot.y, spot.z, p.getYaw(), p.getPitch());
+				}
+			} catch (RuntimeException ex) {
+				LOGGER_SAFE.warn("ship bed keeper", ex);
+			}
+		}
+	}
+
+	private static final org.slf4j.Logger LOGGER_SAFE = org.slf4j.LoggerFactory.getLogger("ship-beds");
 
 	private void useBed(ServerPlayerEntity player, int x, int y, int z) {
 		int[] h = bedHead(x, y, z);
@@ -1042,6 +1106,7 @@ public class ShipEntity extends Entity {
 		if (getWorld().isClient) return;
 		dataTracker.set(FILL[hold], Cargo.fill(holds[hold]));
 		dataTracker.set(MATERIAL[hold], Cargo.material(holds[hold]));
+		dataTracker.set(BOXED[hold], Cargo.containerShare(holds[hold]));
 	}
 
 	// =====================================================================
@@ -1178,13 +1243,23 @@ public class ShipEntity extends Entity {
 		if (hatchProgress >= 0.999f) {
 			for (int i = 0; i < COVERS; i++) {
 				double x0 = COVER_X0 + COVER_LEN * i;
-				list.add(new Box(x0, COVER_Y, 0.95, x0 + COVER_LEN, COVER_Y + 0.25, 16.05));
-				list.add(new Box(x0, COVER_Y + 0.25, 2.2, x0 + COVER_LEN, COVER_Y + 0.5, 14.8));
+				list.add(new Box(x0, COVER_Y, COVER_Z0, x0 + COVER_LEN, COVER_Y + 0.16, COVER_Z1));
+				list.add(new Box(x0, COVER_Y + 0.16, COVER_Z0 + 1.0, x0 + COVER_LEN, COVER_Y + 0.4, COVER_Z1 - 1.0));
 			}
 		} else if (hatchProgress <= 0.001f) {
-			list.add(new Box(STACK_X, COVER_Y, 0.95, STACK_X + COVER_LEN, COVER_Y + COVER_STACK * COVERS + 0.5, 16.05));
+			for (int g = 0; g * COVER_GROUP < COVERS; g++) {
+				int last = Math.min(COVERS, (g + 1) * COVER_GROUP) - 1, cnt = last - g * COVER_GROUP + 1;
+				double sx = stackX(g);
+				list.add(new Box(sx, COVER_Y, COVER_Z0, sx + COVER_LEN, COVER_Y + COVER_STACK * (cnt - 1) + 0.4, COVER_Z1));
+			}
 		}
 		return list;
+	}
+
+	/** Waar de luiken van stapel g liggen als het ruim open is: boven het voorste deel van hun ruim. */
+	public static float stackX(int g) {
+		int last = Math.min(COVERS, (g + 1) * COVER_GROUP) - 1;
+		return COVER_X0 + COVER_LEN * last;
 	}
 
 	private void gatherShapes(Entity e, Box localQuery, List<VoxelShape> out) {
@@ -1268,6 +1343,15 @@ public class ShipEntity extends Entity {
 	}
 
 	public static Vec3d collideAll(Entity e, Vec3d mv) {
+		try {
+			return collideAllSafe(e, mv);
+		} catch (RuntimeException ex) {
+			reportError("collision", ex);
+			return mv;
+		}
+	}
+
+	private static Vec3d collideAllSafe(Entity e, Vec3d mv) {
 		if (e instanceof ShipEntity || e.noClip) return mv;
 		List<ShipEntity> ships = ShipHolder.of(e.getWorld());
 		if (ships.isEmpty()) return mv;
@@ -1281,6 +1365,15 @@ public class ShipEntity extends Entity {
 	}
 
 	public static boolean isClimbing(Entity e) {
+		try {
+			return isClimbingSafe(e);
+		} catch (RuntimeException ex) {
+			reportError("ladder", ex);
+			return false;
+		}
+	}
+
+	private static boolean isClimbingSafe(Entity e) {
 		for (ShipEntity s : ShipHolder.of(e.getWorld())) {
 			if (!s.getBoundingBox().contains(e.getPos())) continue;
 			Vec3d l = s.unlift(s.toLocal(e.getPos()));
@@ -1334,15 +1427,15 @@ public class ShipEntity extends Entity {
 		if (Math.abs(spd) > 0.03) {
 			int n = Math.abs(spd) > 0.15 ? 2 : 1;
 			for (int i = 0; i < n; i++) {
-				for (double tz : new double[]{0.6, 16.4}) {
-					Vec3d p = toWorld(spd > 0 ? 135 + r.nextDouble() * 4 : 2 + r.nextDouble() * 2, 0, tz);
+				for (double tz : new double[]{0.6, 18.4}) {
+					Vec3d p = toWorld(spd > 0 ? 173 + r.nextDouble() * 4 : 2 + r.nextDouble() * 2, 0, tz);
 					Vec3d side = dirToWorld(new Vec3d(0, 0, tz < 8 ? -0.12 : 0.12));
 					world.addParticle(ParticleTypes.SPLASH, p.x, wy + 0.05, p.z, side.x, 0.1, side.z);
 				}
 			}
 		}
 		if (thr != 0 && (age & 1) == 0) {
-			for (double tz : new double[]{5.5, 11.5}) {
+			for (double tz : new double[]{6.5, 13.5}) {
 				Vec3d p = toWorld(-0.5 - r.nextDouble() * 2, 0, tz + r.nextDouble() - 0.5);
 				world.addParticle(ParticleTypes.BUBBLE, p.x, wy - 0.6, p.z, 0, 0.05, 0);
 				if (r.nextInt(3) == 0) world.addParticle(ParticleTypes.SPLASH, p.x, wy + 0.05, p.z, 0, 0.05, 0);
@@ -1350,7 +1443,7 @@ public class ShipEntity extends Entity {
 		}
 		int smokeEvery = Math.max(2, 8 - Math.abs(thr) * 2);
 		if (thr != 0 && age % smokeEvery == 0) {
-			Vec3d c = toWorld(10.5, 10.9, 13.5);
+			Vec3d c = toWorld(10.5, 9.9, 15.5);
 			world.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, true, c.x, c.y, c.z, 0, 0.06, 0);
 			if (Math.abs(thr) >= 2) world.addParticle(ParticleTypes.LARGE_SMOKE, c.x, c.y, c.z, 0, 0.08, 0);
 		}
@@ -1368,11 +1461,11 @@ public class ShipEntity extends Entity {
 		int mat = material(hold);
 		int a = template.holds[hold][0], b = template.holds[hold][1];
 		var r = this.random;
-		Vec3d center = toWorld((a + b + 1) / 2.0, 6, 8.5);
+		Vec3d center = toWorld((a + b + 1) / 2.0, 5, 9.5);
 		if (mat > 0) {
 			BlockState st = Registries.BLOCK.get(mat - 1).getDefaultState();
 			for (int k = 0; k < 4; k++) {
-				Vec3d p = toWorld(a + 3 + r.nextDouble() * (b - a - 5), 9 + r.nextDouble() * 2, 4.5 + r.nextDouble() * 8);
+				Vec3d p = toWorld(a + 3 + r.nextDouble() * (b - a - 5), 6 + r.nextDouble() * 2, 4.5 + r.nextDouble() * 10);
 				world.addParticle(new BlockStateParticleEffect(ParticleTypes.FALLING_DUST, st), p.x, p.y, p.z, 0, 0, 0);
 				world.addParticle(new BlockStateParticleEffect(ParticleTypes.BLOCK, st), p.x, p.y - 2, p.z, 0, -0.5, 0);
 			}
@@ -1410,6 +1503,7 @@ public class ShipEntity extends Entity {
 		for (int i = 0; i < HOLD_COUNT; i++) {
 			dataTracker.set(FILL[i], Cargo.fill(holds[i]));
 			dataTracker.set(MATERIAL[i], Cargo.material(holds[i]));
+			dataTracker.set(BOXED[i], Cargo.containerShare(holds[i]));
 		}
 		displaced.clear();
 		for (long p : nbt.getLongArray("Displaced")) displaced.add(p);

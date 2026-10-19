@@ -174,18 +174,20 @@ public final class ShipMesh {
 						random.setSeed(42L);
 						List<BakedQuad> quads = model.getQuads(st, dir, random);
 						if (quads.isEmpty()) continue;
-						if (!Block.shouldDrawSide(st, s, pos, dir, pos.offset(dir))) continue;
+						boolean border = part != 0 && s.template.inLift(x, y, z) != s.template.inLift(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
+						if (!border && !Block.shouldDrawSide(st, s, pos, dir, pos.offset(dir))) continue;
 						int ni = ShipTemplate.index(x + dir.getOffsetX(), y + dir.getOffsetY(), z + dir.getOffsetZ());
 						if (SEALED_CULL && ni >= 0 && !outside[ni] && !opaque[ni]) continue;
 						int lev = detail ? 0 : (ni < 0 || outside[ni]) ? 2 : 1;
 						if (dir == Direction.DOWN && !detail && x >= 0 && x < s.template.length && y <= s.template.hullBottom[x]) lev = 1;
-						for (BakedQuad q : quads) emit(buf[sec * 3 + lev], q, st, x, y, z, dir, sky, blk, opaque, colors);
+						if (border) lev = 0;
+						for (BakedQuad q : quads) emit(buf[sec * 3 + lev], q, st, x, y, z, border ? null : dir, sky, blk, opaque, colors, border);
 					}
 					random.setSeed(42L);
 					int own = ShipTemplate.index(x, y, z);
 					int levFree = detail ? 0 : (own < 0 || outside[own]) ? 2 : 1;
 					for (BakedQuad q : model.getQuads(st, null, random))
-						emit(buf[sec * 3 + levFree], q, st, x, y, z, null, sky, blk, opaque, colors);
+						emit(buf[sec * 3 + levFree], q, st, x, y, z, null, sky, blk, opaque, colors, false);
 				}
 			}
 		}
@@ -200,7 +202,7 @@ public final class ShipMesh {
 	}
 
 	private static void emit(FloatList buf, BakedQuad q, BlockState st, int x, int y, int z, Direction cull,
-							 int[] sky, int[] blk, boolean[] opaque, net.minecraft.client.color.block.BlockColors colors) {
+							 int[] sky, int[] blk, boolean[] opaque, net.minecraft.client.color.block.BlockColors colors, boolean border) {
 		int[] v = q.getVertexData();
 		int stride = v.length / 4;
 		Direction face = q.getFace();
@@ -228,6 +230,7 @@ public final class ShipMesh {
 		int li = ShipTemplate.index(lx, ly, lz);
 		int skyL = li < 0 ? 15 : sky[li];
 		int blkL = li < 0 ? 0 : blk[li];
+		if (border) skyL = 15;   // face between the raised wheelhouse and the roof: open air when lifted
 		int light = LightmapTextureManager.pack(blkL, skyL);
 		for (int i = 0; i < 4; i++) {
 			int o = i * stride;

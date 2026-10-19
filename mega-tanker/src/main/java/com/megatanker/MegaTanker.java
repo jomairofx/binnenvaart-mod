@@ -132,6 +132,7 @@ public class MegaTanker implements ModInitializer {
 			if (!alive && newPlayer.getAttached(SHIP_BED) != null) PENDING_RESPAWN.put(newPlayer.getUuid(), 0);
 		});
 		ServerTickEvents.END_SERVER_TICK.register(MegaTanker::respawnTick);
+		ServerTickEvents.END_SERVER_TICK.register(com_ship_beds -> com.megatanker.ship.ShipEntity.keepSleepers(com_ship_beds));
 
 		PayloadTypeRegistry.playC2S().register(ShipPayloads.Control.ID, ShipPayloads.Control.CODEC);
 		PayloadTypeRegistry.playC2S().register(ShipPayloads.Interact.ID, ShipPayloads.Interact.CODEC);
@@ -139,11 +140,11 @@ public class MegaTanker implements ModInitializer {
 
 		ServerPlayNetworking.registerGlobalReceiver(ShipPayloads.Control.ID, (payload, context) -> {
 			if (context.player().getWorld().getEntityById(payload.entityId()) instanceof ShipEntity ship)
-				ship.handleControl(context.player(), payload);
+				ShipEntity.safely("control", () -> ship.handleControl(context.player(), payload));
 		});
 		ServerPlayNetworking.registerGlobalReceiver(ShipPayloads.Interact.ID, (payload, context) -> {
 			if (context.player().getWorld().getEntityById(payload.entityId()) instanceof ShipEntity ship)
-				ship.handleInteract(context.player(), new Vec3d(payload.x(), payload.y(), payload.z()), payload.sneaking());
+				ShipEntity.safely("interact", () -> ship.handleInteract(context.player(), new Vec3d(payload.x(), payload.y(), payload.z()), payload.sneaking()));
 		});
 
 		com.megatanker.test.SelfTest.register();

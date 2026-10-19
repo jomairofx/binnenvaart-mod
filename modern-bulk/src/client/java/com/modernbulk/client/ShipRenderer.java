@@ -61,6 +61,18 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 
 	@Override
 	public void render(ShipEntity ship, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
+		// eigen kopie van de matrixstapel: als er iets misgaat blijft die van Minecraft heel
+		MatrixStack own = new MatrixStack();
+		own.peek().getPositionMatrix().set(matrices.peek().getPositionMatrix());
+		own.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
+		try {
+			renderSafe(ship, yaw, tickDelta, own, consumers, light);
+		} catch (RuntimeException ex) {
+			ShipEntity.reportError("render", ex);
+		}
+	}
+
+	private void renderSafe(ShipEntity ship, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
 		ShipMesh[] meshes = ship.renderCache instanceof ShipMesh[] mm ? mm : null;
 		boolean lightsOn = ship.lightsOn();
 		if (meshes == null || meshes[0].version != ship.structure.version || meshes[0].lights != lightsOn) {
@@ -142,30 +154,53 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			if (f < 0.002f) continue;
 			int mat = ship.material(h);
 			int a = t.holds[h][0], b = t.holds[h][1];
-			if (mat > 0) {
+			float floor = (float) t.holdFloorY;
+			int len = b - a + 1;
+			int cols = Math.max(1, (int) ((len - 0.4f) / 6.2f));
+			int rows = Math.max(1, (int) ((t.holdZ1 - t.holdZ0 + 1 - 0.2f) / 2.5f));
+			int tiers = Math.max(1, (int) ((t.coamingTopY - floor - 0.3f) / 2.62f));
+			float share = mat > 0 ? ship.containerShare(h) : 1f;
+			if (mat > 0 && (share < 0.02f || cols < 2)) share = share >= 0.5f && cols < 2 ? 1f : 0f;
+			if (share >= 0.999f || mat <= 0) {
+				renderContainers(vc, h, a, cols, rows, tiers, t.holdZ0, t.holdZ1, floor, f, len, light);
+			} else if (share <= 0.001f) {
 				BlockState st = Registries.BLOCK.get(mat - 1).getDefaultState();
-				renderPile(vc, sprites(st), a, b, t.holdZ0, t.holdZ1, (float) t.holdFloorY, (float) t.coamingTopY, f, hatch, light);
+				renderPile(vc, sprites(st), a, b, t.holdZ0, t.holdZ1, floor, (float) t.coamingTopY, f, hatch, light);
 			} else {
-				renderContainers(vc, h, a, b, (float) t.holdFloorY, f, light);
+				// gemengd: containers achterin het ruim, stortgoed in de rest
+				int cc = MathHelper.clamp(Math.round(cols * share), 1, cols - 1);
+				float fc = MathHelper.clamp(f * share * cols / cc, 0.02f, 1f);
+				renderContainers(vc, h, a, cc, rows, tiers, t.holdZ0, t.holdZ1, floor, fc, cc * 6.2f + 0.4f, light);
+				int a2 = Math.min(b - 2, a + (int) Math.ceil(cc * 6.2f + 0.4f));
+				float fp = MathHelper.clamp(f * (1 - share) * len / (b - a2 + 1), 0.02f, 1f);
+				BlockState st = Registries.BLOCK.get(mat - 1).getDefaultState();
+				renderPile(vc, sprites(st), a2, b, t.holdZ0, t.holdZ1, floor, (float) t.coamingTopY, fp, hatch, light);
 			}
 		}
 	}
 
 	private static float pileHeight(int x, int z, int a, int b, float f, float cap) {
 		float cx = (a + b + 1) / 2f, halfLen = (b - a + 1) / 2f;
-		float dx = Math.abs(x + 0.5f - cx) / halfLen, dz = Math.abs(z + 0.5f - 8.5f) / 6.5f;
+		float dx = Math.abs(x + 0.5f - cx) / halfLen, dz = Math.abs(z + 0.5f - 9.5f) / 6.5f;
 		long hsh = (x * 3129871L) ^ (z * 116129781L);
 		hsh = hsh * hsh * 42317861L + hsh * 11L;
 		float noise = ((hsh >> 16) & 15) / 15f - 0.5f;
-		float hgt = f * (9.4f - 3.0f * dx * dx - 2.2f * dz * dz) + noise * 0.3f * f;
+		float hgt = f * (8.4f - 3.0f * dx * dx - 2.2f * dz * dz) + noise * 0.3f * f;
 		float c = cap;
-		if (x >= 115) c = Math.min(c, 8.3f);
+		// onder de luikenstapel aan de voorkant van elk ruim blijft de stort onder de luiken
+		for (int g = 0; g * ShipEntity.COVER_GROUP < ShipEntity.COVERS; g++) {
+			float sx = ShipEntity.stackX(g);
+			if (x + 1 > sx && x < sx + ShipEntity.COVER_LEN) c = Math.min(c, CLOSED_CAP);
+		}
 		return MathHelper.clamp(hgt, 0.05f, c);
 	}
 
+	/** Hoogste stort boven de ruimvloer onder gesloten luiken (vloer -3, luiken op 4,5). */
+	private static final float CLOSED_CAP = 7.3f;
+
 	private void renderPile(Sink vc, Sprite[] sp, int a, int b, int z0, int z1, float floor, float coaming,
 							float f, float hatch, int light) {
-		float cap = MathHelper.lerp(hatch, 9.4f, 8.3f);
+		float cap = MathHelper.lerp(hatch, 8.4f, CLOSED_CAP);
 		int w = b - a + 1, d = z1 - z0 + 1;
 		float[][] hm = new float[w][d];
 		for (int i = 0; i < w; i++) for (int k = 0; k < d; k++) hm[i][k] = pileHeight(a + i, z0 + k, a, b, f, cap);
@@ -191,44 +226,72 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		}
 	}
 
-	private void renderContainers(Sink vc, int hold, int a, int b, float floor, float f, int light) {
-		float slots = f * 8f;
-		int len = b - a + 1;
-		for (int k = 0; k < 8; k++) {
+	/** Zeecontainers (20 ft) netjes in rijen en lagen; ze zakken van boven in het ruim als ze geladen worden. */
+	private void renderContainers(Sink vc, int hold, int a, int cols, int rows, int tiers, int z0, int z1, float floor,
+								  float f, float span, int light) {
+		int per = cols * rows, cap = per * tiers;
+		float slots = f * cap;
+		float xs = a + (span - cols * 6.2f) / 2f + 0.07f;
+		float zs = z0 + ((z1 - z0 + 1) - rows * 2.5f) / 2f + 0.03f;
+		Sprite dark = sprites(Blocks.GRAY_CONCRETE.getDefaultState())[0];
+		for (int k = 0; k < cap; k++) {
 			float p = MathHelper.clamp(slots - k, 0f, 1f);
 			if (p <= 0) break;
-			int tier = 0, row = k % 4, col = k / 4;
-			float x0 = a + (len - 12.4f) / 2f + col * 6.4f;
-			float zz = 3.0f + row * 2.6f;
+			int tier = k / per, idx = k % per, col = idx / rows, row = idx % rows;
+			float x0 = xs + col * 6.2f, zz = zs + row * 2.5f;
 			float drop = (1 - p) * (1 - p) * 7f;
 			float y0 = floor + tier * 2.62f + drop;
-			Block color = CONTAINER_COLORS[(hold * 3 + k * 5) % CONTAINER_COLORS.length];
+			Block color = CONTAINER_COLORS[(hold * 7 + k * 5 + (k / 3)) % CONTAINER_COLORS.length];
 			Sprite s = sprites(color.getDefaultState())[0];
-			box(vc, s, x0, y0, zz, x0 + 6.05f, y0 + 2.59f, zz + 2.44f, light, 1f);
-			// deuren aan de kopse kant: iets donkerder strookje
+			box(vc, s, x0, y0 + 0.08f, zz, x0 + 6.05f, y0 + 2.51f, zz + 2.44f, light, 1f);
+			// ribbels in de zijwanden
+			for (float rx = x0 + 0.45f; rx < x0 + 5.7f; rx += 0.7f) {
+				box(vc, s, rx, y0 + 0.2f, zz - 0.04f, rx + 0.3f, y0 + 2.4f, zz, light, 0.82f);
+				box(vc, s, rx, y0 + 0.2f, zz + 2.44f, rx + 0.3f, y0 + 2.4f, zz + 2.48f, light, 0.82f);
+			}
+			// hoekstijlen, onder- en bovenregels
+			box(vc, dark, x0, y0, zz, x0 + 6.05f, y0 + 0.08f, zz + 2.44f, light, 0.7f);
+			box(vc, s, x0, y0 + 2.51f, zz, x0 + 6.05f, y0 + 2.59f, zz + 2.44f, light, 0.75f);
+			for (float cx : new float[]{x0, x0 + 5.9f})
+				for (float cz : new float[]{zz, zz + 2.29f}) box(vc, dark, cx, y0, cz, cx + 0.15f, y0 + 2.59f, cz + 0.15f, light, 0.8f);
+			// deuren aan de kopse kant met vergrendelstangen
 			box(vc, s, x0 + 6.05f, y0 + 0.1f, zz + 0.1f, x0 + 6.1f, y0 + 2.49f, zz + 2.34f, light, 0.55f);
+			for (float bz : new float[]{zz + 0.5f, zz + 0.9f, zz + 1.5f, zz + 1.9f})
+				box(vc, dark, x0 + 6.1f, y0 + 0.2f, bz, x0 + 6.14f, y0 + 2.4f, bz + 0.06f, light, 0.6f);
 		}
 	}
 
 	// ---------------------------------------------------------------- luiken
 
+	/** Schuifluiken: per ruim vier stuks die bij openen naar voren rollen en laag op elkaar komen te liggen. */
 	private void renderCovers(float t, Sink vc, int light) {
 		Sprite s = sprites(Blocks.LIGHT_GRAY_CONCRETE.getDefaultState())[0];
 		Sprite rim = sprites(Blocks.GRAY_CONCRETE.getDefaultState())[0];
-		int n = ShipEntity.COVERS;
-		float stagger = 0.06f, dur = 1f - stagger * (n - 1);
+		Sprite wheel = sprites(Blocks.BLACK_CONCRETE.getDefaultState())[0];
+		int n = ShipEntity.COVERS, gsz = ShipEntity.COVER_GROUP;
+		float z0 = ShipEntity.COVER_Z0, z1 = ShipEntity.COVER_Z1, len = ShipEntity.COVER_LEN;
 		for (int i = 0; i < n; i++) {
-			float p = MathHelper.clamp((t - stagger * i) / dur, 0f, 1f);
+			int g = i / gsz, last = Math.min(n, (g + 1) * gsz) - 1;
+			int level = last - i;                                   // the front one stays down, the others ride on top
+			float stagger = 0.12f, dur = 1f - stagger * (gsz - 1);
+			float p = MathHelper.clamp((t - stagger * level) / dur, 0f, 1f);
 			p = p * p * (3 - 2 * p);
-			float stackY = ShipEntity.COVER_Y + ShipEntity.COVER_STACK * (n - 1 - i);
-			float drop = MathHelper.clamp((p - 0.8f) / 0.2f, 0f, 1f);
-			float x0 = MathHelper.lerp(p, ShipEntity.STACK_X, ShipEntity.COVER_X0 + ShipEntity.COVER_LEN * i);
-			float x1 = x0 + ShipEntity.COVER_LEN - 0.03f;
-			float y = MathHelper.lerp(drop, stackY, ShipEntity.COVER_Y);
-			if (p > 0 && p < 1) y += 0.15f * MathHelper.sin(p * MathHelper.PI);
-			box(vc, rim, x0 + 0.03f, y, 0.95f, x1, y + 0.25f, 16.05f, light, 0.95f);
-			box(vc, s, x0 + 0.03f, y + 0.25f, 2.2f, x1, y + 0.5f, 14.8f, light, 1f);
-			box(vc, s, x0 + 0.03f, y + 0.5f, 3.8f, x1, y + 0.62f, 13.2f, light, 1f);
+			float q = 1f - p;                                       // 0 = closed, 1 = on the stack
+			float rise = MathHelper.clamp(q / 0.15f, 0f, 1f), roll = MathHelper.clamp((q - 0.15f) / 0.85f, 0f, 1f);
+			float closedX = ShipEntity.COVER_X0 + len * i;
+			float x0 = MathHelper.lerp(roll, closedX, ShipEntity.stackX(g));
+			float y = MathHelper.lerp(rise, ShipEntity.COVER_Y, ShipEntity.COVER_Y + ShipEntity.COVER_STACK * level);
+			float x1 = x0 + len - 0.04f;
+			// onderplaat over de volle breedte, verhoogd middendeel (dakvorm), dwarsribben en loopwielen
+			box(vc, rim, x0 + 0.04f, y, z0, x1, y + 0.16f, z1, light, 0.95f);
+			box(vc, s, x0 + 0.04f, y + 0.16f, z0 + 1.0f, x1, y + 0.3f, z1 - 1.0f, light, 1f);
+			box(vc, s, x0 + 0.04f, y + 0.3f, z0 + 3.0f, x1, y + 0.4f, z1 - 3.0f, light, 1f);
+			for (float rx = x0 + 1.0f; rx < x1 - 0.5f; rx += 1.2f)
+				box(vc, rim, rx, y + 0.16f, z0 + 0.3f, rx + 0.12f, y + 0.24f, z1 - 0.3f, light, 0.85f);
+			for (float wx : new float[]{x0 + 0.5f, x1 - 0.8f}) {
+				box(vc, wheel, wx, y - 0.1f, z0 + 0.1f, wx + 0.3f, y, z0 + 0.35f, light, 0.8f);
+				box(vc, wheel, wx, y - 0.1f, z1 - 0.35f, wx + 0.3f, y, z1 - 0.1f, light, 0.8f);
+			}
 		}
 	}
 
@@ -282,13 +345,13 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		float w = tr.getWidth(name) * scale;
 		// stuurboord (z+)
 		matrices.push();
-		matrices.translate(126.0f, 1.95f, 17.01f);
+		matrices.translate(160.0f, 1.95f, 19.01f);
 		matrices.scale(scale, -scale, scale);
 		draw(tr, name, matrices, consumers, light);
 		matrices.pop();
 		// bakboord (z-)
 		matrices.push();
-		matrices.translate(126.0f + w, 1.95f, -0.01f);
+		matrices.translate(160.0f + w, 1.95f, -0.01f);
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f));
 		matrices.scale(scale, -scale, scale);
 		draw(tr, name, matrices, consumers, light);
@@ -421,6 +484,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			for (float z = z0; z < z1 - 1e-4f; z += 1f) {
 				float ze = Math.min(z1, z + 1);
 				quadUp(vc, s, x, y1, z, xe, ze, tint, light);
+				quadDown(vc, s, x, y0, z, xe, ze, tint * 0.6f, light);
 			}
 		}
 		for (float z = z0; z < z1 - 1e-4f; z += 1f) {

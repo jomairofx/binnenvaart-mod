@@ -121,7 +121,7 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 	// ------------------------------------------------------------------ server
 
 	public static void serverTick(World world, BlockPos pos, BlockState state, CraneBlockEntity be) {
-		if (world instanceof ServerWorld sw) be.tickServer(sw);
+		if (world instanceof ServerWorld sw) nl.kempenaar.ship.ShipEntity.safely("crane", () -> be.tickServer(sw));
 	}
 
 	private void tickServer(ServerWorld w) {
@@ -236,7 +236,7 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		int a = hb[0], b = hb[1];
 		// altijd op de hartlijn van het ruim, afwisselend voor, midden en achter, zodat de stort mooi verdeeld wordt
 		double len = b - a + 1, mid = (a + b + 1) / 2.0;
-		double tx = mid + ((spot % 3) - 1) * len * 0.25;
+		double tx = mid + new double[]{-0.28, -0.05, 0.16}[spot % 3] * len;   // stays clear of the cover stack at the front of the hold
 		double tz = (s.holdZ0() + s.holdZ1() + 1) / 2.0;
 		Vec3d p = s.toWorld(tx, s.coamingTopY(), tz);
 		double dx = p.x - c.x, dz = p.z - c.z, d = Math.sqrt(dx * dx + dz * dz);

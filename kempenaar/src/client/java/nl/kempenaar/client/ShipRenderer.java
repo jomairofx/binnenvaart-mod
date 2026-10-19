@@ -61,6 +61,18 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 
 	@Override
 	public void render(ShipEntity ship, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
+		// eigen kopie van de matrixstapel: als er iets misgaat blijft die van Minecraft heel
+		MatrixStack own = new MatrixStack();
+		own.peek().getPositionMatrix().set(matrices.peek().getPositionMatrix());
+		own.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
+		try {
+			renderSafe(ship, yaw, tickDelta, own, consumers, light);
+		} catch (RuntimeException ex) {
+			ShipEntity.reportError("render", ex);
+		}
+	}
+
+	private void renderSafe(ShipEntity ship, float yaw, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
 		ShipMesh[] meshes = ship.renderCache instanceof ShipMesh[] mm ? mm : null;
 		boolean lightsOn = ship.lightsOn();
 		if (meshes == null || meshes[0].version != ship.structure.version || meshes[0].lights != lightsOn) {
@@ -142,11 +154,27 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			if (f < 0.002f) continue;
 			int mat = ship.material(h);
 			int a = t.holds[h][0], b = t.holds[h][1];
-			if (mat > 0) {
+			float floor = (float) t.holdFloorY;
+			int len = b - a + 1;
+			int cols = Math.max(1, (int) ((len - 0.4f) / 6.2f));
+			int rows = Math.max(1, (int) ((t.holdZ1 - t.holdZ0 + 1 - 0.2f) / 2.5f));
+			int tiers = Math.max(1, (int) ((t.coamingTopY - floor - 0.3f) / 2.62f));
+			float share = mat > 0 ? ship.containerShare(h) : 1f;
+			if (mat > 0 && (share < 0.02f || cols < 2)) share = share >= 0.5f && cols < 2 ? 1f : 0f;
+			if (share >= 0.999f || mat <= 0) {
+				renderContainers(vc, h, a, cols, rows, tiers, t.holdZ0, t.holdZ1, floor, f, len, light);
+			} else if (share <= 0.001f) {
 				BlockState st = Registries.BLOCK.get(mat - 1).getDefaultState();
-				renderPile(vc, sprites(st), a, b, t.holdZ0, t.holdZ1, (float) t.holdFloorY, (float) t.coamingTopY, f, hatch, light);
+				renderPile(vc, sprites(st), a, b, t.holdZ0, t.holdZ1, floor, (float) t.coamingTopY, f, hatch, light);
 			} else {
-				renderContainers(vc, h, a, b, (float) t.holdFloorY, f, light);
+				// gemengd: containers achterin het ruim, stortgoed in de rest
+				int cc = MathHelper.clamp(Math.round(cols * share), 1, cols - 1);
+				float fc = MathHelper.clamp(f * share * cols / cc, 0.02f, 1f);
+				renderContainers(vc, h, a, cc, rows, tiers, t.holdZ0, t.holdZ1, floor, fc, cc * 6.2f + 0.4f, light);
+				int a2 = Math.min(b - 2, a + (int) Math.ceil(cc * 6.2f + 0.4f));
+				float fp = MathHelper.clamp(f * (1 - share) * len / (b - a2 + 1), 0.02f, 1f);
+				BlockState st = Registries.BLOCK.get(mat - 1).getDefaultState();
+				renderPile(vc, sprites(st), a2, b, t.holdZ0, t.holdZ1, floor, (float) t.coamingTopY, fp, hatch, light);
 			}
 		}
 	}
@@ -191,22 +219,38 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		}
 	}
 
-	private void renderContainers(Sink vc, int hold, int a, int b, float floor, float f, int light) {
-		float slots = f * 4f;
-		int len = b - a + 1;
-		for (int k = 0; k < 4; k++) {
+	/** Zeecontainers (20 ft) netjes in rijen en lagen; ze zakken van boven in het ruim als ze geladen worden. */
+	private void renderContainers(Sink vc, int hold, int a, int cols, int rows, int tiers, int z0, int z1, float floor,
+								  float f, float span, int light) {
+		int per = cols * rows, cap = per * tiers;
+		float slots = f * cap;
+		float xs = a + (span - cols * 6.2f) / 2f + 0.07f;
+		float zs = z0 + ((z1 - z0 + 1) - rows * 2.5f) / 2f + 0.03f;
+		Sprite dark = sprites(Blocks.GRAY_CONCRETE.getDefaultState())[0];
+		for (int k = 0; k < cap; k++) {
 			float p = MathHelper.clamp(slots - k, 0f, 1f);
 			if (p <= 0) break;
-			int tier = k / 4, idx = k % 4, row = idx % 2, col = idx / 2;
-			float x0 = a + (len - 12.4f) / 2f + col * 6.4f;
-			float zz = row == 0 ? 2.03f : 4.53f;
+			int tier = k / per, idx = k % per, col = idx / rows, row = idx % rows;
+			float x0 = xs + col * 6.2f, zz = zs + row * 2.5f;
 			float drop = (1 - p) * (1 - p) * 7f;
-			float y0 = floor + drop;
-			Block color = CONTAINER_COLORS[(hold * 3 + k * 5) % CONTAINER_COLORS.length];
+			float y0 = floor + tier * 2.62f + drop;
+			Block color = CONTAINER_COLORS[(hold * 7 + k * 5 + (k / 3)) % CONTAINER_COLORS.length];
 			Sprite s = sprites(color.getDefaultState())[0];
-			box(vc, s, x0, y0, zz, x0 + 6.05f, y0 + 2.59f, zz + 2.44f, light, 1f);
-			// deuren aan de kopse kant: iets donkerder strookje
+			box(vc, s, x0, y0 + 0.08f, zz, x0 + 6.05f, y0 + 2.51f, zz + 2.44f, light, 1f);
+			// ribbels in de zijwanden
+			for (float rx = x0 + 0.45f; rx < x0 + 5.7f; rx += 0.7f) {
+				box(vc, s, rx, y0 + 0.2f, zz - 0.04f, rx + 0.3f, y0 + 2.4f, zz, light, 0.82f);
+				box(vc, s, rx, y0 + 0.2f, zz + 2.44f, rx + 0.3f, y0 + 2.4f, zz + 2.48f, light, 0.82f);
+			}
+			// hoekstijlen, onder- en bovenregels
+			box(vc, dark, x0, y0, zz, x0 + 6.05f, y0 + 0.08f, zz + 2.44f, light, 0.7f);
+			box(vc, s, x0, y0 + 2.51f, zz, x0 + 6.05f, y0 + 2.59f, zz + 2.44f, light, 0.75f);
+			for (float cx : new float[]{x0, x0 + 5.9f})
+				for (float cz : new float[]{zz, zz + 2.29f}) box(vc, dark, cx, y0, cz, cx + 0.15f, y0 + 2.59f, cz + 0.15f, light, 0.8f);
+			// deuren aan de kopse kant met vergrendelstangen
 			box(vc, s, x0 + 6.05f, y0 + 0.1f, zz + 0.1f, x0 + 6.1f, y0 + 2.49f, zz + 2.34f, light, 0.55f);
+			for (float bz : new float[]{zz + 0.5f, zz + 0.9f, zz + 1.5f, zz + 1.9f})
+				box(vc, dark, x0 + 6.1f, y0 + 0.2f, bz, x0 + 6.14f, y0 + 2.4f, bz + 0.06f, light, 0.6f);
 		}
 	}
 
@@ -216,7 +260,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		Sprite s = sprites(Blocks.POLISHED_ANDESITE.getDefaultState())[0];
 		Sprite rim = sprites(Blocks.SMOOTH_STONE.getDefaultState())[0];
 		int n = ShipEntity.COVERS;
-		float stagger = 0.06f, dur = 1f - stagger * (n - 1);
+		float stagger = Math.min(0.06f, 0.45f / Math.max(1, n - 1)), dur = 1f - stagger * (n - 1);
 		for (int i = 0; i < n; i++) {
 			float p = MathHelper.clamp((t - stagger * i) / dur, 0f, 1f);
 			p = p * p * (3 - 2 * p);
@@ -428,6 +472,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			for (float z = z0; z < z1 - 1e-4f; z += 1f) {
 				float ze = Math.min(z1, z + 1);
 				quadUp(vc, s, x, y1, z, xe, ze, tint, light);
+				quadDown(vc, s, x, y0, z, xe, ze, tint * 0.6f, light);
 			}
 		}
 		for (float z = z0; z < z1 - 1e-4f; z += 1f) {

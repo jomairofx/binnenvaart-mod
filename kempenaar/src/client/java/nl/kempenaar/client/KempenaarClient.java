@@ -48,9 +48,9 @@ public class KempenaarClient implements ClientModInitializer {
 				ship.applyBlockChanges(payload.positions(), payload.states());
 		});
 
-		ClientTickEvents.END_CLIENT_TICK.register(KempenaarClient::tick);
+		ClientTickEvents.END_CLIENT_TICK.register(mc -> ShipEntity.safely("client tick", () -> tick(mc)));
 		ClientSelfTest.register();
-		HudRenderCallback.EVENT.register((ctx, tickCounter) -> renderHud(ctx));
+		HudRenderCallback.EVENT.register((ctx, tickCounter) -> ShipEntity.safely("hud", () -> renderHud(ctx)));
 	}
 
 	static int testLift;

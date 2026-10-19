@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "modernbulk",
+  "version": "${version}",
+  "name": "Modern Bulk Carrier",
+  "description": "ZEELANDIA: a large modern Dutch inland bulk carrier (120 x 17) with lifting wheelhouse, car on the aft deck, four holds with rolling hatch covers and working lights. Sailable, walkable and loadable.",
+  "authors": [
+    "jomairofx"
+  ],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.modernbulk.ModernBulk"
+    ],
+    "client": [
+      "com.modernbulk.client.ModernBulkClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "mixins": [
+    "modernbulk.mixins.json",
+    {
+      "config": "modernbulk.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "icon": "assets/modernbulk/icon.png"
+}

@@ -1,0 +1,13 @@
+{
+  "item.modernbulk.modern_bulk": "Modern Bulk Carrier ZEELANDIA",
+  "entity.modernbulk.modern_bulk": "ZEELANDIA",
+  "block.modernbulk.displaced_water": "Displaced Water",
+  "category.modernbulk": "Modern Bulk Carrier ZEELANDIA",
+  "key.modernbulk.thruster_port": "Bow thruster port (left)",
+  "key.modernbulk.thruster_starboard": "Bow thruster starboard (right)",
+  "key.modernbulk.horn": "Ship horn",
+  "key.modernbulk.hatches": "Open/close hatches",
+  "key.modernbulk.lift_up": "Wheelhouse up",
+  "key.modernbulk.lift_down": "Wheelhouse down",
+  "key.modernbulk.lights": "Ship lights on/off"
+}

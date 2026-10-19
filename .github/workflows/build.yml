@@ -122,6 +122,28 @@ jobs:
           timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace > client_out.txt 2>&1 || true
           cp run/logs/latest.log run/client.log || true
           cat run/client_selftest.txt || echo "geen client_selftest.txt"
+      - name: Modern Bulk Carrier bouwen
+        continue-on-error: true
+        working-directory: modern-bulk
+        run: chmod +x gradlew && set -o pipefail && ./gradlew build --stacktrace 2>&1 | tee build_out.txt
+      - name: Modern Bulk Carrier servertest (met Binnenvaart samen)
+        working-directory: modern-bulk
+        run: |
+          mkdir -p run/mods && cp ../build/libs/binnenvaart-1.0.0.jar run/mods/ && echo "eula=true" > run/eula.txt
+          cp ../run/server.properties run/server.properties
+          timeout 900 ./gradlew runTestServer --stacktrace > server_out.txt 2>&1 || true
+          cp run/logs/latest.log run/server.log || true
+          cat run/selftest.txt || echo "geen selftest.txt"
+      - name: Modern Bulk Carrier clienttest
+        working-directory: modern-bulk
+        run: |
+          rm -rf run/saves && mkdir -p run/saves && cp -r run/world run/saves/testwelt || true
+          cp ../run/options.txt run/options.txt
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export ALSOFT_DRIVERS=null
+          timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace > client_out.txt 2>&1 || true
+          cp run/logs/latest.log run/client.log || true
+          cat run/client_selftest.txt || echo "geen client_selftest.txt"
       - name: No Kelp bouwen
         continue-on-error: true
         working-directory: no-kelp
@@ -154,6 +176,10 @@ jobs:
           cp -r kempenaar/run/screenshots /tmp/out/kempenaar/ 2>/dev/null || true
           cp kempenaar/run/*.txt kempenaar/run/*.log kempenaar/server_out.txt kempenaar/client_out.txt kempenaar/build_out.txt /tmp/out/kempenaar/ 2>/dev/null || true
           cp kempenaar/build/libs/kempenaar-1.0.0.jar /tmp/out/ 2>/dev/null || true
+          mkdir -p /tmp/out/bulk
+          cp -r modern-bulk/run/screenshots /tmp/out/bulk/ 2>/dev/null || true
+          cp modern-bulk/run/*.txt modern-bulk/run/*.log modern-bulk/server_out.txt modern-bulk/client_out.txt modern-bulk/build_out.txt /tmp/out/bulk/ 2>/dev/null || true
+          cp modern-bulk/build/libs/modern-bulk-1.0.0.jar /tmp/out/ 2>/dev/null || true
           mkdir -p /tmp/out/nokelp
           cp no-kelp/run/*.txt no-kelp/run/*.log no-kelp/server_out.txt no-kelp/build_out.txt /tmp/out/nokelp/ 2>/dev/null || true
           cp no-kelp/build/libs/no-kelp-1.0.0.jar /tmp/out/ 2>/dev/null || true
@@ -168,3 +194,4 @@ jobs:
           grep -q "RESULT PASS" mega-tanker/run/selftest.txt && grep -q "RESULT PASS" mega-tanker/run/client_selftest.txt
           grep -q "RESULT PASS" kempenaar/run/selftest.txt && grep -q "RESULT PASS" kempenaar/run/client_selftest.txt
           grep -q "RESULT PASS" no-kelp/run/selftest.txt
+          grep -q "RESULT PASS" modern-bulk/run/selftest.txt && grep -q "RESULT PASS" modern-bulk/run/client_selftest.txt

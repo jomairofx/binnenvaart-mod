@@ -1,0 +1,18 @@
+{
+  "engine_idle": {
+    "sounds": [
+      {
+        "name": "modernbulk:engine_idle",
+        "stream": false
+      }
+    ]
+  },
+  "engine_load": {
+    "sounds": [
+      {
+        "name": "modernbulk:engine_load",
+        "stream": false
+      }
+    ]
+  }
+}

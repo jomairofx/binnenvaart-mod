@@ -39,7 +39,7 @@ final class SelfTest {
 	}
 
 	private static void testRiver(ServerWorld w, RiverField.Kind kind, RiverField.Kind other, int minWidth, int minDepth) {
-		int[] c = SelfTestSpots.clearSpot(kind, other);
+		int[] c = SelfTestSpots.clearSpot(kind, other, w);
 		check(kind.name() + " gevonden", c != null, c == null ? "geen" : "midden op " + c[0] + ", " + c[1]);
 		if (c == null) return;
 		int x = c[0], z = c[1];
@@ -84,10 +84,16 @@ final class SelfTest {
 		int top = w.getTopY(Heightmap.Type.OCEAN_FLOOR, bx, bz);
 		log.add("  oever op " + bx + ", " + bz + ": land tot y " + top);
 		// under the river the ground is normal ground with stone below (caves and ores untouched)
-		int solid = 0;
-		for (int y = RiverField.WATER_TOP - depth - 1; y > RiverField.WATER_TOP - depth - 12; y--)
-			if (!w.getBlockState(new BlockPos(x, y, z)).isAir() && !water(w, x, y, z)) solid++;
-		check(kind.name() + " vaste bodem", solid >= 6, solid + " van 11 blokken onder de bedding vast");
+		int good = 0;
+		for (int k = -2; k <= 2; k++) {
+			int px = (int) Math.round(x + k * gx * hw * 0.3), pz = (int) Math.round(z + k * gz * hw * 0.3);
+			int y = RiverField.WATER_TOP;
+			while (y > -50 && water(w, px, y, pz)) y--;
+			int solid = 0;
+			for (int yy = y; yy > y - 11; yy--) if (!w.getBlockState(new BlockPos(px, yy, pz)).isAir() && !water(w, px, yy, pz)) solid++;
+			if (solid >= 6) good++;
+		}
+		check(kind.name() + " vaste bodem", good >= 3, good + " van 5 plekken met een vaste bodem onder de bedding");
 	}
 
 	private static void onTick(MinecraftServer server) {

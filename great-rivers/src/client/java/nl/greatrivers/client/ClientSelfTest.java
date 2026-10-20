@@ -34,8 +34,10 @@ public final class ClientSelfTest {
 		views.add(new double[]{ex, ey, ez, tx, ty, tz});
 	}
 
+	private static net.minecraft.server.world.ServerWorld srvWorld;
+
 	private static void plan(RiverField.Kind k, RiverField.Kind other, String tag, double across, double high) {
-		int[] c = nl.greatrivers.SelfTestSpots.clearSpot(k, other);
+		int[] c = nl.greatrivers.SelfTestSpots.clearSpot(k, other, srvWorld);
 		if (c == null) {
 			log.add("FAIL geen " + k.name());
 			return;
@@ -61,6 +63,7 @@ public final class ClientSelfTest {
 			cmd(srv, "time set 5000");
 			cmd(srv, "weather clear");
 			cmd(srv, "gamemode spectator @p");
+			srvWorld = srv.getOverworld();
 			RiverField f = RiverField.current;
 			if (f == null) {
 				log.add("FAIL geen riviernet");

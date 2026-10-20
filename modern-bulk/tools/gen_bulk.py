@@ -283,7 +283,7 @@ S(10, 9, 15, "cauldron")
 # tender (white with turquoise rim) on chocks
 S(8, 6, 4, "smooth_quartz_stairs[facing=west,half=bottom]"); S(9, 6, 4, "smooth_quartz_slab[type=bottom]")
 S(10, 6, 4, "smooth_quartz_slab[type=bottom]"); S(11, 6, 4, "smooth_quartz_stairs[facing=east,half=bottom]")
-S(9, 7, 4, "cyan_carpet"); S(10, 7, 4, "cyan_carpet")
+
 # satellite dome + antenna on the roof
 S(11, 6, 12, "white_concrete"); S(11, 7, 12, "smooth_quartz_slab[type=bottom]")
 

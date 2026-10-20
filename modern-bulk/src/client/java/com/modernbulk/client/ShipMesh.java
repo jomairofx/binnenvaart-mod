@@ -40,6 +40,8 @@ import java.util.Map;
  */
 public final class ShipMesh {
 	private static final int STRIDE = 7; // x y z u v kleur licht
+	/** Per vlak: normaal (3) en afstand (1), daarna 4 hoekpunten. */
+	private static final int QUAD = 4 + 4 * STRIDE;
 	private static final int SEC = 8;
 	/** Sommige schepen (tanker) hebben dichte tanks: vlakken daarheen zijn nooit te zien. */
 	private static final boolean SEALED_CULL = false;
@@ -90,6 +92,14 @@ public final class ShipMesh {
 			double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
 			level[k] = Math.max(minLevelAll, d < NEAR ? 0 : d < MID ? 1 : 2);
 		}
+		// camera in sjablooncoördinaten, om afgewende vlakken over te slaan
+		double rx = cam.x - shipPos.x, rz = cam.z - shipPos.z;
+		float cx = (float) (rx * c + rz * s + ShipTemplate.CX), cy = (float) (cam.y - shipPos.y), cz = (float) (-rx * s + rz * c + ShipTemplate.CZ);
+		float m00 = m.m00(), m01 = m.m01(), m02 = m.m02(), m10 = m.m10(), m11 = m.m11(), m12 = m.m12();
+		float m20 = m.m20(), m21 = m.m21(), m22 = m.m22(), m30 = m.m30(), m31 = m.m31(), m32 = m.m32();
+		org.joml.Vector3f nrm = entry.getNormalMatrix().transform(new org.joml.Vector3f(0f, 1f, 0f));
+		float nx = nrm.x, ny = nrm.y, nz = nrm.z;
+		int overlay = OverlayTexture.DEFAULT_UV;
 		for (int l = 0; l < layers.size(); l++) {
 			float[][] parts = data.get(l);
 			VertexConsumer vc = null;
@@ -99,13 +109,14 @@ public final class ShipMesh {
 					float[] d = parts[k * 3 + lev];
 					if (d == null || d.length == 0) continue;
 					if (vc == null) vc = consumers.getBuffer(layers.get(l));
-					for (int i = 0; i < d.length; i += STRIDE) {
-						vc.vertex(m, d[i], d[i + 1], d[i + 2])
-								.color(Float.floatToRawIntBits(d[i + 5]))
-								.texture(d[i + 3], d[i + 4])
-								.overlay(OverlayTexture.DEFAULT_UV)
-								.light(Float.floatToRawIntBits(d[i + 6]))
-								.normal(entry, 0f, 1f, 0f);
+					for (int q = 0; q < d.length; q += QUAD) {
+						// achterkant naar de camera: wordt toch niet getekend
+						if (d[q] * cx + d[q + 1] * cy + d[q + 2] * cz - d[q + 3] < -0.6f) continue;
+						for (int i = q + 4, e = q + QUAD; i < e; i += STRIDE) {
+							float x = d[i], y = d[i + 1], z = d[i + 2];
+							vc.vertex(m00 * x + m10 * y + m20 * z + m30, m01 * x + m11 * y + m21 * z + m31, m02 * x + m12 * y + m22 * z + m32,
+									Float.floatToRawIntBits(d[i + 5]), d[i + 3], d[i + 4], overlay, Float.floatToRawIntBits(d[i + 6]), nx, ny, nz);
+						}
 					}
 				}
 			}
@@ -232,6 +243,20 @@ public final class ShipMesh {
 		int blkL = li < 0 ? 0 : blk[li];
 		if (border) skyL = 15;   // face between the raised wheelhouse and the roof: open air when lifted
 		int light = LightmapTextureManager.pack(blkL, skyL);
+		// echte normaal van het vlak (uit de hoekpunten), voor het overslaan van afgewende vlakken
+		float ax = Float.intBitsToFloat(v[0]) + x, ay = Float.intBitsToFloat(v[1]) + y, az = Float.intBitsToFloat(v[2]) + z;
+		float ux = Float.intBitsToFloat(v[stride]) + x - ax, uy = Float.intBitsToFloat(v[stride + 1]) + y - ay, uz = Float.intBitsToFloat(v[stride + 2]) + z - az;
+		float wx = Float.intBitsToFloat(v[2 * stride]) + x - ax, wy = Float.intBitsToFloat(v[2 * stride + 1]) + y - ay, wz = Float.intBitsToFloat(v[2 * stride + 2]) + z - az;
+		float qx = uy * wz - uz * wy, qy = uz * wx - ux * wz, qz = ux * wy - uy * wx;
+		float ql = (float) Math.sqrt(qx * qx + qy * qy + qz * qz);
+		if (ql < 1e-6f) {
+			// ontaard vlak: nooit overslaan
+			buf.add(0); buf.add(0); buf.add(0); buf.add(-1000f);
+		} else {
+			qx /= ql; qy /= ql; qz /= ql;
+			if (qx * face.getOffsetX() + qy * face.getOffsetY() + qz * face.getOffsetZ() < 0) { qx = -qx; qy = -qy; qz = -qz; }
+			buf.add(qx); buf.add(qy); buf.add(qz); buf.add(qx * ax + qy * ay + qz * az);
+		}
 		for (int i = 0; i < 4; i++) {
 			int o = i * stride;
 			buf.add(Float.intBitsToFloat(v[o]) + x);

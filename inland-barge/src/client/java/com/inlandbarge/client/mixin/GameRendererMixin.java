@@ -30,7 +30,7 @@ public abstract class GameRendererMixin {
 			Vec3d hit;
 			try {
 				hit = ship.raycast(eye, end, camera);
-			} catch (RuntimeException ex) {
+			} catch (RuntimeException | StackOverflowError ex) {
 				ShipEntity.reportError("raycast", ex);
 				continue;
 			}

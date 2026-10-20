@@ -137,24 +137,28 @@ for z in (3, 15):
 # lifebuoys on the aft rail
 S(0, 3, 4, "orange_banner[rotation=4]") if False else None
 # car on the aft deck (starboard) on its turntable, with the car crane next to it
+# dark grey estate car: low body, tinted windows all round, thin roof, wheels, lights and mirrors
 for x in R(2, 5):
-    for z in (11, 12): S(x, 2, z, "light_gray_concrete")
+    for z in (11, 12): S(x, 2, z, "gray_concrete")                        # body
 for z in (11, 12):
-    S(2, 3, z, "smooth_stone_slab[type=bottom]"); S(5, 3, z, "light_gray_concrete")
-    S(3, 3, z, "black_stained_glass"); S(4, 3, z, "black_stained_glass")
-S(5, 4, 11, "light_gray_carpet"); S(5, 4, 12, "light_gray_carpet")
+    S(2, 3, z, "black_stained_glass")                                     # rear window
+    S(3, 3, z, "black_stained_glass"); S(4, 3, z, "black_stained_glass")  # side windows / windscreen
+    S(5, 3, z, "polished_deepslate_slab[type=bottom]")                    # bonnet
+    for x in (2, 3, 4): S(x, 4, z, "gray_carpet")                         # roof
 for x in (2, 5):
-    S(x, 2, 10, "polished_blackstone_button[face=wall,facing=north,powered=false]")
+    S(x, 2, 10, "polished_blackstone_button[face=wall,facing=north,powered=false]")   # wheels
     S(x, 2, 13, "polished_blackstone_button[face=wall,facing=south,powered=false]")
-S(6, 2, 12, "yellow_carpet"); S(6, 2, 11, "yellow_carpet")
+S(6, 2, 11, "end_rod[facing=east]"); S(6, 2, 12, "end_rod[facing=east]")          # headlights
+S(1, 2, 11, "red_candle[candles=1,lit=false]"); S(1, 2, 12, "red_candle[candles=1,lit=false]")   # tail lights
+S(4, 3, 10, "lever[face=wall,facing=north,powered=false]"); S(4, 3, 13, "lever[face=wall,facing=south,powered=false]")   # mirrors
 for y in R(2, 5): S(6, y, 15, "yellow_concrete")
 S(6, 6, 15, "yellow_concrete")
 for (x, z) in [(5, 14), (4, 13), (3, 12)]: S(x, 6, z, "yellow_concrete")
 S(3, 5, 12, "chain[axis=y]")
 S(6, 2, 16, "yellow_terracotta")
 # deck hatch to the steering gear room
-S(4, 1, 7, "spruce_trapdoor[facing=north,half=top,open=false]")
-for y in R(-3, 0): S(4, y, 7, "ladder[facing=north]")
+S(4, 2, 7, "spruce_trapdoor[facing=north,half=bottom,open=false]")
+for y in R(-2, 1): S(4, y, 7, "ladder[facing=north]")
 for x in R(2, 6):
     for z in R(2, 16): S(x, -4, z, "smooth_stone") if bot(x) < -4 else None
 
@@ -261,8 +265,8 @@ for zc in (6, 12):
 S(10, -3, 9, "lever[face=floor,facing=east,powered=false]"); S(10, -3, 10, "black_carpet")
 S(13, -3, 15, "barrel[facing=up]"); S(14, -3, 15, "barrel[facing=up]"); S(19, -3, 3, "anvil[facing=north]")
 for p in [(15, 0, 9), (12, 0, 4), (12, 0, 14), (18, 0, 9)]: S(*p, "lantern[hanging=true]")
-S(20, 1, ZC, "spruce_trapdoor[facing=west,half=top,open=false]")
-for y in R(-3, 0): S(20, y, ZC, "ladder[facing=west]")
+S(20, 2, ZC, "spruce_trapdoor[facing=west,half=bottom,open=false]")      # hatch on top of the floor
+for y in R(-3, 1): S(20, y, ZC, "ladder[facing=west]")                    # ladder all the way up
 
 # ---------------- roof deck, ladder, exhaust, tender ----------------
 for x in R(HX0, HX1):
@@ -311,9 +315,8 @@ S(WX1, WY + 5, WZ0, "red_candle[candles=1,lit=true]"); S(WX1, WY + 5, WZ1, "lime
 S(19, WY + 5, ZC, "lantern[hanging=false]")                               # mast head light
 # rear doorway in the middle of the back wall; steel ladder mast behind it, long enough for the raised house
 S(WX0, WY + 1, ZC, "air"); S(WX0, WY + 2, ZC, "air")
-for y in R(WY, WY + 1 + int(LIFT_MAX)): S(12, y, ZC, "polished_andesite_wall")
+for y in R(WY, WY + 1 + int(LIFT_MAX)): S(12, y, ZC, "andesite_wall")
 for y in R(WY, WY + int(LIFT_MAX)): S(13, y, ZC, "ladder[facing=east]")
-S(12, WY + 2 + int(LIFT_MAX), ZC, "lantern[hanging=false]")
 # helm: wrap-around low console, black chair, screens, joysticks
 for z in R(WZ0 + 1, WZ1 - 1): S(WX1 - 1, WY + 1, z, "polished_deepslate_slab[type=bottom]")
 for z in (WZ0 + 1, WZ0 + 2, WZ1 - 2, WZ1 - 1): S(WX1 - 2, WY + 1, z, "polished_deepslate_slab[type=bottom]")
@@ -372,8 +375,8 @@ for z in (2, 16):
     S(L - 5, 0, z - 1 if z < ZC else z + 1, "chain[axis=y]") if False else None
 # bow thruster room hatch with ladder
 BT = FORE_START + 3
-S(BT, 1, 4, "spruce_trapdoor[facing=south,half=top,open=false]")
-for y in R(-3, 0): S(BT, y, 4, "ladder[facing=south]")
+S(BT, 2, 4, "spruce_trapdoor[facing=south,half=bottom,open=false]")
+for y in R(-4, 1): S(BT, y, 4, "ladder[facing=south]")
 for z in R(1, 17):
     for y in R(-4, 0): S(FORE_START + 1, y, z, INNER)
 S(BT + 2, -3, ZC, "iron_block"); S(BT + 3, -3, ZC, "iron_block"); S(BT + 2, -2, ZC, "lightning_rod[facing=up]")

@@ -422,7 +422,7 @@ public class ShipEntity extends Entity {
 	public void tick() {
 		try {
 			tickSafe();
-		} catch (RuntimeException ex) {
+		} catch (RuntimeException | StackOverflowError ex) {
 			reportError("tick", ex);
 		}
 	}
@@ -441,7 +441,7 @@ public class ShipEntity extends Entity {
 	public static void safely(String where, Runnable r) {
 		try {
 			r.run();
-		} catch (RuntimeException ex) {
+		} catch (RuntimeException | StackOverflowError ex) {
 			reportError(where, ex);
 		}
 	}
@@ -1034,7 +1034,7 @@ public class ShipEntity extends Entity {
 				if (!bp.equals(sp.get())) p.setSleepingPosition(bp);
 				double d = p.getPos().squaredDistanceTo(spot);
 				if (d > 1e-4) p.setPosition(spot.x, spot.y, spot.z);
-			} catch (RuntimeException ex) {
+			} catch (RuntimeException | StackOverflowError ex) {
 				LOGGER_SAFE.warn("ship bed keeper", ex);
 			}
 		}
@@ -1231,16 +1231,52 @@ public class ShipEntity extends Entity {
 	// =====================================================================
 
 	/** Luikvakken in sjablooncoördinaten (alleen als ze stilstaan). */
+	// ---- luiken: maten in sjablooncoördinaten ----
+	public static final float CV_X0 = 15f, CV_LEN = 5f, CV_Y = 3.5f, CV_Z0 = 0.95f, CV_Z1 = 10.05f, CV_IN1 = 1.25f, CV_IN2 = 2.85f;
+	/** Hoogte per luik op de stapel en dikte van een luik. */
+	public static final float CV_STACK = 0.36f, CV_THICK = 0.34f;
+	private static int[] coverGroupEnd;
+
+	/** Het voorste luik van de groep (per ruim) waar luik i bij hoort: daar komt de stapel. */
+	public static int coverGroupEnd(int i) {
+		if (coverGroupEnd == null) {
+			int[][] h = ShipTemplate.get().holds;
+			int[] grp = new int[COVERS];
+			for (int k = 0; k < COVERS; k++) {
+				float c = CV_X0 + CV_LEN * (k + 0.5f);
+				int g = h.length - 1;
+				for (int j = 0; j < h.length; j++) if (c < h[j][1] + 1.5f) { g = j; break; }
+				grp[k] = g;
+			}
+			int[] end = new int[COVERS];
+			for (int k = COVERS - 1; k >= 0; k--) end[k] = (k == COVERS - 1 || grp[k + 1] != grp[k]) ? k : end[k + 1];
+			coverGroupEnd = end;
+		}
+		return coverGroupEnd[i];
+	}
+
+	/** Waar luik i ligt als het ruim open is. */
+	public static float stackX(int i) {
+		return CV_X0 + CV_LEN * coverGroupEnd(i);
+	}
+
+	/** Luikvakken in sjablooncoördinaten (alleen als ze stilstaan). */
 	public List<Box> coverBoxes() {
 		List<Box> list = new ArrayList<>();
 		if (hatchProgress >= 0.999f) {
 			for (int i = 0; i < COVERS; i++) {
-				double x0 = 15 + 5 * i;
-				list.add(new Box(x0, 3.5, 0.95, x0 + 5, 3.75, 10.05));
-				list.add(new Box(x0, 3.75, 2.2, x0 + 5, 4.0, 8.8));
+				double x0 = CV_X0 + CV_LEN * i;
+				list.add(new Box(x0, CV_Y, CV_Z0, x0 + CV_LEN, CV_Y + 0.14, CV_Z1));
+				list.add(new Box(x0, CV_Y + 0.14, CV_Z0 + CV_IN1, x0 + CV_LEN, CV_Y + CV_THICK, CV_Z1 - CV_IN1));
 			}
 		} else if (hatchProgress <= 0.001f) {
-			list.add(new Box(90, 3.5, 0.95, 95, 3.5 + COVER_STACK * COVERS + 0.5, 10.05));
+			int start = 0;
+			for (int i = 0; i < COVERS; i++) {
+				if (coverGroupEnd(i) != i) continue;
+				double sx = stackX(i);
+				list.add(new Box(sx, CV_Y, CV_Z0, sx + CV_LEN, CV_Y + CV_STACK * (i - start) + CV_THICK, CV_Z1));
+				start = i + 1;
+			}
 		}
 		return list;
 	}
@@ -1328,7 +1364,7 @@ public class ShipEntity extends Entity {
 	public static Vec3d collideAll(Entity e, Vec3d mv) {
 		try {
 			return collideAllSafe(e, mv);
-		} catch (RuntimeException ex) {
+		} catch (RuntimeException | StackOverflowError ex) {
 			reportError("collision", ex);
 			return mv;
 		}
@@ -1366,7 +1402,7 @@ public class ShipEntity extends Entity {
 				int wy = MathHelper.ceil(s.getY() + y);
 				if (wy > top) top = wy;
 			}
-		} catch (RuntimeException ex) {
+		} catch (RuntimeException | StackOverflowError ex) {
 			reportError("rain", ex);
 		}
 		return top;
@@ -1377,7 +1413,7 @@ public class ShipEntity extends Entity {
 	public static boolean isClimbing(Entity e) {
 		try {
 			return isClimbingSafe(e);
-		} catch (RuntimeException ex) {
+		} catch (RuntimeException | StackOverflowError ex) {
 			reportError("ladder", ex);
 			return false;
 		}

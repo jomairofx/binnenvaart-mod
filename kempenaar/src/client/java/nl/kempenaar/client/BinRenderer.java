@@ -45,7 +45,7 @@ public class BinRenderer implements BlockEntityRenderer<CraneStorageBlockEntity>
 		own.peek().getNormalMatrix().set(m.peek().getNormalMatrix());
 		try {
 			renderSafe(be, tickDelta, own, v, light, overlay);
-		} catch (RuntimeException ex) {
+		} catch (RuntimeException | StackOverflowError ex) {
 			nl.kempenaar.ship.ShipEntity.reportError("crane render", ex);
 		}
 	}
@@ -78,6 +78,7 @@ public class BinRenderer implements BlockEntityRenderer<CraneStorageBlockEntity>
 			g.box(mat, 0.0f, 2.02f, 0.0f, 1.0f, 2.02f + h, 1.0f, 1f);
 		}
 		VertexConsumer vc = v.getBuffer(TexturedRenderLayers.getEntityCutout());
+		m.scale(1f, 0.75f, 1f);   // 1,5 blok hoog: zo blijft hij binnen het blok dat je kunt aanklikken
 		g.emit(vc, m.peek(), l);
 	}
 }

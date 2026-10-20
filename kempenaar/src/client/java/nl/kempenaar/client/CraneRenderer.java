@@ -151,7 +151,7 @@ public class CraneRenderer implements BlockEntityRenderer<CraneBlockEntity> {
 		own.peek().getNormalMatrix().set(m.peek().getNormalMatrix());
 		try {
 			renderSafe(be, tickDelta, own, v, light, overlay);
-		} catch (RuntimeException ex) {
+		} catch (RuntimeException | StackOverflowError ex) {
 			nl.kempenaar.ship.ShipEntity.reportError("crane render", ex);
 		}
 	}

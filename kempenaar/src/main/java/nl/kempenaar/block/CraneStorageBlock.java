@@ -37,7 +37,7 @@ public class CraneStorageBlock extends BlockWithEntity {
 	}
 
 	/** Groot: 1,8 x 1,8 blokken en 2 hoog (de bunker steekt aan alle kanten iets buiten het blok uit). */
-	private static final net.minecraft.util.shape.VoxelShape SHAPE = net.minecraft.block.Block.createCuboidShape(-6.4, 0, -6.4, 22.4, 32, 22.4);
+	private static final net.minecraft.util.shape.VoxelShape SHAPE = net.minecraft.block.Block.createCuboidShape(-6.4, 0, -6.4, 22.4, 24, 22.4);
 
 	@Override
 	protected net.minecraft.util.shape.VoxelShape getOutlineShape(BlockState state, net.minecraft.world.BlockView world, BlockPos pos, net.minecraft.block.ShapeContext context) {

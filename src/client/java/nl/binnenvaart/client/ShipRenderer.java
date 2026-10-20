@@ -67,7 +67,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		own.peek().getNormalMatrix().set(matrices.peek().getNormalMatrix());
 		try {
 			renderSafe(ship, yaw, tickDelta, own, consumers, light);
-		} catch (RuntimeException ex) {
+		} catch (RuntimeException | StackOverflowError ex) {
 			ShipEntity.reportError("render", ex);
 		}
 	}
@@ -91,12 +91,12 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		Vec3d cam = this.dispatcher.camera.getPos();
 		Vec3d shipPos = ship.getLerpedPos(tickDelta);
 		boolean shadow = IrisCompat.isShadowPass();
-		mesh.render(matrices, consumers, lastFrustum, shipPos, y, cam, shadow ? 1 : 0);
+		mesh.render(matrices, consumers, lastFrustum, shipPos, y, cam, shadow ? 2 : 0);
 		if (meshes.length > 1) {
 			float lift = ship.liftLerp(tickDelta);
 			matrices.push();
 			matrices.translate(0, lift, 0);
-			meshes[1].render(matrices, consumers, lastFrustum, shipPos.add(0, lift, 0), y, cam, shadow ? 1 : 0);
+			meshes[1].render(matrices, consumers, lastFrustum, shipPos.add(0, lift, 0), y, cam, shadow ? 2 : 0);
 			matrices.pop();
 			if (lift > 0.01f) {
 				int[] r = ship.template.liftRegion, c = ship.template.liftColumn;
@@ -127,7 +127,9 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			renderCovers(hatch, dc.sink, light);
 			renderBeds(ship, dc.sink, light);
 		}
-		dc.sink.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
+		// in de schaduwpass alleen dichtbij: scheelt veel werk met shaders
+		if (!shadow || cam.squaredDistanceTo(shipPos) < 48 * 48)
+			dc.sink.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
 		if (!shadow) renderName(ship, matrices, consumers, light);
 		matrices.pop();
 		super.render(ship, yaw, tickDelta, matrices, consumers, light);
@@ -236,44 +238,63 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			float y0 = floor + tier * 2.62f + drop;
 			Block color = CONTAINER_COLORS[(hold * 7 + k * 5 + (k / 3)) % CONTAINER_COLORS.length];
 			Sprite s = sprites(color.getDefaultState())[0];
-			box(vc, s, x0, y0 + 0.08f, zz, x0 + 6.05f, y0 + 2.51f, zz + 2.44f, light, 1f);
+			boxFast(vc, s, x0, y0 + 0.08f, zz, x0 + 6.05f, y0 + 2.51f, zz + 2.44f, light, 1f);
 			// ribbels in de zijwanden
-			for (float rx = x0 + 0.45f; rx < x0 + 5.7f; rx += 0.7f) {
-				box(vc, s, rx, y0 + 0.2f, zz - 0.04f, rx + 0.3f, y0 + 2.4f, zz, light, 0.82f);
-				box(vc, s, rx, y0 + 0.2f, zz + 2.44f, rx + 0.3f, y0 + 2.4f, zz + 2.48f, light, 0.82f);
+			for (float rx = x0 + 0.45f; rx < x0 + 5.7f; rx += 1.3f) {
+				boxFast(vc, s, rx, y0 + 0.2f, zz - 0.04f, rx + 0.3f, y0 + 2.4f, zz, light, 0.82f);
+				boxFast(vc, s, rx, y0 + 0.2f, zz + 2.44f, rx + 0.3f, y0 + 2.4f, zz + 2.48f, light, 0.82f);
 			}
 			// hoekstijlen, onder- en bovenregels
-			box(vc, dark, x0, y0, zz, x0 + 6.05f, y0 + 0.08f, zz + 2.44f, light, 0.7f);
-			box(vc, s, x0, y0 + 2.51f, zz, x0 + 6.05f, y0 + 2.59f, zz + 2.44f, light, 0.75f);
+			boxFast(vc, dark, x0, y0, zz, x0 + 6.05f, y0 + 0.08f, zz + 2.44f, light, 0.7f);
+			boxFast(vc, s, x0, y0 + 2.51f, zz, x0 + 6.05f, y0 + 2.59f, zz + 2.44f, light, 0.75f);
 			for (float cx : new float[]{x0, x0 + 5.9f})
-				for (float cz : new float[]{zz, zz + 2.29f}) box(vc, dark, cx, y0, cz, cx + 0.15f, y0 + 2.59f, cz + 0.15f, light, 0.8f);
+				for (float cz : new float[]{zz, zz + 2.29f}) boxFast(vc, dark, cx, y0, cz, cx + 0.15f, y0 + 2.59f, cz + 0.15f, light, 0.8f);
 			// deuren aan de kopse kant met vergrendelstangen
-			box(vc, s, x0 + 6.05f, y0 + 0.1f, zz + 0.1f, x0 + 6.1f, y0 + 2.49f, zz + 2.34f, light, 0.55f);
+			boxFast(vc, s, x0 + 6.05f, y0 + 0.1f, zz + 0.1f, x0 + 6.1f, y0 + 2.49f, zz + 2.34f, light, 0.55f);
 			for (float bz : new float[]{zz + 0.5f, zz + 0.9f, zz + 1.5f, zz + 1.9f})
-				box(vc, dark, x0 + 6.1f, y0 + 0.2f, bz, x0 + 6.14f, y0 + 2.4f, bz + 0.06f, light, 0.6f);
+				boxFast(vc, dark, x0 + 6.1f, y0 + 0.2f, bz, x0 + 6.14f, y0 + 2.4f, bz + 0.06f, light, 0.6f);
 		}
 	}
 
 	// ---------------------------------------------------------------- luiken
 
+	/** Schuifluiken: dun, en per ruim rollen ze naar voren op een lage stapel, zodat je vrij zicht houdt. */
 	private void renderCovers(float t, Sink vc, int light) {
 		Sprite s = sprites(Blocks.POLISHED_ANDESITE.getDefaultState())[0];
 		Sprite rim = sprites(Blocks.SMOOTH_STONE.getDefaultState())[0];
+		Sprite wheel = sprites(Blocks.BLACK_CONCRETE.getDefaultState())[0];
 		int n = ShipEntity.COVERS;
-		float stagger = Math.min(0.06f, 0.45f / Math.max(1, n - 1)), dur = 1f - stagger * (n - 1);
+		float len = ShipEntity.CV_LEN, z0 = ShipEntity.CV_Z0, z1 = ShipEntity.CV_Z1, base = ShipEntity.CV_Y;
 		for (int i = 0; i < n; i++) {
-			float p = MathHelper.clamp((t - stagger * i) / dur, 0f, 1f);
+			int level = ShipEntity.coverGroupEnd(i) - i;              // the front one stays down, the others ride on top
+			float stagger = 0.08f, dur = 0.55f;
+			float p = MathHelper.clamp((t - stagger * Math.min(level, 5)) / dur, 0f, 1f);
 			p = p * p * (3 - 2 * p);
-			float stackY = 3.5f + ShipEntity.COVER_STACK * (n - 1 - i);
-			float drop = MathHelper.clamp((p - 0.8f) / 0.2f, 0f, 1f);
-			float x0 = MathHelper.lerp(p, 75f, 15f + 5f * i);
-			float y = MathHelper.lerp(drop, stackY, 3.5f);
-			if (p > 0 && p < 1) y += 0.15f * MathHelper.sin(p * MathHelper.PI);
-			box(vc, rim, x0 + 0.03f, y, 0.95f, x0 + 4.97f, y + 0.25f, 10.05f, light, 0.95f);
-			box(vc, s, x0 + 0.03f, y + 0.25f, 2.2f, x0 + 4.97f, y + 0.5f, 8.8f, light, 1f);
-			box(vc, s, x0 + 0.03f, y + 0.5f, 3.8f, x0 + 4.97f, y + 0.62f, 7.2f, light, 1f);
+			float q = 1f - p;                                         // 0 = closed, 1 = on the stack
+			float rise = MathHelper.clamp(q / 0.15f, 0f, 1f), roll = MathHelper.clamp((q - 0.15f) / 0.85f, 0f, 1f);
+			float x0 = MathHelper.lerp(roll, ShipEntity.CV_X0 + len * i, ShipEntity.stackX(i));
+			float y = MathHelper.lerp(rise, base, base + ShipEntity.CV_STACK * level);
+			float x1 = x0 + len - 0.04f;
+			boxFast(vc, rim, x0 + 0.04f, y, z0, x1, y + 0.14f, z1, light, 0.95f);
+			boxFast(vc, s, x0 + 0.04f, y + 0.14f, z0 + ShipEntity.CV_IN1, x1, y + 0.26f, z1 - ShipEntity.CV_IN1, light, 1f);
+			boxFast(vc, s, x0 + 0.04f, y + 0.26f, z0 + ShipEntity.CV_IN2, x1, y + ShipEntity.CV_THICK, z1 - ShipEntity.CV_IN2, light, 1f);
+			for (float wx : new float[]{x0 + 0.4f, x1 - 0.7f}) {
+				boxFast(vc, wheel, wx, y - 0.08f, z0 + 0.1f, wx + 0.3f, y, z0 + 0.32f, light, 0.8f);
+				boxFast(vc, wheel, wx, y - 0.08f, z1 - 0.32f, wx + 0.3f, y, z1 - 0.1f, light, 0.8f);
+			}
 		}
 	}
+
+	/** Kast met één vlak per zijde (de textuur wordt uitgerekt): veel goedkoper dan per blok. */
+	private static void boxFast(Sink vc, Sprite s, float x0, float y0, float z0, float x1, float y1, float z1, int light, float tint) {
+		quadUp(vc, s, x0, y1, z0, x1, z1, tint, light);
+		quadDown(vc, s, x0, y0, z0, x1, z1, tint * 0.6f, light);
+		sideXTile(vc, s, x0, z0, z1, y0, y1, false, light, tint);
+		sideXTile(vc, s, x1, z0, z1, y0, y1, true, light, tint);
+		sideZTile(vc, s, z0, x0, x1, y0, y1, false, light, tint);
+		sideZTile(vc, s, z1, x0, x1, y0, y1, true, light, tint);
+	}
+
 
 	// ---------------------------------------------------------------- bedden
 

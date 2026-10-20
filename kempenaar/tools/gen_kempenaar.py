@@ -240,7 +240,7 @@ for x in R(HX0 + 1, HX1 - 1):
         if (x, z) not in [(14, 4), (13, 5)]: S(x, 5, z, "spruce_slab[type=bottom]")
 S(HX0, 5, 4, "spruce_slab[type=bottom]")                         # threshold of the rear doorway
 S(15, 6, 5, "lever[face=floor,facing=east,powered=false]")      # throttle lever now on the floor slab
-for y in R(5, 8): S(10, y, 4, "polished_andesite_wall")
+for y in R(5, 8): S(10, y, 4, "andesite_wall")
 for y in R(5, 8): S(11, y, 4, "ladder[facing=east]")
 
 # ---------------- looppad x=18 en ladders langs de romp ----------------

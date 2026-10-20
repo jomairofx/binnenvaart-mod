@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "nl.greatrivers.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "NoiseConfigMixin",
+    "MultiNoiseBiomeSourceMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

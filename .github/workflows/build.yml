@@ -133,6 +133,28 @@ jobs:
           timeout 600 ./gradlew runTestServer --stacktrace > server_out.txt 2>&1 || true
           cp run/logs/latest.log run/server.log || true
           cat run/selftest.txt || echo "geen selftest.txt"
+      - name: Great Rivers bouwen
+        continue-on-error: true
+        working-directory: great-rivers
+        run: chmod +x gradlew && set -o pipefail && ./gradlew build --stacktrace 2>&1 | tee build_out.txt
+      - name: Great Rivers servertest (echte wereld)
+        working-directory: great-rivers
+        run: |
+          mkdir -p run && echo "eula=true" > run/eula.txt
+          printf 'online-mode=false\nspawn-protection=0\nlevel-seed=binnenvaart\nlevel-type=minecraft\\:normal\ngenerate-structures=true\nview-distance=6\nsimulation-distance=6\n' > run/server.properties
+          timeout 1200 ./gradlew runTestServer --stacktrace > server_out.txt 2>&1 || true
+          cp run/logs/latest.log run/server.log || true
+          cat run/selftest.txt || echo "geen selftest.txt"
+      - name: Great Rivers clienttest
+        working-directory: great-rivers
+        run: |
+          rm -rf run/saves && mkdir -p run/saves && cp -r run/world run/saves/testwelt || true
+          cp ../run/options.txt run/options.txt
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export ALSOFT_DRIVERS=null
+          timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace > client_out.txt 2>&1 || true
+          cp run/logs/latest.log run/client.log || true
+          cat run/client_selftest.txt || echo "geen client_selftest.txt"
       - name: Resultaten naar branch
         if: always()
         run: |
@@ -155,6 +177,10 @@ jobs:
           mkdir -p /tmp/out/nokelp
           cp no-kelp/run/*.txt no-kelp/run/*.log no-kelp/server_out.txt no-kelp/build_out.txt /tmp/out/nokelp/ 2>/dev/null || true
           cp no-kelp/build/libs/no-kelp-1.0.0.jar /tmp/out/ 2>/dev/null || true
+          mkdir -p /tmp/out/rivers
+          cp -r great-rivers/run/screenshots /tmp/out/rivers/ 2>/dev/null || true
+          cp great-rivers/run/*.txt great-rivers/run/*.log great-rivers/server_out.txt great-rivers/client_out.txt great-rivers/build_out.txt /tmp/out/rivers/ 2>/dev/null || true
+          cp great-rivers/build/libs/great-rivers-1.0.0.jar /tmp/out/ 2>/dev/null || true
           curl -fsSL -o /tmp/out/fabric-api-0.116.4+1.21.1.jar "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.116.4%2B1.21.1/fabric-api-0.116.4%2B1.21.1.jar" || true
           cd /tmp/out && git init -q && git checkout -q -b ci-resultaten && git add -A
           git -c user.name=ci -c user.email=ci@localhost commit -qm "Resultaten ${GITHUB_SHA}"
@@ -165,6 +191,7 @@ jobs:
           grep -q "RESULT PASS" inland-barge/run/selftest.txt && grep -q "RESULT PASS" inland-barge/run/client_selftest.txt
           grep -q "RESULT PASS" kempenaar/run/selftest.txt && grep -q "RESULT PASS" kempenaar/run/client_selftest.txt
           grep -q "RESULT PASS" no-kelp/run/selftest.txt
+          grep -q "RESULT PASS" great-rivers/run/selftest.txt && grep -q "RESULT PASS" great-rivers/run/client_selftest.txt
           grep -q "RESULT PASS" modern-bulk/run/selftest.txt && grep -q "RESULT PASS" modern-bulk/run/client_selftest.txt
           # caught errors in ship code count as failures too
           ! grep -l "Ship error in" run/*.log inland-barge/run/*.log kempenaar/run/*.log modern-bulk/run/*.log 2>/dev/null

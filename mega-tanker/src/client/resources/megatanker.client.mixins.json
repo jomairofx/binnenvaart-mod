@@ -6,7 +6,8 @@
   "client": [
     "CameraMixin",
     "GameRendererMixin",
-    "MouseMixin"
+    "MouseMixin",
+    "WeatherMixin"
   ],
   "injectors": {
     "defaultRequire": 1

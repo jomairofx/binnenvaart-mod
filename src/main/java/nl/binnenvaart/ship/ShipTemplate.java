@@ -47,6 +47,32 @@ public final class ShipTemplate {
 		return (iy * SIZE_Z + iz) * SIZE_X + ix;
 	}
 
+	private int[] topCache;
+
+	/** Hoogste blok dat regen tegenhoudt in kolom (x, z), of Integer.MIN_VALUE als er niets staat. */
+	public int topAt(int x, int z) {
+		int ix = x - MIN_X, iz = z - MIN_Z;
+		if (ix < 0 || iz < 0 || ix >= SIZE_X || iz >= SIZE_Z) return Integer.MIN_VALUE;
+		int[] c = topCache;
+		if (c == null) {
+			c = new int[SIZE_X * SIZE_Z];
+			for (int cx = 0; cx < SIZE_X; cx++)
+				for (int cz = 0; cz < SIZE_Z; cz++) {
+					int top = Integer.MIN_VALUE;
+					for (int cy = SIZE_Y - 1; cy >= 0; cy--) {
+						BlockState st = states[(cy * SIZE_Z + cz) * SIZE_X + cx];
+						if (st != null && !st.isAir() && (st.blocksMovement() || !st.getFluidState().isEmpty())) {
+							top = cy + MIN_Y;
+							break;
+						}
+					}
+					c[cz * SIZE_X + cx] = top;
+				}
+			topCache = c;
+		}
+		return c[iz * SIZE_X + ix];
+	}
+
 	public BlockState getState(int x, int y, int z) {
 		int i = index(x, y, z);
 		if (i < 0) return Blocks.AIR.getDefaultState();

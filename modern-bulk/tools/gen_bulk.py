@@ -292,14 +292,13 @@ for x in R(WX0, WX1):
         S(x, WY + 4, z, WHITE)                                            # roof
         if edge:
             S(x, WY + 1, z, WHITE)                                        # lower panel
-            S(x, WY + 2, z, "light_gray_stained_glass_pane")              # big windows all round
+            S(x, WY + 2, z, "air")                                        # open window band all round (no glass)
             S(x, WY + 3, z, "smooth_quartz_slab[type=top]")               # header above the windows
 for (x, z) in [(WX0, WZ0), (WX0, WZ1), (WX1, WZ0), (WX1, WZ1)]:
     S(x, WY + 2, z, "white_concrete_powder") if False else S(x, WY + 2, z, WHITE)
-# the front is almost all glass: lower panel only half high
+# the front: lower panel only half high for a free view over the bow
 for z in R(WZ0 + 1, WZ1 - 1):
     S(WX1, WY + 1, z, "smooth_quartz_slab[type=bottom]")
-    S(WX1, WY + 2, z, "light_gray_stained_glass_pane")
 # visor overhang, rain gutter, roof gear
 for x in R(WX0, WX1 + 1):
     S(x, WY + 4, WZ0 - 1, "smooth_quartz_slab[type=bottom]"); S(x, WY + 4, WZ1 + 1, "smooth_quartz_slab[type=bottom]")

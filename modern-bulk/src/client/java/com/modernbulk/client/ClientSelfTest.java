@@ -330,6 +330,21 @@ public final class ClientSelfTest {
 			check("meezakken met de stuurhut", ship.liftOffset() < 0.05 && Math.abs(l.y - 7.0) < 0.25,
 					String.format("stuurhut %.2f, speler op lokale y=%.2f", ship.liftOffset(), l.y));
 			shot(mc, "20_stuurhut_omlaag");
+			cmd(srv, "weather rain");
+			ShipEntity.rainChecks = 0;
+		}
+		if (t == helm + 1160) {
+			Vec3d roof = ship.toWorld(12.5, 0, 9.5);
+			int top = ShipEntity.rainTop(mc.world, net.minecraft.util.math.MathHelper.floor(roof.x), net.minecraft.util.math.MathHelper.floor(roof.z), -64);
+			double expect = ship.getY() + 6;
+			check("regen stopt op het dak", ShipEntity.rainChecks > 0 && top >= expect - 0.01,
+					String.format("regenkolommen bekeken %d, regen stopt op y=%d (dak %.2f)", ShipEntity.rainChecks, top, expect));
+			tp(srv, ship, new double[]{-6.0, 9.0, 3.0}, new double[]{14.0, 5.0, 9.5});
+		}
+		if (t == helm + 1190) shot(mc, "22_regen_achterschip");
+		if (t == helm + 1195) tp(srv, ship, new double[]{15.5, 7.0 + 1.62, 7.5}, new double[]{60, 6, 9.5});
+		if (t == helm + 1220) {
+			shot(mc, "22b_regen_stuurhut");
 			finish(mc, failed ? "RESULT FAIL" : "RESULT PASS");
 		}
 	}

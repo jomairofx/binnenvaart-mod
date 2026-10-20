@@ -1361,6 +1361,33 @@ public class ShipEntity extends Entity {
 		return mv;
 	}
 
+	/** Client: hoogte waar de regen in deze wereldkolom ophoudt, rekening houdend met schepen. */
+	public static int rainTop(World w, int x, int z, int top) {
+		try {
+			for (ShipEntity s : ShipHolder.of(w)) {
+				Box bb = s.getBoundingBox();
+				if (x + 1 < bb.minX || x > bb.maxX || z + 1 < bb.minZ || z > bb.maxZ) continue;
+				Vec3d l = s.toLocal(new Vec3d(x + 0.5, s.getY(), z + 0.5));
+				int lx = MathHelper.floor(l.x), lz = MathHelper.floor(l.z);
+				int t = s.template.topAt(lx, lz);
+				if (t == Integer.MIN_VALUE) continue;
+				double y = t + 1 + (s.template.inLiftXZ(l.x, l.z) ? s.liftOffset() : 0);
+				// dichte luiken houden de regen ook tegen
+				if (COVERS > 0 && s.hatchProgress > 0.5f && l.z >= s.template.holdZ0 - 1 && l.z < s.template.holdZ1 + 2) {
+					int[][] h = s.template.holds;
+					if (h.length > 0 && l.x >= h[0][0] - 1 && l.x < h[h.length - 1][1] + 2) y = Math.max(y, s.template.coamingTopY + 0.5);
+				}
+				int wy = MathHelper.ceil(s.getY() + y);
+				if (wy > top) top = wy;
+			}
+		} catch (RuntimeException ex) {
+			reportError("rain", ex);
+		}
+		return top;
+	}
+
+	public static int rainChecks;
+
 	public static boolean isClimbing(Entity e) {
 		try {
 			return isClimbingSafe(e);

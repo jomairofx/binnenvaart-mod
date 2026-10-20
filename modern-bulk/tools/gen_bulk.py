@@ -257,6 +257,8 @@ for x in R(9, 20):
     for z in R(1, 17): S(x, -4, z, "smooth_stone")
 for z in R(1, 17):
     for y in R(-4, 0): S(8, y, z, INNER); S(21, y, z, INNER)
+for x in R(9, 20):
+    for y in R(-4, 0): S(x, y, 1, INNER); S(x, y, 17, INNER)       # inner lining of the engine room
 for zc in (6, 12):
     for x in R(11, 17):
         S(x, -3, zc, "iron_block" if x in (11, 17) else "black_concrete"); S(x, -2, zc, "polished_blackstone_slab[type=bottom]")

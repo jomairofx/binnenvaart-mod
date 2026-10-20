@@ -56,6 +56,11 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 
 	// werkgang (gesynchroniseerd met de client voor de animatie)
 	public boolean running;
+	/** Go/Stop: alleen als de kraan aan staat begint hij aan een nieuwe slag. */
+	public boolean enabled;
+	/** Pauze: de kraan bevriest midden in de slag. */
+	public boolean paused;
+	public long pausedAt;
 	public long cycleStart;
 	public float targetYaw, targetR = (float) HOME_R, targetLow = (float) HOME_LOW;
 	public int carryMat; // 0 = leeg, >0 = blok (raw state id + 1), -1 = kist met stukgoed
@@ -84,6 +89,7 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 
 	/** Stand van giek, loopkat en grijper op een (gebroken) tijdstip, plus hoe ver de grijper openstaat (0..1). */
 	public Pose pose(double time) {
+		if (paused) time = pausedAt;
 		float h = homeYaw();
 		if (!running) return new Pose(h, (float) HOME_R, (float) HOME_LOW);
 		double t = time - cycleStart;
@@ -105,6 +111,7 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 
 	/** Opening van de grijper: bij laden open boven het ruim, bij lossen open boven de kade (en tijdens het zakken in het ruim). */
 	public float grabOpen(double time) {
+		if (paused) time = pausedAt;
 		if (!running) return 0.6f;
 		double t = time - cycleStart;
 		if (!unloading) {
@@ -125,6 +132,7 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 	}
 
 	private void tickServer(ServerWorld w) {
+		if (paused) return;
 		if (running) {
 			long t = w.getTime() - cycleStart;
 			if (t == 25 || t == 140) sound(w, Vec3d.ofCenter(pos).add(0, TOWER, 0), SoundEvents.BLOCK_PISTON_CONTRACT, 0.5f, 0.5f);
@@ -141,6 +149,7 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		}
 		if (++idle < 10) return;
 		idle = 0;
+		if (!enabled) return;
 		if (!isCarriedEmpty()) {
 			depositCarried();
 			if (!isCarriedEmpty()) return;
@@ -376,6 +385,46 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		player.sendMessage(Text.literal(unloading ? "Cargo crane: UNLOADING — from the hold into the 4 storage bins" : "Cargo crane: LOADING — from the crane (and its bins) into the hold").formatted(Formatting.AQUA), true);
 	}
 
+	/** Bediening vanaf het bedieningspaneel: 0 = laden, 1 = lossen, 2 = go/stop, 3 = pauze/verder. */
+	public void command(PlayerEntity player, int cmd) {
+		if (world == null) return;
+		switch (cmd) {
+			case 0, 1 -> {
+				boolean u = cmd == 1;
+				if (u != unloading) {
+					if (running) {
+						player.sendMessage(Text.literal("Please wait, the crane is busy").formatted(Formatting.GRAY), true);
+						break;
+					}
+					unloading = u;
+					if (bins().isEmpty()) CraneBlock.placeStorage(world, pos);
+				}
+				player.sendMessage(Text.literal(unloading ? "Cargo crane: UNLOADING (hold -> storage bins)" : "Cargo crane: LOADING (crane and bins -> hold)").formatted(Formatting.AQUA), true);
+			}
+			case 2 -> {
+				enabled = !enabled;
+				if (!enabled && paused) resume();
+				player.sendMessage(Text.literal(enabled ? "Cargo crane: GO" : "Cargo crane: STOP (finishes the current move)").formatted(enabled ? Formatting.GREEN : Formatting.RED), true);
+			}
+			case 3 -> {
+				if (paused) resume();
+				else {
+					paused = true;
+					pausedAt = world.getTime();
+				}
+				player.sendMessage(Text.literal(paused ? "Cargo crane: PAUSED" : "Cargo crane: running again").formatted(Formatting.GOLD), true);
+			}
+			default -> {}
+		}
+		markDirty();
+		sync();
+	}
+
+	private void resume() {
+		if (world != null && running) cycleStart += world.getTime() - pausedAt;
+		paused = false;
+	}
+
 	/** Alleen voor de automatische test. */
 	public void testSetUnloading(boolean u) {
 		unloading = u;
@@ -395,6 +444,9 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		nbt.putFloat("TargetLow", targetLow);
 		nbt.putInt("CarryMat", carryMat);
 		nbt.putBoolean("Unloading", unloading);
+		nbt.putBoolean("Enabled", enabled);
+		nbt.putBoolean("Paused", paused);
+		nbt.putLong("PausedAt", pausedAt);
 	}
 
 	@Override
@@ -405,6 +457,11 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		Inventories.writeNbt(c, carried, registries);
 		nbt.put("Carried", c);
 		nbt.putBoolean("Unloading", unloading);
+		nbt.putBoolean("Enabled", enabled);
+		nbt.putBoolean("Paused", paused);
+		nbt.putLong("PausedAt", pausedAt);
+		nbt.putBoolean("Running", running);
+		nbt.putLong("CycleStart", cycleStart);
 	}
 
 	@Override
@@ -419,6 +476,9 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 			Inventories.readNbt(nbt.getCompound("Carried"), carried, registries);
 		}
 		unloading = nbt.getBoolean("Unloading");
+		enabled = nbt.getBoolean("Enabled");
+		paused = nbt.getBoolean("Paused");
+		pausedAt = nbt.getLong("PausedAt");
 		if (nbt.contains("Running")) {
 			running = nbt.getBoolean("Running");
 			cycleStart = nbt.getLong("CycleStart");

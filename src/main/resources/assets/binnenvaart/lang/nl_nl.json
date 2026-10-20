@@ -9,5 +9,6 @@
   "key.binnenvaart.luiken_v2": "Open/close hatches",
   "key.binnenvaart.lift_up": "Wheelhouse up",
   "key.binnenvaart.lift_down": "Wheelhouse down",
-  "key.binnenvaart.lights": "Ship lights on/off"
+  "key.binnenvaart.lights": "Ship lights on/off",
+  "key.binnenvaart.engine": "Engine on/off"
 }

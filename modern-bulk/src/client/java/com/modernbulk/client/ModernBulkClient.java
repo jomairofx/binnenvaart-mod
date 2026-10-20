@@ -21,9 +21,10 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 public class ModernBulkClient implements ClientModInitializer {
-	static KeyBinding thrusterLeft, thrusterRight, horn, hatches, liftUp, liftDown, lights;
-	private static boolean prevForward, prevBack, prevHornKey, prevHatchKey, prevLightKey;
+	static KeyBinding thrusterLeft, thrusterRight, horn, hatches, liftUp, liftDown, lights, engine;
+	private static boolean prevForward, prevBack, prevHornKey, prevHatchKey, prevLightKey, prevEngineKey;
 	private static int throttle;
+	public static boolean testEngine;
 	private static int lastShipId = -1;
 	private static final Map<ShipEntity, ShipEngineSound> SOUNDS = new WeakHashMap<>();
 
@@ -39,6 +40,7 @@ public class ModernBulkClient implements ClientModInitializer {
 		liftUp = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.modernbulk.lift_up", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_PAGE_UP, "category.modernbulk"));
 		liftDown = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.modernbulk.lift_down", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_PAGE_DOWN, "category.modernbulk"));
 		lights = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.modernbulk.lights", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_K, "category.modernbulk"));
+		engine = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.modernbulk.engine", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_M, "category.modernbulk"));
 
 		ClientPlayNetworking.registerGlobalReceiver(ShipPayloads.Blocks.ID, (payload, context) -> {
 			var world = context.client().world;
@@ -123,11 +125,21 @@ public class ModernBulkClient implements ClientModInitializer {
 		boolean lightKey = mc.currentScreen == null && held(mc, lights);
 		if (lightKey && !prevLightKey) lt = true;
 		prevLightKey = lightKey;
+		boolean et = false;
+		while (engine.wasPressed()) et = true;
+		boolean engineKey = mc.currentScreen == null && held(mc, engine);
+		if (engineKey && !prevEngineKey) et = true;
+		prevEngineKey = engineKey;
+		if (testEngine) {
+			et = true;
+			testEngine = false;
+		}
+		if (!ship.engineOn() && !et) throttle = 0;
 		if (testLights) {
 			lt = true;
 			testLights = false;
 		}
-		ClientPlayNetworking.send(new ShipPayloads.Control(ship.getId(), throttle, rudder, thruster, h, l, liftDir, lt));
+		ClientPlayNetworking.send(new ShipPayloads.Control(ship.getId(), throttle, rudder, thruster, h, l, liftDir, lt, et));
 	}
 
 	/** Is de toets ingedrukt, ook als een andere mod dezelfde toets heeft. */
@@ -214,7 +226,7 @@ public class ModernBulkClient implements ClientModInitializer {
 		ctx.drawText(tr, keys, lx, y + 93, 0x7F8C99, false);
 		ctx.drawText(tr, "F5 camera  (scroll wheel: zoom)", lx, y + 103, 0x7F8C99, false);
 		String liftTxt = ship.template.liftRegion != null ? String.format("Wheelhouse %s/%s (%.1f m)  ", keyName(liftUp), keyName(liftDown), ship.liftOffset()) : "";
-		ctx.drawText(tr, liftTxt + "Lights " + keyName(lights) + ": " + (ship.lightsOn() ? "on" : "off"), lx, y + 115, 0x7F8C99, false);
+		ctx.drawText(tr, liftTxt + "Lights " + keyName(lights) + ": " + (ship.lightsOn() ? "on" : "off") + "  Engine " + keyName(engine) + ": " + (ship.engineOn() ? "on" : "OFF"), lx, y + 115, 0x7F8C99, false);
 		m.pop();
 	}
 }

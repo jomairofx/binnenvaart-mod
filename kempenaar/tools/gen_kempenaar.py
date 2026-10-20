@@ -81,8 +81,8 @@ for z in (3, 5):
 S(2, -1, 4, "iron_block"); S(2, 0, 4, "lightning_rod[facing=up]")
 S(5, -1, 1, "crafting_table"); S(4, -1, 1, "barrel[facing=up]")
 S(3, 0, 4, "lantern[hanging=true]")
-for y in R(-1, 0): S(5, y, 7, "ladder[facing=west]")
-S(5, 1, 7, "spruce_trapdoor[facing=west,half=top,open=false]")
+for y in R(-1, 1): S(5, y, 7, "ladder[facing=west]")                  # ladder up through the deck
+S(5, 2, 7, "spruce_trapdoor[facing=west,half=bottom,open=false]")   # hatch on top
 
 # ---------------- achterdek ----------------
 for x in R(0, 5):
@@ -289,8 +289,8 @@ S(67, 7, 3, "iron_bars"); S(67, 7, 5, "iron_bars")
 S(67, 9, 4, "lantern[hanging=false]")
 # bolders en luik boegschroefruimte
 # houten luik naar de boegschroefruimte, met ladder tegen de huid
-S(61, 1, 1, "spruce_trapdoor[facing=south,half=top,open=false]")
-for y in R(-2, 0): S(61, y, 1, "ladder[facing=south]")
+S(61, 2, 1, "spruce_trapdoor[facing=south,half=bottom,open=false]")
+for y in R(-2, 1): S(61, y, 1, "ladder[facing=south]")
 # boegschroefmotor en verlichting in de voorpiek
 S(60, -2, 4, "iron_block"); S(61, -2, 4, "iron_block"); S(60, -1, 4, "lightning_rod[facing=up]")
 S(61, -1, 4, "grindstone[face=floor,facing=east]")

@@ -9,5 +9,6 @@
   "key.modernbulk.hatches": "Open/close hatches",
   "key.modernbulk.lift_up": "Wheelhouse up",
   "key.modernbulk.lift_down": "Wheelhouse down",
-  "key.modernbulk.lights": "Ship lights on/off"
+  "key.modernbulk.lights": "Ship lights on/off",
+  "key.modernbulk.engine": "Engine on/off"
 }

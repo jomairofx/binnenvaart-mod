@@ -71,7 +71,7 @@ public class Kempenaar implements ModInitializer {
 			BlockEntityType.Builder.create(CraneBlockEntity::new, CRANE).build(null));
 
 	public static final Block CRANE_STORAGE = Registry.register(Registries.BLOCK, id("kraanopslag"),
-			new nl.kempenaar.block.CraneStorageBlock(AbstractBlock.Settings.create().mapColor(MapColor.GRAY).strength(3.0f, 6.0f).sounds(BlockSoundGroup.METAL)));
+			new nl.kempenaar.block.CraneStorageBlock(AbstractBlock.Settings.create().mapColor(MapColor.GRAY).strength(3.0f, 6.0f).sounds(BlockSoundGroup.METAL).nonOpaque()));
 	public static final Item CRANE_STORAGE_ITEM = Registry.register(Registries.ITEM, id("kraanopslag"), new BlockItem(CRANE_STORAGE, new Item.Settings()));
 	public static final BlockEntityType<nl.kempenaar.block.CraneStorageBlockEntity> CRANE_STORAGE_BE = Registry.register(Registries.BLOCK_ENTITY_TYPE, id("kraanopslag"),
 			BlockEntityType.Builder.create(nl.kempenaar.block.CraneStorageBlockEntity::new, CRANE_STORAGE).build(null));
@@ -159,6 +159,16 @@ public class Kempenaar implements ModInitializer {
 		PayloadTypeRegistry.playC2S().register(ShipPayloads.Control.ID, ShipPayloads.Control.CODEC);
 		PayloadTypeRegistry.playC2S().register(ShipPayloads.Interact.ID, ShipPayloads.Interact.CODEC);
 		PayloadTypeRegistry.playS2C().register(ShipPayloads.Blocks.ID, ShipPayloads.Blocks.CODEC);
+		PayloadTypeRegistry.playS2C().register(nl.kempenaar.net.CranePayloads.Panel.ID, nl.kempenaar.net.CranePayloads.Panel.CODEC);
+		PayloadTypeRegistry.playC2S().register(nl.kempenaar.net.CranePayloads.Command.ID, nl.kempenaar.net.CranePayloads.Command.CODEC);
+		ServerPlayNetworking.registerGlobalReceiver(nl.kempenaar.net.CranePayloads.Command.ID, (payload, context) -> {
+			var p = context.player();
+			if (p.squaredDistanceTo(net.minecraft.util.math.Vec3d.ofCenter(payload.pos())) > 10 * 10) return;
+			if (p.getWorld().getBlockEntity(payload.pos()) instanceof nl.kempenaar.block.CraneBlockEntity crane) {
+				ShipEntity.safely("crane command", () -> crane.command(p, payload.cmd()));
+				ServerPlayNetworking.send(p, new nl.kempenaar.net.CranePayloads.Panel(payload.pos(), crane.unloading, crane.enabled, crane.paused));
+			}
+		});
 
 		ServerPlayNetworking.registerGlobalReceiver(ShipPayloads.Control.ID, (payload, context) -> {
 			if (context.player().getWorld().getEntityById(payload.entityId()) instanceof ShipEntity ship)

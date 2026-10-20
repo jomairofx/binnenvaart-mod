@@ -92,7 +92,8 @@ public class CraneBlock extends BlockWithEntity {
 	protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
 		if (world.isClient) return ActionResult.SUCCESS;
 		if (world.getBlockEntity(pos) instanceof CraneBlockEntity crane) {
-			if (player.isSneaking()) crane.toggleMode(player);
+			if (player.isSneaking() && player instanceof net.minecraft.server.network.ServerPlayerEntity sp)
+				net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(sp, new nl.kempenaar.net.CranePayloads.Panel(pos, crane.unloading, crane.enabled, crane.paused));
 			else player.openHandledScreen(crane);
 		}
 		return ActionResult.CONSUME;

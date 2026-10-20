@@ -289,8 +289,10 @@ public final class ClientSelfTest {
 				var w = srv.getOverworld();
 				w.setBlockState(bp, Kempenaar.CRANE.getDefaultState().with(nl.kempenaar.block.CraneBlock.FACING, net.minecraft.util.math.Direction.NORTH));
 				nl.kempenaar.block.CraneBlock.placeStorage(w, bp);
-				if (w.getBlockEntity(bp) instanceof nl.kempenaar.block.CraneBlockEntity c)
+				if (w.getBlockEntity(bp) instanceof nl.kempenaar.block.CraneBlockEntity c) {
+					c.enabled = true;
 					for (int i = 0; i < 12; i++) c.setStack(i, new net.minecraft.item.ItemStack(net.minecraft.item.Items.SAND, 64));
+				}
 			});
 			cmd(srv, "gamemode spectator @p");
 			mc.options.hudHidden = true;
@@ -307,11 +309,11 @@ public final class ClientSelfTest {
 		if (t == crane + 395) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
-				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(61.5, 1.9, 1.5), false);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(61.5, 2.1, 1.5), false);
 			});
 		}
 		if (t == crane + 410) {
-			var st = ship.structure.get(61, 1, 1);
+			var st = ship.structure.get(61, 2, 1);
 			boolean open = st.contains(net.minecraft.state.property.Properties.OPEN) && st.get(net.minecraft.state.property.Properties.OPEN);
 			check("luik boegschroefruimte", open, "luik: " + st);
 			shot(mc, "24_luik_voorpiek");

@@ -181,7 +181,7 @@ for x in R(8, AFT_END):
     S(x, 2, 0, WHITE); S(x, 2, 18, WHITE)
     S(x, 3, 0, RAIL); S(x, 3, 18, RAIL)
 # windows: tinted glass band on all sides
-G = "gray_stained_glass_pane"
+G = "air"   # open window openings, no glass
 for x in R(HX0 + 1, HX1 - 1):
     if x not in (13, 17):
         S(x, 3, HZ0, G); S(x, 3, HZ1, G)
@@ -216,7 +216,7 @@ S(12, 2, 5, "spruce_trapdoor[facing=west,half=bottom,open=true]")
 for z in (5, 6): S(11, 2, z, "white_carpet")
 S(10, 4, 3, "item_frame") if False else None
 # bathroom (x 14..16): shower, washbasin with mirror, toilet
-S(14, 2, 3, "light_blue_stained_glass_pane"); S(14, 2, 4, "light_blue_stained_glass_pane")
+
 S(15, 2, 3, "water_cauldron[level=3]"); S(15, 4, 3, "lightning_rod[facing=down]")
 S(16, 2, 3, "quartz_slab[type=top]"); S(16, 3, 3, "tripwire_hook[facing=south,attached=false,powered=false]")
 S(16, 2, 7, "quartz_stairs[facing=north,half=bottom]"); S(16, 3, 7, "quartz_slab[type=bottom]")

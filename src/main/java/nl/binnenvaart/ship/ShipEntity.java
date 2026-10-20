@@ -100,6 +100,7 @@ public class ShipEntity extends Entity {
 	private static final TrackedData<Boolean> AGROUND = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final TrackedData<Float> LIFT = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.FLOAT);
 	private static final TrackedData<Boolean> LIGHTS = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+	private static final TrackedData<Boolean> ENGINE = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	@SuppressWarnings("unchecked")
 	private static final TrackedData<Float>[] FILL = new TrackedData[4];
 	@SuppressWarnings("unchecked")
@@ -228,6 +229,7 @@ public class ShipEntity extends Entity {
 		builder.add(AGROUND, false);
 		builder.add(LIFT, 0f);
 		builder.add(LIGHTS, true);
+		builder.add(ENGINE, true);
 		for (int i = 0; i < 4; i++) {
 			builder.add(FILL[i], 0f);
 			builder.add(MATERIAL[i], 0);
@@ -288,6 +290,14 @@ public class ShipEntity extends Entity {
 
 	public float liftLerp(float tickDelta) {
 		return MathHelper.lerp(tickDelta, prevLiftClient, liftClient);
+	}
+
+	public boolean engineOn() {
+		return dataTracker.get(ENGINE);
+	}
+
+	public void setEngine(boolean on) {
+		dataTracker.set(ENGINE, on);
 	}
 
 	public boolean lightsOn() {
@@ -742,6 +752,14 @@ public class ShipEntity extends Entity {
 		if (!hasPassenger(player)) return;
 		lastControlTick = age;
 		throttle = MathHelper.clamp(c.throttle(), -2, 3);
+		if (c.toggleEngine()) {
+			boolean on = !engineOn();
+			dataTracker.set(ENGINE, on);
+			Vec3d ep = getPos();
+			getWorld().playSound(null, ep.x, ep.y, ep.z, on ? SoundEvents.BLOCK_PISTON_EXTEND : SoundEvents.BLOCK_PISTON_CONTRACT, SoundCategory.NEUTRAL, 1.2f, 0.4f);
+			player.sendMessage(Text.literal(on ? "Engine started" : "Engine stopped").formatted(Formatting.GRAY), true);
+		}
+		if (!engineOn()) throttle = 0;
 		rudderInput = MathHelper.clamp(c.rudder(), -1, 1);
 		thrusterInput = MathHelper.clamp(c.thruster(), -1, 1);
 		if (template.liftRegion != null && c.lift() != 0)
@@ -768,6 +786,7 @@ public class ShipEntity extends Entity {
 	}
 
 	public void testControl(int throttle, int rudder, int thruster) {
+		dataTracker.set(ENGINE, true);
 		this.testMode = true;
 		this.throttle = throttle;
 		this.rudderInput = rudder;
@@ -1534,6 +1553,7 @@ public class ShipEntity extends Entity {
 		liftCur = nbt.getDouble("Lift");
 		dataTracker.set(LIFT, (float) liftCur);
 		dataTracker.set(LIGHTS, !nbt.contains("Lights") || nbt.getBoolean("Lights"));
+		dataTracker.set(ENGINE, !nbt.contains("EngineOn") || nbt.getBoolean("EngineOn"));
 		shipYaw = prevShipYaw = nbt.getDouble("ShipYaw");
 		waterLayerY = nbt.getInt("WaterLayer");
 		throttle = MathHelper.clamp(nbt.getInt("Throttle"), -2, 3);
@@ -1567,6 +1587,7 @@ public class ShipEntity extends Entity {
 		nbt.putDouble("LiftTarget", liftTarget);
 		nbt.putDouble("Lift", liftCur);
 		nbt.putBoolean("Lights", lightsOn());
+		nbt.putBoolean("EngineOn", engineOn());
 		nbt.putDouble("ShipYaw", shipYaw);
 		nbt.putInt("WaterLayer", waterLayerY);
 		nbt.putInt("Throttle", throttle);

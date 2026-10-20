@@ -52,7 +52,7 @@ public class ShipEngineSound extends MovingSoundInstance {
 		}
 		updatePos();
 		float l = ship.engineLoad;
-		boolean running = ship.syncedThrottle() != 0;
+		boolean running = ship.engineOn();   // motor aan = stationair gebrom, ook op Stop
 		float push = Math.max(0f, ship.engineTarget() - l); // gas geven: even wat harder
 		// telegraaf op Stop = motor uit; anders zwaar en vrij zacht, zodat hij niet overheerst
 		float targetVol = !running ? 0f : loadLayer ? 0.02f + 0.5f * l + 0.18f * push : 0.3f * (1f - 0.5f * l);

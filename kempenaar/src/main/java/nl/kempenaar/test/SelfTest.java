@@ -140,6 +140,7 @@ public final class SelfTest {
 				cranePos = BlockPos.ofFloored(cp.x, waterTop, cp.z);
 				w.setBlockState(cranePos, Kempenaar.CRANE.getDefaultState());
 				crane = (nl.kempenaar.block.CraneBlockEntity) w.getBlockEntity(cranePos);
+				crane.enabled = true;
 				nl.kempenaar.block.CraneBlock.placeStorage(w, cranePos);
 				for (int i = 0; i < 10; i++) crane.setStack(i, new ItemStack(Items.SAND, 64));
 			}
@@ -156,6 +157,7 @@ public final class SelfTest {
 					BlockPos c2 = BlockPos.ofFloored(cp2.x, waterTop, cp2.z);
 					w.setBlockState(c2, Kempenaar.CRANE.getDefaultState());
 					crane2 = (nl.kempenaar.block.CraneBlockEntity) w.getBlockEntity(c2);
+					crane2.enabled = true;
 					for (int i = 0; i < 6; i++) crane2.setStack(i, new ItemStack(Items.GRAVEL, 64));
 				} else {
 					log.add("geen STELLA MARIS beschikbaar (mod niet geladen)");

@@ -87,6 +87,11 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 
 		matrices.push();
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotation((float) -y));
+		// heel licht deinen op het water, ook als het schip stilligt (alleen beeld, kost bijna niets)
+		float tw = (ship.age + tickDelta) * 0.05f + (ship.getId() % 97);
+		matrices.translate(0, 0.025f * MathHelper.sin(tw * 1.3f), 0);
+		matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(0.3f * MathHelper.sin(tw * 0.9f)));
+		matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(0.1f * MathHelper.sin(tw * 0.55f + 1.3f)));
 		matrices.translate(-ShipTemplate.CX, 0, -ShipTemplate.CZ);
 		Vec3d cam = this.dispatcher.camera.getPos();
 		Vec3d shipPos = ship.getLerpedPos(tickDelta);
@@ -159,8 +164,9 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			float floor = (float) t.holdFloorY;
 			int len = b - a + 1;
 			int cols = Math.max(1, (int) ((len - 0.4f) / 6.2f));
-			int rows = Math.max(1, (int) ((t.holdZ1 - t.holdZ0 + 1 - 0.2f) / 2.5f));
-			int tiers = Math.max(1, (int) ((t.coamingTopY - floor - 0.3f) / 2.62f));
+			int rows = Math.max(1, (int) ((t.holdZ1 - t.holdZ0 + 1 - 0.02f) / 2.47f));
+			// netjes in het ruim, onder de luiken, hoogstens 3 hoog
+			int tiers = MathHelper.clamp((int) ((ShipEntity.CV_Y - floor - 0.05f) / 2.6f), 1, 3);
 			float share = mat > 0 ? ship.containerShare(h) : 1f;
 			if (mat > 0 && (share < 0.02f || cols < 2)) share = share >= 0.5f && cols < 2 ? 1f : 0f;
 			if (share >= 0.999f || mat <= 0) {
@@ -203,7 +209,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 
 	private void renderPile(Sink vc, Sprite[] sp, int a, int b, int z0, int z1, float floor, float coaming,
 							float f, float hatch, int light) {
-		float cap = MathHelper.lerp(hatch, 8.4f, CLOSED_CAP);
+		float cap = ShipEntity.CV_Y - floor - 0.12f;   // altijd onder de luiken, ook tijdens het schuiven
 		int w = b - a + 1, d = z1 - z0 + 1;
 		float[][] hm = new float[w][d];
 		for (int i = 0; i < w; i++) for (int k = 0; k < d; k++) hm[i][k] = pileHeight(a + i, z0 + k, a, b, f, cap);
@@ -233,17 +239,15 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 	private void renderContainers(Sink vc, int hold, int a, int cols, int rows, int tiers, int z0, int z1, float floor,
 								  float f, float span, int light) {
 		int per = cols * rows, cap = per * tiers;
-		float slots = f * cap;
+		int count = f <= 0.002f ? 0 : MathHelper.clamp((int) Math.ceil(f * cap - 0.01f), 1, cap);
 		float xs = a + (span - cols * 6.2f) / 2f + 0.07f;
-		float zs = z0 + ((z1 - z0 + 1) - rows * 2.5f) / 2f + 0.03f;
+		float zs = z0 + ((z1 - z0 + 1) - rows * 2.47f) / 2f + 0.015f;
 		Sprite dark = sprites(Blocks.GRAY_CONCRETE.getDefaultState())[0];
 		for (int k = 0; k < cap; k++) {
-			float p = MathHelper.clamp(slots - k, 0f, 1f);
-			if (p <= 0) break;
+			if (k >= count) break;
 			int tier = k / per, idx = k % per, col = idx / rows, row = idx % rows;
-			float x0 = xs + col * 6.2f, zz = zs + row * 2.5f;
-			float drop = (1 - p) * (1 - p) * 7f;
-			float y0 = floor + tier * 2.62f + drop;
+			float x0 = xs + col * 6.2f, zz = zs + row * 2.47f;
+			float y0 = floor + tier * 2.6f;
 			Block color = CONTAINER_COLORS[(hold * 7 + k * 5 + (k / 3)) % CONTAINER_COLORS.length];
 			Sprite s = sprites(color.getDefaultState())[0];
 			boxFast(vc, s, x0, y0 + 0.08f, zz, x0 + 6.05f, y0 + 2.51f, zz + 2.44f, light, 1f);

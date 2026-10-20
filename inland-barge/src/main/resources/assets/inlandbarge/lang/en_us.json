@@ -9,5 +9,6 @@
   "key.inlandbarge.hatches": "Open/close hatches",
   "key.inlandbarge.lift_up": "Wheelhouse up",
   "key.inlandbarge.lift_down": "Wheelhouse down",
-  "key.inlandbarge.lights": "Ship lights on/off"
+  "key.inlandbarge.lights": "Ship lights on/off",
+  "key.inlandbarge.engine": "Engine on/off"
 }

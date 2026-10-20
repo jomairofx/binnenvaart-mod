@@ -195,3 +195,5 @@ jobs:
           grep -q "RESULT PASS" kempenaar/run/selftest.txt && grep -q "RESULT PASS" kempenaar/run/client_selftest.txt
           grep -q "RESULT PASS" no-kelp/run/selftest.txt
           grep -q "RESULT PASS" modern-bulk/run/selftest.txt && grep -q "RESULT PASS" modern-bulk/run/client_selftest.txt
+          # caught errors in ship code count as failures too
+          ! grep -l "Ship error in" run/*.log inland-barge/run/*.log mega-tanker/run/*.log kempenaar/run/*.log modern-bulk/run/*.log 2>/dev/null

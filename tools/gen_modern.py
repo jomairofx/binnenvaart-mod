@@ -156,7 +156,7 @@ def build(cfg):
         S(x, 5, HZ0 - 1, FASCIA); S(x, 5, HZ1 + 1, FASCIA)
     for z in R(HZ0, HZ1):
         S(HX0 - 1, 5, z, FASCIA); S(HX1 + 1, 5, z, FASCIA)
-    for x in R(8, AFT_END):
+    for x in R(8, AFT_END - (2 if W < 14 else 0)):
         S(x, 2, 0, WHITE); S(x, 2, W - 1, WHITE)
         S(x, 3, 0, RAIL); S(x, 3, W - 1, RAIL)
     # window openings (no glass)
@@ -184,9 +184,9 @@ def build(cfg):
         # living room x 9..12: sofa against the partition, TV on the aft wall, coffee table
         for z in R(P0, P1): S(HX0, 3, z, "black_concrete")
         for z in R(P0, P1): S(9, 2, z, "dark_oak_slab[type=bottom]")
-        for x in (11, 12): S(x, 2, P1, "dark_oak_stairs[facing=south,half=bottom]")
-        S(11, 2, P0, "spruce_slab[type=bottom]"); S(12, 2, P0, "potted_fern")
-        S(10, 2, P1, "spruce_fence"); S(10, 3, P1, "lantern[hanging=false]")
+        for z in (P0, P0 + 1): S(12, 2, z, "dark_oak_stairs[facing=east,half=bottom]")   # sofa looking at the TV
+        S(10, 2, P0, "spruce_slab[type=bottom]")                                          # coffee table
+        S(9, 2, P1, "spruce_fence"); S(9, 3, P1, "lantern[hanging=false]")               # standing lamp
         # galley x 14..16 along the hull side
         for x in R(14, 16):
             for z in R(P0, P1): S(x, 1, z, "polished_diorite" if (x + z) % 2 == 0 else "polished_andesite")
@@ -299,6 +299,14 @@ def build(cfg):
                 S(xx, WY + 2, z, "air")
                 S(xx, WY + 3, z, "smooth_quartz_slab[type=top]")
     for (xx, z) in [(WX0, WZ0), (WX0, WZ1), (WX1, WZ0), (WX1, WZ1)]: S(xx, WY + 2, z, WHITE)
+    for xx in R(WX0 + 1, WX1 - 1):                                 # window posts along the sides
+        if (xx - WX0) % 2 == 0: S(xx, WY + 2, WZ0, "smooth_quartz_wall" if False else WHITE); S(xx, WY + 2, WZ1, WHITE) if (xx - WX0) % 2 == 0 else None
+    for z in R(WZ0 + 1, WZ1 - 1):
+        if (z - WZ0) % 3 == 0: S(WX1, WY + 2, z, WHITE); S(WX0, WY + 2, z, WHITE) if z != ZC else None
+    for xx in R(WX0, WX1):
+        for z in (WZ0, WZ1): S(xx, WY + 3, z, WHITE)               # full header band under the roof
+    for z in R(WZ0, WZ1):
+        S(WX0, WY + 3, z, WHITE); S(WX1, WY + 3, z, WHITE)
     for z in R(WZ0 + 1, WZ1 - 1): S(WX1, WY + 1, z, "smooth_quartz_slab[type=bottom]")
     for xx in R(WX0, WX1 + 1):
         S(xx, WY + 4, WZ0 - 1, "smooth_quartz_slab[type=bottom]"); S(xx, WY + 4, WZ1 + 1, "smooth_quartz_slab[type=bottom]")
@@ -405,7 +413,7 @@ def build(cfg):
         S(HOLD_END + 1, 2, z, "iron_block"); S(HOLD_END + 1, 3, z, "polished_blackstone_slab[type=bottom]")
 
     # ---------------- fore ship ----------------
-    for xx in R(FORE_START, L - 3):
+    for xx in R(FORE_START + (2 if W < 14 else 0), L - 3):
         z0, z1 = zr(xx)
         S(xx, 2, z0, ACC if not TANKER else WHITE); S(xx, 2, z1, ACC if not TANKER else WHITE)
         S(xx, 3, z0, RAIL); S(xx, 3, z1, RAIL)
@@ -422,7 +430,7 @@ def build(cfg):
         S(L - 6, 3, z, "iron_block"); S(L - 7, 3, z, "anvil[facing=north]"); S(L - 5, 3, z, "chain[axis=x]"); S(L - 4, 3, z, "chain[axis=x]")
     BT = FORE_START + 3
     S(BT, 2, 2, "spruce_trapdoor[facing=south,half=bottom,open=false]")
-    for y in R(-4, 1): S(BT, y, 2, "ladder[facing=south]")
+    for y in R(bot(BT) + 1, 1): S(BT, y, 2, "ladder[facing=south]")
     for z in R(1, W - 2):
         for y in R(-4, 0): S(FORE_START + 1, y, z, INNER)
     S(BT + 2, -3, ZC, "iron_block"); S(BT + 3, -3, ZC, "iron_block"); S(BT + 2, -2, ZC, "lightning_rod[facing=up]")
@@ -431,7 +439,13 @@ def build(cfg):
     for z in R(ZC - 1, ZC + 1): S(BH + 1, 2, z, "polished_deepslate_slab[type=top]")
     S(BH + 1, 3, ZC - 1, "black_carpet"); S(BH + 1, 3, ZC + 1, "black_carpet"); S(BH + 1, 3, ZC, "lever[face=floor,facing=west,powered=false]")
     S(BH, 2, ZC, "polished_blackstone_stairs[facing=west,half=bottom]")
-    if cfg.get("a_mast", True):
+    if cfg.get("a_mast", True) and cfg.get("slim_mast", False):
+        AM = L - 5
+        for y in R(3, 9): S(AM, y, ZC, RAIL)                       # thin steel pole
+        for z in (ZC - 2, ZC - 1, ZC + 1, ZC + 2): S(AM, 8, z, RAIL)   # yard
+        for z in (ZC - 2, ZC + 2): S(AM, 7, z, "lantern[hanging=true]")
+        S(AM, 10, ZC, "end_rod[facing=up]")                         # masthead light
+    elif cfg.get("a_mast", True):
         AM = L - 5
         m0, m1 = max(zr(AM)[0] + 1, ZC - 4), min(zr(AM)[1] - 1, ZC + 4)
         for y in R(3, 9):

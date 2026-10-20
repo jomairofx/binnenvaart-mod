@@ -781,11 +781,28 @@ public class ShipEntity extends Entity {
 		if (c.toggleHatches()) {
 			if (hatchProgress > 0.001f && hatchProgress < 0.999f) return;
 			boolean closed = !hatchesClosed();
+			if (closed && containersStickOut()) {
+				player.sendMessage(Text.literal("Containers stick out above the hold: the hatches cannot close").formatted(Formatting.RED), true);
+				return;
+			}
 			dataTracker.set(HATCHES_CLOSED, closed);
 			Vec3d h = toWorld(52, 4, 4.5);
 			getWorld().playSound(null, h.x, h.y, h.z, SoundEvents.BLOCK_PISTON_EXTEND, SoundCategory.NEUTRAL, 1.5f, 0.5f);
 			player.sendMessage(Text.literal(closed ? "Hatches closing" : "Hatches opening").formatted(Formatting.GRAY), true);
 		}
+	}
+
+	/** Steken er containers boven het ruim uit (meer dan er onder de luiken passen)? */
+	public boolean containersStickOut() {
+		if (COVERS == 0) return false;
+		int fit = MathHelper.clamp((int) ((CV_Y - template.holdFloorY - 0.05) / 2.6), 0, 3);
+		for (int h = 0; h < template.holds.length; h++) {
+			float f = fill(h);
+			if (f < 0.002f) continue;
+			float share = material(h) > 0 ? containerShare(h) : 1f;
+			if (f * share > fit / 3f + 0.005f) return true;
+		}
+		return false;
 	}
 
 	public void testControl(int throttle, int rudder, int thruster) {

@@ -166,7 +166,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			int cols = Math.max(1, (int) ((len - 0.4f) / 6.2f));
 			int rows = Math.max(1, (int) ((t.holdZ1 - t.holdZ0 + 1 - 0.02f) / 2.47f));
 			// netjes in het ruim, onder de luiken, hoogstens 3 hoog
-			int tiers = MathHelper.clamp((int) ((ShipEntity.CV_Y - floor - 0.05f) / 2.6f), 1, 3);
+			int tiers = 3;   // containers mogen boven het ruim uitsteken (dan kunnen de luiken niet dicht)
 			float share = mat > 0 ? ship.containerShare(h) : 1f;
 			if (mat > 0 && (share < 0.02f || cols < 2)) share = share >= 0.5f && cols < 2 ? 1f : 0f;
 			if (share >= 0.999f || mat <= 0) {
@@ -232,7 +232,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 								  float f, float span, int light) {
 		int per = cols * rows, cap = per * tiers;
 		int count = f <= 0.002f ? 0 : MathHelper.clamp((int) Math.ceil(f * cap - 0.01f), 1, cap);
-		float xs = a + (span - cols * 6.2f) / 2f + 0.07f;
+		float xs = a + 0.1f;   // achterin het ruim: de luikenstapel ligt voorin
 		float zs = z0 + ((z1 - z0 + 1) - rows * 2.47f) / 2f + 0.015f;
 		Sprite dark = sprites(Blocks.GRAY_CONCRETE.getDefaultState())[0];
 		for (int k = 0; k < cap; k++) {

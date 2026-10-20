@@ -46,7 +46,7 @@ public final class ShipMesh {
 	/** Sommige schepen (tanker) hebben dichte tanks: vlakken daarheen zijn nooit te zien. */
 	private static final boolean SEALED_CULL = false;
 	/** Afstanden (blokken) waaronder detailniveau 0 en 1 nog getekend worden. */
-	public static final double NEAR = 100, MID = 220;
+	public static final double NEAR = 200, MID = 400;
 
 	public final int version;
 	public final boolean lights;

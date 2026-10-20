@@ -206,7 +206,7 @@ for x in R(HX0, HX1):
 for z in R(HZ0 + 1, HZ1 - 1): S(HX1, 5, z, "polished_deepslate_slab[type=top]")   # stuurlessenaar
 S(HX1, 5, HZ0, "spruce_planks"); S(HX1, 5, HZ1, "spruce_planks")
 for (x, z) in [(HX0, HZ0), (HX0, HZ1), (HX1, HZ0), (HX1, HZ1)]:
-    S(x, 6, z, "dark_oak_fence")
+    S(x, 6, z, "stone_brick_wall")
 # achterwand net als voor en opzij: houten onderpaneel, rondom open raamstrook met dunne stijlen,
 # in het midden een open doorgang met bovenlijst
 S(HX0, 5, 4, "air")
@@ -221,7 +221,7 @@ for x in R(HX0, HX1):
     for z in (HZ0, HZ1):
         if (x, z) not in [(HX0, HZ0), (HX0, HZ1), (HX1, HZ0), (HX1, HZ1)]: S(x, 7, z, "smooth_quartz_slab[type=top]")
 for z in R(HZ0 + 1, HZ1 - 1): S(HX1, 7, z, "smooth_quartz_slab[type=top]")
-for (x, z) in [(HX0, HZ0), (HX0, HZ1), (HX1, HZ0), (HX1, HZ1)]: S(x, 7, z, WHITE)
+for (x, z) in [(HX0, HZ0), (HX0, HZ1), (HX1, HZ0), (HX1, HZ1)]: S(x, 7, z, "stone_brick_wall")
 S(HX1, 9, HZ0 - 1, "red_candle[candles=1,lit=true]"); S(HX1, 9, HZ1 + 1, "lime_candle[candles=1,lit=true]")   # boordlichten
 # inrichting: stuurstoel, scherm, joystick, kaartentafel
 S(14, 5, 4, "dark_oak_stairs[facing=west,half=bottom]")

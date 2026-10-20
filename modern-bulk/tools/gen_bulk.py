@@ -129,7 +129,6 @@ S(1, 3, 1, RAIL); S(1, 3, 17, RAIL)
 # name board on the transom and flagstaff with the Dutch ensign
 for y in R(2, 5): S(0, y, ZC, "birch_fence")
 S(0, 6, ZC, "end_rod[facing=up]")
-for (y, c) in [(5, "red_wool"), (4, "white_wool"), (3, "blue_wool")]: S(-1, y, ZC, c)
 # mooring bollards (double) and winches against the bulwark
 for z in (2, 16):
     S(2, 2, z, "polished_blackstone_wall"); S(3, 2, z, "polished_blackstone_wall")

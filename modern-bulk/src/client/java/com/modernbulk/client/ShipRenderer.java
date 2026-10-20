@@ -411,7 +411,13 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 	static final class DynCache {
 		final Sink sink = new Sink();
 		float hatch = -1;
-		final float[] fill = {-1, -1, -1, -1, -1};
+		final float[] fill = filled(ShipEntity.HOLD_COUNT);
+
+		private static float[] filled(int n) {
+			float[] a = new float[n];
+			java.util.Arrays.fill(a, -1f);
+			return a;
+		}
 		final int[] mat = new int[ShipEntity.HOLD_COUNT];
 		int light = -1;
 	}

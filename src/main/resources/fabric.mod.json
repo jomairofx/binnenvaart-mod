@@ -3,7 +3,7 @@
   "id": "binnenvaart",
   "version": "${version}",
   "name": "Binnenvaart",
-  "description": "HENDRIKA: a sailable, walkable inland cargo ship with four cargo holds.",
+  "description": "HENDRIKA: a modern Dutch inland tanker (143 x 16) with six tanks, lifting wheelhouse, car with crane, engine on/off and working lights. Sailable and walkable.",
   "authors": [
     "jomairofx"
   ],

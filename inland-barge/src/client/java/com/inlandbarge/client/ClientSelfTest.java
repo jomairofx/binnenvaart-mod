@@ -37,10 +37,12 @@ public final class ClientSelfTest {
 			new Shot("03_boeg", new double[]{126, 6, 24}, new double[]{100, 1, 5.5}, false),
 			new Shot("04_achterkant", new double[]{-24, 8, -12}, new double[]{4, 4, 5.5}, false),
 			new Shot("05_ruim", new double[]{62, 6.5, 5.5}, new double[]{10, 6, 5.5}, false),
-			new Shot("06_woning", new double[]{9.6, 2.7, 5.0}, new double[]{4.5, 2.4, 3.0}, false),
-			new Shot("07_machinekamer", new double[]{11.5, -1.3, 5.0}, new double[]{8.5, -2.5, 3.0}, false),
+			new Shot("06_woning", new double[]{12.4, 3.62, 7.5}, new double[]{8.5, 2.6, 4.0}, false),
+			new Shot("07_machinekamer", new double[]{11.0, -2.4, 5.5}, new double[]{18.5, -3.0, 3.0}, false),
 			new Shot("08_onderwater", new double[]{48, -6, 22}, new double[]{48, -2, 5.5}, false),
-			new Shot("09_stuurhuis_binnen", new double[]{6.0, 9.3, 5.5}, new double[]{30, 6, 5.5}, false),
+			new Shot("09_stuurhuis_binnen", new double[]{15.0, 8.62, 5.5}, new double[]{60, 4, 5.5}, false),
+			new Shot("09b_achterdek_auto", new double[]{-6.0, 8.0, 2.0}, new double[]{4.0, 2.5, 6.5}, false),
+			new Shot("09c_keuken", new double[]{13.6, 3.62, 6.5}, new double[]{16.5, 2.5, 3.0}, false),
 	};
 
 	public static void register() {
@@ -137,7 +139,7 @@ public final class ClientSelfTest {
 			});
 		}
 		if (t == t0 + 320) {
-			tp(srv, ship, new double[]{14.5, -1.0 + 1.62, -0.62}, new double[]{14.5, 0.6, 6});
+			tp(srv, ship, new double[]{26.5, -1.0 + 1.62, -0.62}, new double[]{26.5, 0.6, 6});
 		}
 		if (t == t0 + 340) mc.options.forwardKey.setPressed(true);
 		if (t > t0 + 340 && t < t0 + 440) {
@@ -156,16 +158,16 @@ public final class ClientSelfTest {
 			mc.options.forwardKey.setPressed(false);
 			Vec3d l = ship.toLocal(mc.player.getPos());
 			check("ladder", ladderMax >= 1.95, String.format("vanuit het water geklommen tot lokale y=%.2f (dek = 2.0)", ladderMax));
-			tp(srv, ship, new double[]{14.6, 2.0 + 1.62, 5.5}, new double[]{13.5, 3.0, 5.5});
+			tp(srv, ship, new double[]{22.6, 2.0 + 1.62, 7.5}, new double[]{21.5, 3.0, 7.5});
 		}
 		if (t == t0 + 460) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
-				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(13.5, 2.5, 5.5), false);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(21.5, 2.5, 7.5), false);
 			});
 		}
 		if (t == t0 + 480) {
-			var st = ship.structure.get(13, 2, 5);
+			var st = ship.structure.get(21, 2, 7);
 			boolean open = st.contains(net.minecraft.state.property.Properties.OPEN) && st.get(net.minecraft.state.property.Properties.OPEN);
 			check("deur", open, "voordeur woning: " + st);
 			shot(mc, "15_deur_open");
@@ -173,7 +175,7 @@ public final class ClientSelfTest {
 		if (t == t0 + 485) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
-				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(15.8, 2.5, 5.5), false);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(25.8, 2.5, 5.5), false);
 			});
 		}
 		if (t == t0 + 495) {
@@ -185,14 +187,14 @@ public final class ClientSelfTest {
 		int helm = t0 + 500;
 		if (t == helm) {
 			cmd(srv, "gamemode creative @p");
-			tp(srv, ship, new double[]{8.5, 9.62, 4.5}, new double[]{60, 8, 5.5});
+			tp(srv, ship, new double[]{15.5, 8.62, 5.5}, new double[]{60, 6, 5.5});
 		}
 		if (t == helm + 30) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
 				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) {
 					s.testMode = false;
-					s.handleInteract(sp, new Vec3d(9.5, 9.5, 5.2), false);
+					s.handleInteract(sp, new Vec3d(16.5, 7.5, 5.5), false);
 				}
 			});
 		}
@@ -224,6 +226,40 @@ public final class ClientSelfTest {
 			InlandBargeClient.thrusterRight.setPressed(false);
 			double d = Math.toDegrees(ship.shipYaw - yaw0);
 			check("boegschroef (pijltje rechts)", d > 0.5 && ship.syncedThruster() == 1, String.format("koers %.1f graden naar stuurboord, boegschroef %d", d, ship.syncedThruster()));
+			srv.execute(() -> {
+				srv.getPlayerManager().getPlayerList().get(0).stopRiding();
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.testSetLift(3.0);
+			});
+		}
+		// stuurhuis omhoog en dan over de ladder op het dak naar binnen klimmen
+		if (t == helm + 720) tp(srv, ship, new double[]{13.5, 6.0 + 1.62, 5.5}, new double[]{9.0, 7.6, 5.5});
+		if (t == helm + 730) {
+			ladderMax = -99;
+			mc.options.forwardKey.setPressed(true);
+		}
+		if (t > helm + 730 && t < helm + 810) {
+			double ly = ship.toLocal(mc.player.getPos()).y;
+			if (ly > ladderMax) ladderMax = ly;
+			if (ly >= 7.0 + ship.liftOffset() + 0.05) mc.options.forwardKey.setPressed(false);
+		}
+		if (t == helm + 810) {
+			mc.options.forwardKey.setPressed(false);
+			check("ladder naar opgeheven stuurhuis", ladderMax >= 7.0 + ship.liftOffset() - 0.05,
+					String.format("geklommen tot lokale y=%.2f, vloer op %.2f", ladderMax, 7.0 + ship.liftOffset()));
+			mc.player.setYaw((float) Math.toDegrees(ship.shipYaw) - 90f);
+			mc.player.setPitch(0f);
+			mc.options.forwardKey.setPressed(true);
+		}
+		if (t == helm + 840) {
+			mc.options.forwardKey.setPressed(false);
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			check("stuurhuis in gelopen", l.x > 14.2 && Math.abs(l.y - (7.0 + ship.liftOffset())) < 0.3,
+					String.format("speler op lokaal (%.2f, %.2f, %.2f)", l.x, l.y, l.z));
+			shot(mc, "18_stuurhuis_omhoog_binnen");
+			tp(srv, ship, new double[]{-8.0, 12.0, -6.0}, new double[]{14.0, 7.0, 5.5});
+		}
+		if (t == helm + 870) {
+			shot(mc, "18b_stuurhuis_omhoog_buiten");
 			finish(mc, failed ? "RESULT FAIL" : "RESULT PASS");
 		}
 	}

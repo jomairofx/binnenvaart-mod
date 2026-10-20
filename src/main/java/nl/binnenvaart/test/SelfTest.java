@@ -68,10 +68,10 @@ public final class SelfTest {
 			if (tick == 70) {
 				check("geregistreerd", ShipHolder.of(w).contains(ship), "schip in lijst");
 				check("waterverplaatsing", ship.displacedCount() > 500, ship.displacedCount() + " waterblokken verplaatst");
-				Vec3d hold = ship.toWorld(40.5, -2.5, 5.5);
+				Vec3d hold = ship.toWorld(40.5, -2.5, 8.0);
 				var st = w.getBlockState(BlockPos.ofFloored(hold));
 				check("droog ruim", st.isOf(Binnenvaart.DISPLACED_WATER) || st.isAir(), "onder in het ruim: " + st);
-				Vec3d drop = ship.toWorld(40.5, 1.5, 5.5);
+				Vec3d drop = ship.toWorld(40.5, 3.5, 5.5);
 				probe = new ItemEntity(w, drop.x, drop.y, drop.z, new ItemStack(Items.DIAMOND));
 				probe.setVelocity(0, 0, 0);
 				probe.setNeverDespawn();
@@ -79,8 +79,8 @@ public final class SelfTest {
 			}
 			if (tick == 130) {
 				Vec3d l = ship.toLocal(probe.getPos());
-				check("botsing ruimvloer", Math.abs(l.y - (-2.0)) < 0.15, String.format("voorwerp ligt op lokale y=%.3f (vloer -2)", l.y));
-				Vec3d deck = ship.toWorld(50.5, 3.0, 0.5);
+				check("botsing tankdek", Math.abs(l.y - 2.0) < 0.15, String.format("voorwerp ligt op lokale y=%.3f (dek 2)", l.y));
+				Vec3d deck = ship.toWorld(50.5, 3.0, 1.5);
 				ItemEntity d2 = new ItemEntity(w, deck.x, deck.y, deck.z, new ItemStack(Items.EMERALD));
 				d2.setVelocity(0, 0, 0);
 				w.spawnEntity(d2);
@@ -92,7 +92,7 @@ public final class SelfTest {
 				double dist = ship.getPos().distanceTo(start);
 				check("varen", dist > 25, String.format("schip voer %.1f blokken in 15 s (snelheid %.3f b/t)", dist, ship.currentSpeed()));
 				Vec3d l = ship.toLocal(probe.getPos());
-				check("meenemen", Math.abs(l.x - 40.5) < 1.5 && Math.abs(l.z - 5.5) < 1.5 && Math.abs(l.y + 2) < 0.3,
+				check("meenemen", Math.abs(l.x - 40.5) < 1.5 && Math.abs(l.z - 5.5) < 1.5 && Math.abs(l.y - 2) < 0.3,
 						String.format("voorwerp op lokaal (%.2f, %.2f, %.2f)", l.x, l.y, l.z));
 				ship.testControl(2, 1, 0);
 			}
@@ -121,10 +121,10 @@ public final class SelfTest {
 			if (tick == 1180) {
 				check("stuurhut omhoog", ship.liftOffset() > 2.9, String.format("stuurhut staat %.2f blok omhoog", ship.liftOffset()));
 				ship.setLights(false);
-				var lamp = ship.structure.get(7, 11, 5);
+				var lamp = ship.structure.get(10, 5, 3);
 				check("licht uit", !ship.lightsOn() && !lamp.isOf(net.minecraft.block.Blocks.SEA_LANTERN), "lamp nu " + lamp);
 				ship.setLights(true);
-				check("licht aan", ship.lightsOn() && ship.structure.get(7, 11, 5).isOf(net.minecraft.block.Blocks.SEA_LANTERN), "lamp weer " + ship.structure.get(7, 11, 5));
+				check("licht aan", ship.lightsOn() && ship.structure.get(10, 5, 3).isOf(net.minecraft.block.Blocks.SEA_LANTERN), "lamp weer " + ship.structure.get(10, 5, 3));
 				ship.testSetLift(0);
 			}
 			if (tick == 1200) {

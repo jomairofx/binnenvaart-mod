@@ -128,7 +128,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 				dc.fill[h] = fills[h];
 				dc.mat[h] = ship.material(h);
 			}
-			renderCargo(ship, fills, hatch, dc.sink, light);
+			if (!ship.template.tanker) renderCargo(ship, fills, hatch, dc.sink, light);
 			renderCovers(hatch, dc.sink, light);
 			renderBeds(ship, dc.sink, light);
 		}
@@ -346,17 +346,17 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 	private void renderName(ShipEntity ship, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
 		TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 		String name = ship.template.name;
-		float scale = 0.1f;
+		float scale = 0.13f;
 		float w = tr.getWidth(name) * scale;
 		// stuurboord (z+)
 		matrices.push();
-		matrices.translate(85.0f, 1.9f, 11.01f);
+		matrices.translate(129.0f, 1.9f, 16.01f);
 		matrices.scale(scale, -scale, scale);
 		draw(tr, name, matrices, consumers, light);
 		matrices.pop();
 		// bakboord (z-)
 		matrices.push();
-		matrices.translate(85.0f + w, 1.9f, -0.01f);
+		matrices.translate(129.0f + w, 1.9f, -0.01f);
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f));
 		matrices.scale(scale, -scale, scale);
 		draw(tr, name, matrices, consumers, light);

@@ -1,8 +1,8 @@
 {
-  "item.binnenvaart.binnenvaartschip": "Inland Ship HENDRIKA",
-  "entity.binnenvaart.binnenvaartschip": "Inland Ship HENDRIKA",
+  "item.binnenvaart.binnenvaartschip": "Inland Tanker HENDRIKA",
+  "entity.binnenvaart.binnenvaartschip": "Inland Tanker HENDRIKA",
   "block.binnenvaart.verplaatst_water": "Displaced Water",
-  "category.binnenvaart": "Inland Ship HENDRIKA",
+  "category.binnenvaart": "Inland Tanker HENDRIKA",
   "key.binnenvaart.boeg_links_v2": "Bow thruster port (left)",
   "key.binnenvaart.boeg_rechts_v2": "Bow thruster starboard (right)",
   "key.binnenvaart.hoorn_v2": "Ship horn",

@@ -32,15 +32,18 @@ public final class ClientSelfTest {
 	private record Shot(String name, double[] eye, double[] target, boolean hud) {}
 
 	private static final Shot[] SHOTS = {
-			new Shot("01_overzicht", new double[]{18, 26, 46}, new double[]{55, 0, 5.5}, false),
-			new Shot("02_zijkant", new double[]{48, 3, 62}, new double[]{48, 1, 5.5}, false),
-			new Shot("03_boeg", new double[]{112, 6, 24}, new double[]{86, 1, 5.5}, false),
-			new Shot("04_achterkant", new double[]{-24, 8, -12}, new double[]{4, 4, 5.5}, false),
-			new Shot("05_ruim", new double[]{62, 6.5, 5.5}, new double[]{10, 6, 5.5}, false),
-			new Shot("06_woning", new double[]{9.6, 2.7, 5.0}, new double[]{4.5, 2.4, 3.0}, false),
-			new Shot("07_machinekamer", new double[]{11.5, -1.3, 5.0}, new double[]{8.5, -2.5, 3.0}, false),
-			new Shot("08_onderwater", new double[]{48, -6, 22}, new double[]{48, -2, 5.5}, false),
-			new Shot("09_stuurhuis_binnen", new double[]{6.0, 9.3, 5.5}, new double[]{30, 6, 5.5}, false),
+			new Shot("01_overzicht", new double[]{25, 32, 62}, new double[]{71, 0, 8}, false),
+			new Shot("02_zijkant", new double[]{71, 3, 82}, new double[]{71, 1, 8}, false),
+			new Shot("03_boeg", new double[]{168, 7, 32}, new double[]{136, 1, 8}, false),
+			new Shot("04_achterkant", new double[]{-24, 9, -12}, new double[]{6, 4, 8}, false),
+			new Shot("05_tankdek", new double[]{62, 6, 8}, new double[]{20, 3, 8}, false),
+			new Shot("05b_tankdek_boven", new double[]{75, 30, 8.1}, new double[]{75, 0, 8}, false),
+			new Shot("06_woning", new double[]{13.5, 3.62, 8.5}, new double[]{8.5, 2.6, 11.0}, false),
+			new Shot("06b_keuken", new double[]{13.5, 3.62, 8.5}, new double[]{19.5, 2.5, 12.0}, false),
+			new Shot("07_machinekamer", new double[]{11.0, -2.4, 8.5}, new double[]{18.5, -3.0, 4.0}, false),
+			new Shot("08_onderwater", new double[]{71, -6, 32}, new double[]{71, -2, 8}, false),
+			new Shot("09_stuurhuis_binnen", new double[]{15.0, 8.62, 8.5}, new double[]{80, 4, 8}, false),
+			new Shot("09b_achterdek_auto", new double[]{-6.0, 8.0, 4.0}, new double[]{4.0, 2.5, 11.5}, false),
 	};
 
 	public static void register() {
@@ -118,7 +121,7 @@ public final class ClientSelfTest {
 		if (t == t0) {
 			cmd(srv, "gamemode survival @p");
 			mc.options.hudHidden = true;
-			tp(srv, ship, new double[]{50.5, 3.62, 0.5}, new double[]{70, 3.6, 0.5});
+			tp(srv, ship, new double[]{50.5, 3.62, 1.5}, new double[]{70, 3.6, 1.5});
 		}
 		if (t == t0 + 40) {
 			Vec3d l = ship.toLocal(mc.player.getPos());
@@ -137,7 +140,7 @@ public final class ClientSelfTest {
 			});
 		}
 		if (t == t0 + 320) {
-			tp(srv, ship, new double[]{12.5, -1.0 + 1.62, -0.62}, new double[]{12.5, 0.6, 6});
+			tp(srv, ship, new double[]{26.5, -1.0 + 1.62, -0.62}, new double[]{26.5, 0.6, 6});
 		}
 		if (t == t0 + 340) mc.options.forwardKey.setPressed(true);
 		if (t > t0 + 340 && t < t0 + 440) {
@@ -156,16 +159,16 @@ public final class ClientSelfTest {
 			mc.options.forwardKey.setPressed(false);
 			Vec3d l = ship.toLocal(mc.player.getPos());
 			check("ladder", ladderMax >= 1.95, String.format("vanuit het water geklommen tot lokale y=%.2f (dek = 2.0)", ladderMax));
-			tp(srv, ship, new double[]{12.7, 2.0 + 1.62, 5.5}, new double[]{11.5, 3.0, 5.5});
+			tp(srv, ship, new double[]{22.6, 2.0 + 1.62, 8.5}, new double[]{21.5, 3.0, 8.5});
 		}
 		if (t == t0 + 460) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
-				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(11.5, 2.5, 5.5), false);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(21.5, 2.5, 8.5), false);
 			});
 		}
 		if (t == t0 + 480) {
-			var st = ship.structure.get(11, 2, 5);
+			var st = ship.structure.get(21, 2, 8);
 			boolean open = st.contains(net.minecraft.state.property.Properties.OPEN) && st.get(net.minecraft.state.property.Properties.OPEN);
 			check("deur", open, "voordeur woning: " + st);
 			shot(mc, "15_deur_open");
@@ -173,7 +176,7 @@ public final class ClientSelfTest {
 		if (t == t0 + 485) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
-				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(15.5, 2.5, 5.5), false);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(25.8, 2.5, 5.5), false);
 			});
 		}
 		if (t == t0 + 495) {
@@ -185,14 +188,14 @@ public final class ClientSelfTest {
 		int helm = t0 + 500;
 		if (t == helm) {
 			cmd(srv, "gamemode creative @p");
-			tp(srv, ship, new double[]{8.5, 9.62, 4.5}, new double[]{60, 8, 5.5});
+			tp(srv, ship, new double[]{15.5, 8.62, 8.5}, new double[]{60, 6, 8});
 		}
 		if (t == helm + 30) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
 				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) {
 					s.testMode = false;
-					s.handleInteract(sp, new Vec3d(9.5, 9.5, 5.2), false);
+					s.handleInteract(sp, new Vec3d(16.5, 7.5, 8.5), false);
 				}
 			});
 		}
@@ -230,11 +233,11 @@ public final class ClientSelfTest {
 		if (t == helm + 590) {
 			cmd(srv, "gamemode survival @p");
 			mc.options.hudHidden = false;
-			tp(srv, ship, new double[]{40.5, 2.0 + 1.62, 0.5}, new double[]{40.5, 2.0, 0.5 - 6});
+			tp(srv, ship, new double[]{26.5, 2.0 + 1.62, 1.5}, new double[]{26.5, 2.0, 1.5 - 6});
 		}
 		if (t == helm + 610) {
 			// over de rand het water in springen
-			Vec3d a = ship.toWorld(40.5, 2.0, 0.5), b = ship.toWorld(40.5, 2.0, 0.5 - 1);
+			Vec3d a = ship.toWorld(26.5, 2.0, 1.5), b = ship.toWorld(26.5, 2.0, 1.5 - 1);
 			Vec3d dir = b.subtract(a).normalize();
 			mc.player.setVelocity(dir.x * 0.45, 0.42, dir.z * 0.45);
 		}

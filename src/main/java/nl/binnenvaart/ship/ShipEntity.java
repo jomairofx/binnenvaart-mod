@@ -74,17 +74,18 @@ import java.util.List;
  */
 public class ShipEntity extends Entity {
 	// ---- constanten ----
-	public static final int LENGTH = 96;
+	public static final int LENGTH = 143;
+	public static final int HOLD_COUNT = 6;
 	public static final double EMPTY_RISE = 2.0;          // zoveel blokken ligt een leeg schip hoger
 	public static final double[] STEP_SPEED = {-0.15, -0.075, 0.0, 0.11, 0.23, 0.36}; // blokken per tick
 	public static final String[] STEP_NAMES = {"Full astern", "Slow astern", "Stop", "Slow ahead", "Half ahead", "Full ahead"};
 	public static final double V_FULL = 0.36;
 	private static final double MAX_TURN = Math.toRadians(0.9);
 	private static final double THRUSTER_TURN = Math.toRadians(0.35);
-	private static final double PIVOT_RUDDER = 12.0;      // draaipunt bij roeren (lokaal, t.o.v. midden)
-	private static final double PIVOT_THRUSTER = -38.0;   // draaipunt bij boegschroef (bij de achtersteven)
+	private static final double PIVOT_RUDDER = 16.0;      // draaipunt bij roeren (lokaal, t.o.v. midden)
+	private static final double PIVOT_THRUSTER = -58.0;   // draaipunt bij boegschroef (bij de achtersteven)
 	public static final int HOLD_SLOTS = 54;
-	public static final int COVERS = 13;
+	public static final int COVERS = 0;   // tanker: dichte tanks, geen luiken
 	public static final float COVER_STACK = 0.26f;
 
 	// ---- gesynchroniseerde gegevens ----
@@ -102,14 +103,14 @@ public class ShipEntity extends Entity {
 	private static final TrackedData<Boolean> LIGHTS = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	private static final TrackedData<Boolean> ENGINE = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 	@SuppressWarnings("unchecked")
-	private static final TrackedData<Float>[] FILL = new TrackedData[4];
+	private static final TrackedData<Float>[] FILL = new TrackedData[HOLD_COUNT];
 	@SuppressWarnings("unchecked")
-	private static final TrackedData<Integer>[] MATERIAL = new TrackedData[4];
+	private static final TrackedData<Integer>[] MATERIAL = new TrackedData[HOLD_COUNT];
 	@SuppressWarnings("unchecked")
-	private static final TrackedData<Float>[] BOXED = new TrackedData[4];
+	private static final TrackedData<Float>[] BOXED = new TrackedData[HOLD_COUNT];
 
 	static {
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < HOLD_COUNT; i++) {
 			FILL[i] = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.FLOAT);
 			MATERIAL[i] = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.INTEGER);
 			BOXED[i] = DataTracker.registerData(ShipEntity.class, TrackedDataHandlerRegistry.FLOAT);
@@ -121,7 +122,7 @@ public class ShipEntity extends Entity {
 
 	public final ShipTemplate template = ShipTemplate.get();
 	public final ShipStructure structure = new ShipStructure(template);
-	private final CargoInventory[] holds = new CargoInventory[4];
+	private final CargoInventory[] holds = new CargoInventory[HOLD_COUNT];
 
 	// stand
 	public double shipYaw, prevShipYaw;
@@ -144,8 +145,8 @@ public class ShipEntity extends Entity {
 	private double lerpX, lerpY, lerpZ, lerpYaw;
 	private int lerpSteps, yawSteps;
 	private boolean yawInit;
-	public final float[] displayFill = new float[4];
-	public final float[] prevDisplayFill = new float[4];
+	public final float[] displayFill = new float[HOLD_COUNT];
+	public final float[] prevDisplayFill = new float[HOLD_COUNT];
 	public Object renderCache; // ShipMesh op de client
 	/** Client: hoe hard de motor draait (0 = stationair, 1 = vol vermogen). */
 	public float engineLoad;
@@ -154,7 +155,7 @@ public class ShipEntity extends Entity {
 
 	public ShipEntity(EntityType<? extends ShipEntity> type, World world) {
 		super(type, world);
-		for (int i = 0; i < 4; i++) holds[i] = new CargoInventory(this, i);
+		for (int i = 0; i < HOLD_COUNT; i++) holds[i] = new CargoInventory(this, i);
 	}
 
 	// =====================================================================
@@ -199,7 +200,7 @@ public class ShipEntity extends Entity {
 	protected Box calculateBoundingBox() {
 		double c = Math.cos(shipYaw), s = Math.sin(shipYaw);
 		double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE, minZ = Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
-		double[][] corners = {{-1.5, -1.5}, {97.5, -1.5}, {-1.5, 12.5}, {97.5, 12.5}};
+		double[][] corners = {{-2.5, -2.5}, {144.5, -2.5}, {-2.5, 17.5}, {144.5, 17.5}};
 		for (double[] k : corners) {
 			double lx = k[0] - ShipTemplate.CX, lz = k[1] - ShipTemplate.CZ;
 			double wx = getX() + lx * c - lz * s, wz = getZ() + lx * s + lz * c;
@@ -230,7 +231,7 @@ public class ShipEntity extends Entity {
 		builder.add(LIFT, 0f);
 		builder.add(LIGHTS, true);
 		builder.add(ENGINE, true);
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < HOLD_COUNT; i++) {
 			builder.add(FILL[i], 0f);
 			builder.add(MATERIAL[i], 0);
 			builder.add(BOXED[i], 0f);
@@ -414,8 +415,8 @@ public class ShipEntity extends Entity {
 
 	public float load() {
 		float t = 0;
-		for (int i = 0; i < 4; i++) t += fill(i);
-		return t / 4f;
+		for (int i = 0; i < HOLD_COUNT; i++) t += fill(i);
+		return t / HOLD_COUNT;
 	}
 
 	/** Diepgang in meters (blokken) onder de waterlijn. */
@@ -462,7 +463,7 @@ public class ShipEntity extends Entity {
 		}
 		prevShipYaw = shipYaw;
 		prevHatchProgress = hatchProgress;
-		for (int i = 0; i < 4; i++) prevDisplayFill[i] = displayFill[i];
+		for (int i = 0; i < HOLD_COUNT; i++) prevDisplayFill[i] = displayFill[i];
 		double ox = getX(), oy = getY(), oz = getZ(), oyaw = shipYaw;
 
 		if (getWorld().isClient) clientTick();
@@ -605,7 +606,7 @@ public class ShipEntity extends Entity {
 		// zonder roerganger zet de machine zich bij een aanvaring zelf op stop
 		if (getHelmsman() == null && !testMode) throttle = 0;
 		if (bumpCooldown == 0 && Math.abs(speed) > 0.02) {
-			Vec3d bow = toWorld(speed > 0 ? 95 : 1, 0.5, 5.5);
+			Vec3d bow = toWorld(speed > 0 ? 142 : 1, 0.5, 8.0);
 			getWorld().playSound(null, bow.x, bow.y, bow.z, SoundEvents.ENTITY_IRON_GOLEM_DAMAGE, SoundCategory.NEUTRAL, 1.5f, 0.5f);
 			bumpCooldown = 20;
 		}
@@ -736,7 +737,7 @@ public class ShipEntity extends Entity {
 	@Override
 	public Vec3d updatePassengerForDismount(LivingEntity passenger) {
 		boolean bow = isAtBowHelm(passenger);
-		return bow ? toWorld(84.5, 2.0, 5.5) : toWorld(8.5, 8.0 + liftOffset(), 3.5);
+		return bow ? toWorld(131.5, 2.0, 8.5) : toWorld(15.5, 7.0 + liftOffset(), 8.5);
 	}
 
 	@Override
@@ -771,7 +772,7 @@ public class ShipEntity extends Entity {
 			player.sendMessage(Text.literal(lightsOn() ? "Lights on" : "Lights off").formatted(Formatting.GRAY), true);
 		}
 		if (c.horn() && hornCooldown == 0) {
-			Vec3d h = toWorld(8.0, 12.0 + liftOffset(), 5.5);
+			Vec3d h = toWorld(17.0, 12.0 + liftOffset(), 8.0);
 			getWorld().playSound(null, h.x, h.y, h.z, SoundEvents.EVENT_RAID_HORN, SoundCategory.NEUTRAL, 8.0f, 0.75f);
 			hornCooldown = 60;
 		}
@@ -779,7 +780,7 @@ public class ShipEntity extends Entity {
 			if (hatchProgress > 0.001f && hatchProgress < 0.999f) return;
 			boolean closed = !hatchesClosed();
 			dataTracker.set(HATCHES_CLOSED, closed);
-			Vec3d h = toWorld(77, 4, 5.5);
+			Vec3d h = toWorld(127, 4, 8.0);
 			getWorld().playSound(null, h.x, h.y, h.z, SoundEvents.BLOCK_PISTON_EXTEND, SoundCategory.NEUTRAL, 1.5f, 0.5f);
 			player.sendMessage(Text.literal(closed ? "Hatches closing" : "Hatches opening").formatted(Formatting.GRAY), true);
 		}
@@ -1491,15 +1492,15 @@ public class ShipEntity extends Entity {
 		if (Math.abs(spd) > 0.03) {
 			int n = Math.abs(spd) > 0.15 ? 2 : 1;
 			for (int i = 0; i < n; i++) {
-				for (double tz : new double[]{0.6, 10.4}) {
-					Vec3d p = toWorld(spd > 0 ? 92 + r.nextDouble() * 3 : 2 + r.nextDouble() * 2, 0, tz);
-					Vec3d side = dirToWorld(new Vec3d(0, 0, tz < 5 ? -0.12 : 0.12));
+				for (double tz : new double[]{0.6, 15.4}) {
+					Vec3d p = toWorld(spd > 0 ? 139 + r.nextDouble() * 3 : 2 + r.nextDouble() * 2, 0, tz);
+					Vec3d side = dirToWorld(new Vec3d(0, 0, tz < 8 ? -0.12 : 0.12));
 					world.addParticle(ParticleTypes.SPLASH, p.x, wy + 0.05, p.z, side.x, 0.1, side.z);
 				}
 			}
 		}
 		if (thr != 0 && (age & 1) == 0) {
-			for (double tz : new double[]{3.5, 7.5}) {
+			for (double tz : new double[]{5.5, 11.5}) {
 				Vec3d p = toWorld(-0.5 - r.nextDouble() * 2, 0, tz + r.nextDouble() - 0.5);
 				world.addParticle(ParticleTypes.BUBBLE, p.x, wy - 0.6, p.z, 0, 0.05, 0);
 				if (r.nextInt(3) == 0) world.addParticle(ParticleTypes.SPLASH, p.x, wy + 0.05, p.z, 0, 0.05, 0);
@@ -1507,16 +1508,16 @@ public class ShipEntity extends Entity {
 		}
 		int smokeEvery = Math.max(2, 8 - Math.abs(thr) * 2);
 		if (thr != 0 && age % smokeEvery == 0) {
-			Vec3d c = toWorld(4.5, 10.2, 8.5);
+			Vec3d c = toWorld(10.5, 9.9, 12.5);
 			world.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, true, c.x, c.y, c.z, 0, 0.06, 0);
 			if (Math.abs(thr) >= 2) world.addParticle(ParticleTypes.LARGE_SMOKE, c.x, c.y, c.z, 0, 0.08, 0);
 		}
 		// laad-/losanimatie: de zichtbare lading groeit langzaam mee met de echte lading
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < HOLD_COUNT; i++) {
 			float target = fill(i);
 			float before = displayFill[i];
 			displayFill[i] = approach(displayFill[i], target, 0.006f);
-			if (displayFill[i] > before + 1e-4) loadingEffects(i);
+			if (displayFill[i] > before + 1e-4 && !template.tanker) loadingEffects(i);
 		}
 	}
 
@@ -1525,7 +1526,7 @@ public class ShipEntity extends Entity {
 		int mat = material(hold);
 		int a = template.holds[hold][0], b = template.holds[hold][1];
 		var r = this.random;
-		Vec3d center = toWorld((a + b + 1) / 2.0, 4, 5.5);
+		Vec3d center = toWorld((a + b + 1) / 2.0, 4, 8.0);
 		if (mat > 0) {
 			BlockState st = Registries.BLOCK.get(mat - 1).getDefaultState();
 			for (int k = 0; k < 4; k++) {
@@ -1562,10 +1563,10 @@ public class ShipEntity extends Entity {
 		dataTracker.set(HATCHES_CLOSED, nbt.getBoolean("HatchesClosed"));
 		hatchProgress = prevHatchProgress = nbt.getBoolean("HatchesClosed") ? 1f : 0f;
 		NbtList hl = nbt.getList("Holds", NbtElement.LIST_TYPE);
-		for (int i = 0; i < 4 && i < hl.size(); i++) {
+		for (int i = 0; i < HOLD_COUNT && i < hl.size(); i++) {
 			holds[i].readNbtList(hl.getList(i), getRegistryManager());
 		}
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < HOLD_COUNT; i++) {
 			dataTracker.set(FILL[i], Cargo.fill(holds[i]));
 			dataTracker.set(MATERIAL[i], Cargo.material(holds[i]));
 			dataTracker.set(BOXED[i], Cargo.containerShare(holds[i]));

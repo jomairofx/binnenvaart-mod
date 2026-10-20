@@ -737,7 +737,7 @@ public class ShipEntity extends Entity {
 	@Override
 	public Vec3d updatePassengerForDismount(LivingEntity passenger) {
 		boolean bow = isAtBowHelm(passenger);
-		return bow ? toWorld(98.5, 2.0, 5.5) : toWorld(8.5, 8.0 + liftOffset(), 3.5);
+		return bow ? toWorld(101.5, 2.0, 5.5) : toWorld(15.5, 7.0 + liftOffset(), 5.5);
 	}
 
 	@Override
@@ -772,7 +772,7 @@ public class ShipEntity extends Entity {
 			player.sendMessage(Text.literal(lightsOn() ? "Lights on" : "Lights off").formatted(Formatting.GRAY), true);
 		}
 		if (c.horn() && hornCooldown == 0) {
-			Vec3d h = toWorld(8.0, 12.0 + liftOffset(), 5.5);
+			Vec3d h = toWorld(17.0, 12.0 + liftOffset(), 5.5);
 			getWorld().playSound(null, h.x, h.y, h.z, SoundEvents.EVENT_RAID_HORN, SoundCategory.NEUTRAL, 8.0f, 0.75f);
 			hornCooldown = 60;
 		}
@@ -780,7 +780,7 @@ public class ShipEntity extends Entity {
 			if (hatchProgress > 0.001f && hatchProgress < 0.999f) return;
 			boolean closed = !hatchesClosed();
 			dataTracker.set(HATCHES_CLOSED, closed);
-			Vec3d h = toWorld(92, 4, 5.5);
+			Vec3d h = toWorld(97, 4, 5.5);
 			getWorld().playSound(null, h.x, h.y, h.z, SoundEvents.BLOCK_PISTON_EXTEND, SoundCategory.NEUTRAL, 1.5f, 0.5f);
 			player.sendMessage(Text.literal(closed ? "Hatches closing" : "Hatches opening").formatted(Formatting.GRAY), true);
 		}
@@ -1251,7 +1251,7 @@ public class ShipEntity extends Entity {
 
 	/** Luikvakken in sjablooncoördinaten (alleen als ze stilstaan). */
 	// ---- luiken: maten in sjablooncoördinaten ----
-	public static final float CV_X0 = 15f, CV_LEN = 5f, CV_Y = 3.5f, CV_Z0 = 0.95f, CV_Z1 = 10.05f, CV_IN1 = 1.25f, CV_IN2 = 2.85f;
+	public static final float CV_X0 = 24f, CV_LEN = 73f / 16f, CV_Y = 3.5f, CV_Z0 = 0.95f, CV_Z1 = 10.05f, CV_IN1 = 1.25f, CV_IN2 = 2.85f;
 	/** Hoogte per luik op de stapel en dikte van een luik. */
 	public static final float CV_STACK = 0.36f, CV_THICK = 0.34f;
 	private static int[] coverGroupEnd;
@@ -1508,7 +1508,7 @@ public class ShipEntity extends Entity {
 		}
 		int smokeEvery = Math.max(2, 8 - Math.abs(thr) * 2);
 		if (thr != 0 && age % smokeEvery == 0) {
-			Vec3d c = toWorld(4.5, 10.2, 8.5);
+			Vec3d c = toWorld(10.5, 9.9, 7.5);
 			world.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, true, c.x, c.y, c.z, 0, 0.06, 0);
 			if (Math.abs(thr) >= 2) world.addParticle(ParticleTypes.LARGE_SMOKE, c.x, c.y, c.z, 0, 0.08, 0);
 		}

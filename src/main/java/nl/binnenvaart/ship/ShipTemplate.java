@@ -19,10 +19,10 @@ import java.nio.charset.StandardCharsets;
  */
 public final class ShipTemplate {
 	public static final int MIN_X = -2, MIN_Y = -6, MIN_Z = -2;
-	public static final int SIZE_X = 100, SIZE_Y = 24, SIZE_Z = 16;
+	public static final int SIZE_X = 149, SIZE_Y = 24, SIZE_Z = 21;
 
 	/** Draaipunt (midden van het schip) in sjablooncoördinaten. */
-	public static final double CX = 48.0, CZ = 5.5;
+	public static final double CX = 71.5, CZ = 8.0;
 
 	public final String name;
 	public final int length;
@@ -31,6 +31,8 @@ public final class ShipTemplate {
 	public final int[][] holds;
 	public final int holdZ0, holdZ1;
 	public final double holdFloorY, coamingTopY;
+	/** Tanker: dichte tanks, geen lading te zien. */
+	public final boolean tanker;
 	public final double[] seatAft, seatBow;
 	public final int[] helmAft, helmBow;
 
@@ -119,6 +121,7 @@ public final class ShipTemplate {
 		holdZ1 = json.getAsJsonArray("holdZ").get(1).getAsInt();
 		holdFloorY = json.get("holdFloorY").getAsDouble();
 		coamingTopY = json.get("coamingTopY").getAsDouble();
+		tanker = json.has("tanker") && json.get("tanker").getAsBoolean();
 		JsonObject seats = json.getAsJsonObject("seats");
 		seatAft = vec(seats.getAsJsonObject("aft").getAsJsonArray("pos"));
 		seatBow = vec(seats.getAsJsonObject("bow").getAsJsonArray("pos"));

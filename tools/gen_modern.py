@@ -298,15 +298,9 @@ def build(cfg):
                 S(xx, WY + 1, z, WHITE)
                 S(xx, WY + 2, z, "air")
                 S(xx, WY + 3, z, "smooth_quartz_slab[type=top]")
-    for (xx, z) in [(WX0, WZ0), (WX0, WZ1), (WX1, WZ0), (WX1, WZ1)]: S(xx, WY + 2, z, WHITE)
-    for xx in R(WX0 + 1, WX1 - 1):                                 # window posts along the sides
-        if (xx - WX0) % 2 == 0: S(xx, WY + 2, WZ0, "smooth_quartz_wall" if False else WHITE); S(xx, WY + 2, WZ1, WHITE) if (xx - WX0) % 2 == 0 else None
-    for z in R(WZ0 + 1, WZ1 - 1):
-        if (z - WZ0) % 3 == 0: S(WX1, WY + 2, z, WHITE); S(WX0, WY + 2, z, WHITE) if z != ZC else None
-    for xx in R(WX0, WX1):
-        for z in (WZ0, WZ1): S(xx, WY + 3, z, WHITE)               # full header band under the roof
-    for z in R(WZ0, WZ1):
-        S(WX0, WY + 3, z, WHITE); S(WX1, WY + 3, z, WHITE)
+    # only slim corner posts carry the roof: free all-round view
+    for (xx, z) in [(WX0, WZ0), (WX0, WZ1), (WX1, WZ0), (WX1, WZ1)]:
+        S(xx, WY + 2, z, "stone_brick_wall"); S(xx, WY + 3, z, "stone_brick_wall")
     for z in R(WZ0 + 1, WZ1 - 1): S(WX1, WY + 1, z, "smooth_quartz_slab[type=bottom]")
     for xx in R(WX0, WX1 + 1):
         S(xx, WY + 4, WZ0 - 1, "smooth_quartz_slab[type=bottom]"); S(xx, WY + 4, WZ1 + 1, "smooth_quartz_slab[type=bottom]")

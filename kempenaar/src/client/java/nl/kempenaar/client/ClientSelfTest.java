@@ -341,6 +341,19 @@ public final class ClientSelfTest {
 		if (t == jump + 130) {
 			Vec3d l = ship.toLocal(mc.player.getPos());
 			check("in het water springen", mc.player.isTouchingWater() || l.z < 0, String.format("speler op lokaal (%.2f, %.2f, %.2f), water %s", l.x, l.y, l.z, mc.player.isTouchingWater()));
+			cmd(srv, "gamemode spectator @p");
+			srv.execute(() -> {
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.testSetLift(2.0);
+			});
+		}
+		if (t == jump + 260) {
+			check("stuurhut omhoog", ship.liftOffset() > 1.9, String.format("stuurhut %.2f omhoog", ship.liftOffset()));
+			tp(srv, ship, new double[]{4.0, 13.0, -6.0}, new double[]{13.5, 6.0, 4.5});
+		}
+		if (t == jump + 280) shot(mc, "31_stuurhut_omhoog");
+		if (t == jump + 285) tp(srv, ship, new double[]{8.5, 6.4, 1.5}, new double[]{14.0, 5.5, 4.5});
+		if (t == jump + 300) {
+			shot(mc, "31b_onder_de_stuurhut");
 			finish(mc, failed ? "RESULT FAIL" : "RESULT PASS");
 		}
 	}

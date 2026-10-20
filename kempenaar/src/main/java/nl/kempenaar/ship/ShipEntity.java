@@ -1035,10 +1035,7 @@ public class ShipEntity extends Entity {
 				BlockPos bp = BlockPos.ofFloored(spot.x, spot.y - 0.6875 + 0.01, spot.z);
 				if (!bp.equals(sp.get())) p.setSleepingPosition(bp);
 				double d = p.getPos().squaredDistanceTo(spot);
-				if (d > 1e-4) {
-					p.setPosition(spot.x, spot.y, spot.z);
-					if (d > 0.04) p.networkHandler.requestTeleport(spot.x, spot.y, spot.z, p.getYaw(), p.getPitch());
-				}
+				if (d > 1e-4) p.setPosition(spot.x, spot.y, spot.z);
 			} catch (RuntimeException ex) {
 				LOGGER_SAFE.warn("ship bed keeper", ex);
 			}

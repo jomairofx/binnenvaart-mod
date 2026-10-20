@@ -38,8 +38,8 @@ final class SelfTest {
 		return w.getFluidState(new BlockPos(x, y, z)).isIn(FluidTags.WATER);
 	}
 
-	private static void testRiver(ServerWorld w, RiverField.Kind kind, int minWidth, int minDepth) {
-		int[] c = GreatRivers.nearest(kind, 0, 0, 30000);
+	private static void testRiver(ServerWorld w, RiverField.Kind kind, RiverField.Kind other, int minWidth, int minDepth) {
+		int[] c = SelfTestSpots.clearSpot(kind, other);
 		check(kind.name() + " gevonden", c != null, c == null ? "geen" : "midden op " + c[0] + ", " + c[1]);
 		if (c == null) return;
 		int x = c[0], z = c[1];
@@ -75,7 +75,7 @@ final class SelfTest {
 			}
 		}
 		double expect = kind.halfWidth(x, z) * 2;
-		check(kind.name() + " breed genoeg", width >= minWidth && width >= expect * 0.75,
+		check(kind.name() + " breedte klopt", width >= minWidth && width >= expect * 0.75 && (sea || width <= expect * 1.6 + 20),
 				width + " blokken water dwars over de rivier (ontwerp " + Math.round(expect) + ")");
 		// the bank: dry flood plain just above the water
 		double hw = kind.halfWidth(x, z);
@@ -98,8 +98,8 @@ final class SelfTest {
 			RiverField f = RiverField.current;
 			check("riviernet actief", f != null, f == null ? "geen" : "ja");
 			if (f != null) {
-				testRiver(w, f.river, 50, 5);
-				testRiver(w, f.great, 250, 10);
+				testRiver(w, f.river, f.great, 50, 5);
+				testRiver(w, f.great, f.river, 250, 10);
 				// survival: far from rivers the land is untouched
 				int lx = 0, lz = 0;
 				outer:

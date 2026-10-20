@@ -22,6 +22,7 @@ public final class RiverField {
 		final double scale, warpAmp, warpScale, meanderAmp, meanderScale;
 		final double wMin, wMax, wScale, depth, flood, valley;
 		final SimplexNoiseSampler n, wx, wz, mx, mz, w, bank;
+		final double ox, oz;   // random shift per world: simplex noise is zero at the origin
 
 		Kind(String name, Random r, double scale, double warpAmp, double warpScale, double meanderAmp, double meanderScale,
 			 double wMin, double wMax, double wScale, double depth, double flood, double valley) {
@@ -44,9 +45,13 @@ public final class RiverField {
 			mz = new SimplexNoiseSampler(r);
 			w = new SimplexNoiseSampler(r);
 			bank = new SimplexNoiseSampler(r);
+			ox = (r.nextDouble() - 0.5) * 400000;
+			oz = (r.nextDouble() - 0.5) * 400000;
 		}
 
 		double value(double x, double z) {
+			x += ox;
+			z += oz;
 			double px = x + warpAmp * wx.sample(x / warpScale, z / warpScale) + meanderAmp * mx.sample(x / meanderScale, z / meanderScale);
 			double pz = z + warpAmp * wz.sample(x / warpScale, z / warpScale) + meanderAmp * mz.sample(x / meanderScale, z / meanderScale);
 			return n.sample(px / scale, pz / scale);
@@ -64,7 +69,7 @@ public final class RiverField {
 		}
 
 		public double halfWidth(double x, double z) {
-			double t = 0.5 + 0.5 * w.sample(x / wScale + 17.3, z / wScale - 41.1);
+			double t = 0.5 + 0.5 * w.sample((x + ox) / wScale + 17.3, (z + oz) / wScale - 41.1);
 			return (wMin + (wMax - wMin) * t) / 2;
 		}
 
@@ -81,7 +86,7 @@ public final class RiverField {
 				return WATER_TOP - depth * (1 - u2 * u2) + 0.3;
 			}
 			double e = d - hw;
-			double wobble = 1.2 * bank.sample(x / 40.0, z / 40.0);
+			double wobble = 1.2 * bank.sample((x + ox) / 40.0, (z + oz) / 40.0);
 			if (e < 5) return WATER_TOP + 0.3 + e / 5 * (1.7 + wobble * 0.5);      // the bank: rises out of the water
 			if (e < flood) {
 				double f = (e - 5) / Math.max(1, flood - 5);

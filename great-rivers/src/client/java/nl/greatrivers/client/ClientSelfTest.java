@@ -18,7 +18,7 @@ public final class ClientSelfTest {
 	private static final List<String> log = new ArrayList<>();
 	private static final List<double[]> views = new ArrayList<>();
 	private static final List<String> names = new ArrayList<>();
-	private static final int PER = 260;
+	private static final int PER = 400;
 
 	public static void register() {
 		if (!System.getProperty("greatrivers.selftest", "").equals("client")) return;
@@ -34,8 +34,8 @@ public final class ClientSelfTest {
 		views.add(new double[]{ex, ey, ez, tx, ty, tz});
 	}
 
-	private static void plan(RiverField.Kind k, String tag, double across, double high) {
-		int[] c = GreatRivers.nearest(k, 0, 0, 30000);
+	private static void plan(RiverField.Kind k, RiverField.Kind other, String tag, double across, double high) {
+		int[] c = nl.greatrivers.SelfTestSpots.clearSpot(k, other);
 		if (c == null) {
 			log.add("FAIL geen " + k.name());
 			return;
@@ -65,8 +65,8 @@ public final class ClientSelfTest {
 			if (f == null) {
 				log.add("FAIL geen riviernet");
 			} else {
-				plan(f.river, "maas", 40, 85);
-				plan(f.great, "grote_rivier", 90, 110);
+				plan(f.river, f.great, "maas", 40, 85);
+				plan(f.great, f.river, "grote_rivier", 90, 110);
 			}
 			mc.options.hudHidden = true;
 		}

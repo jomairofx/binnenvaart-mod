@@ -226,7 +226,10 @@ public final class ClientSelfTest {
 		if (t == helm + 575) {
 			BinnenvaartClient.thrusterRight.setPressed(false);
 			double d = Math.toDegrees(ship.shipYaw - yaw0);
-			check("boegschroef (pijltje rechts)", d > 0.5 && ship.syncedThruster() == 1, String.format("koers %.1f graden naar stuurboord, boegschroef %d", d, ship.syncedThruster()));
+			// het schip draait door zijn massa nog na van het roer; kijk naar de draaikracht van de boegschroef zelf
+			net.minecraft.entity.Entity se = srv.getOverworld().getEntity(ship.getUuid());
+			double tr = se instanceof ShipEntity s2 ? Math.toDegrees(s2.thrusterTurnRate()) * 20 : 0;
+			check("boegschroef (pijltje rechts)", tr > 0.5 && ship.syncedThruster() == 1, String.format("boegschroef draait %.1f graden/s naar stuurboord (koers %.1f), boegschroef %d", tr, d, ship.syncedThruster()));
 			BinnenvaartClient.testThrottle(0);
 			srv.execute(() -> srv.getPlayerManager().getPlayerList().get(0).stopRiding());
 		}

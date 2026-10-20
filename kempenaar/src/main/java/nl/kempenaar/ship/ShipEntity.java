@@ -390,6 +390,11 @@ public class ShipEntity extends Entity {
 		return dataTracker.get(THROTTLE);
 	}
 
+	/** Huidige draaisnelheid door de boegschroef (alleen op de server bijgehouden). */
+	public double thrusterTurnRate() {
+		return thrusterRate;
+	}
+
 	public int syncedThruster() {
 		return dataTracker.get(THRUSTER);
 	}

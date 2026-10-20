@@ -319,14 +319,33 @@ S(19, WY + 5, ZC, "lantern[hanging=false]")                               # mast
 S(WX0, WY + 1, ZC, "air"); S(WX0, WY + 2, ZC, "air")
 for y in R(WY, WY + 1 + int(LIFT_MAX)): S(12, y, ZC, "andesite_wall")
 for y in R(WY, WY + int(LIFT_MAX)): S(13, y, ZC, "ladder[facing=east]")
-# helm: wrap-around low console, black chair, screens, joysticks
-for z in R(WZ0 + 1, WZ1 - 1): S(WX1 - 1, WY + 1, z, "polished_deepslate_slab[type=bottom]")
-for z in (WZ0 + 1, WZ0 + 2, WZ1 - 2, WZ1 - 1): S(WX1 - 2, WY + 1, z, "polished_deepslate_slab[type=bottom]")
-S(WX1 - 1, WY + 2, ZC - 1, "black_carpet"); S(WX1 - 1, WY + 2, ZC + 1, "black_carpet")   # flat screens
-S(WX1 - 2, WY + 2, ZC - 2, "lever[face=floor,facing=west,powered=false]")             # joysticks
-S(WX1 - 2, WY + 2, ZC + 2, "lever[face=floor,facing=west,powered=false]")
-S(16, WY + 1, ZC, "polished_blackstone_stairs[facing=west,half=bottom]")             # black helm chair
-S(15, WY + 1, WZ0 + 1, "cartography_table"); S(15, WY + 1, WZ1 - 1, "barrel[facing=up]")
+# helm: wrap-around console (desk top at seat-arm height), everything stands ON the desk, nothing floats
+DESK = "polished_deepslate_slab[type=top]"
+for z in R(WZ0 + 1, WZ1 - 1): S(WX1 - 1, WY + 1, z, DESK)                               # main desk along the front
+for z in (WZ0 + 1, WZ0 + 2, WZ1 - 2, WZ1 - 1): S(WX1 - 2, WY + 1, z, DESK)              # side wings
+D = WY + 2                                                                               # on top of the desk
+S(WX1 - 1, D, ZC, "black_carpet")                                                        # radar screen, centre
+S(WX1 - 1, D, ZC - 1, "gray_carpet"); S(WX1 - 1, D, ZC + 1, "gray_carpet")               # ECDIS / chart screens
+S(WX1 - 1, D, ZC - 2, "black_carpet"); S(WX1 - 1, D, ZC + 2, "black_carpet")             # engine and camera screens
+S(WX1 - 1, D, ZC - 3, "lever[face=floor,facing=west,powered=false]")                    # bow thruster joystick
+S(WX1 - 1, D, ZC + 3, "lever[face=floor,facing=west,powered=false]")                    # VHF handset
+S(WX1 - 2, D, ZC - 3, "lever[face=floor,facing=west,powered=false]")                    # throttle (port engine)
+S(WX1 - 2, D, ZC + 3, "lever[face=floor,facing=west,powered=false]")                    # throttle (starboard engine)
+S(WX1 - 2, D, ZC - 2, "stone_button[face=floor,facing=west,powered=false]")             # rudder tiller
+S(WX1 - 2, D, ZC + 2, "polished_blackstone_button[face=floor,facing=west,powered=false]")  # horn button
+# overhead panel with instruments hanging under the roof at the front
+for z in R(ZC - 2, ZC + 2): S(WX1 - 1, WY + 3, z, "polished_blackstone_slab[type=top]")
+# helm chair: black high-back seat on a column, with arm rests
+S(16, WY + 1, ZC, "polished_blackstone_stairs[facing=west,half=bottom]")
+S(16, WY + 1, ZC - 1, "polished_blackstone_slab[type=bottom]"); S(16, WY + 1, ZC + 1, "polished_blackstone_slab[type=bottom]")
+# rear of the wheelhouse: chart table, bench for a guest, coffee corner, fire extinguisher, floor runner
+S(15, WY + 1, WZ0 + 1, "cartography_table"); S(15, WY + 2, WZ0 + 1, "white_carpet")
+S(15, WY + 1, WZ1 - 3, "dark_oak_stairs[facing=west,half=bottom]")
+S(15, WY + 1, WZ1 - 1, "barrel[facing=up]"); S(15, WY + 2, WZ1 - 1, "flower_pot")
+S(15, WY + 1, WZ1 - 2, "smoker[facing=east,lit=false]")
+S(15, WY + 2, WZ1 - 2, "brewing_stand")
+S(15, WY + 1, WZ0 + 3, "red_candle[candles=1,lit=false]")   # fire extinguisher
+for x in (15, 17): S(x, WY + 1, ZC, "gray_carpet")
 S(16, WY + 4, ZC, "sea_lantern")
 LIGHTS.append((16, WY + 4, ZC))
 

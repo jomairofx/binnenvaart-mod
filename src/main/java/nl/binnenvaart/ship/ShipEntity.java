@@ -80,8 +80,8 @@ public class ShipEntity extends Entity {
 	public static final double[] STEP_SPEED = {-0.15, -0.075, 0.0, 0.11, 0.23, 0.36}; // blokken per tick
 	public static final String[] STEP_NAMES = {"Full astern", "Slow astern", "Stop", "Slow ahead", "Half ahead", "Full ahead"};
 	public static final double V_FULL = 0.36;
-	private static final double MAX_TURN = Math.toRadians(0.9);
-	private static final double THRUSTER_TURN = Math.toRadians(0.35);
+	private static final double MAX_TURN = Math.toRadians(0.495);   // trager, zwaarder sturen
+	private static final double THRUSTER_TURN = Math.toRadians(0.245);
 	private static final double PIVOT_RUDDER = 16.0;      // draaipunt bij roeren (lokaal, t.o.v. midden)
 	private static final double PIVOT_THRUSTER = -58.0;   // draaipunt bij boegschroef (bij de achtersteven)
 	public static final int HOLD_SLOTS = 54;
@@ -132,6 +132,7 @@ public class ShipEntity extends Entity {
 
 	// server: besturing en fysica
 	private double speed, yawRate, thrusterRate, rudder;
+	private double courseYaw = Double.NaN;   // werkelijke vaarrichting: loopt achter op de koers (drift in de bocht)
 	private int throttle, rudderInput, thrusterInput;
 	private int lastControlTick = -1000, hornCooldown, bumpCooldown;
 	private boolean aground;
@@ -515,13 +516,18 @@ public class ShipEntity extends Entity {
 		speed = approach(speed, target, acc);
 		if (Math.abs(speed) < 1e-4 && target == 0) speed = 0;
 
-		rudder = approach(rudder, rudderInput, 0.04);
+		// stuurmachine: het roer draait langzaam (ongeveer 5 s van midscheeps naar hard over)
+		rudder = approach(rudder, rudderInput, 0.010);
 		// schroefwater langs het roer: ook bij stilstand draait het schip een beetje
 		double wash = throttle > 0 ? 0.3 : (throttle < 0 ? -0.15 : 0.15);
 		double targetTurn = rudder * MAX_TURN * (speed / V_FULL + wash);
-		yawRate += (targetTurn - yawRate) * 0.06;
+		// massatraagheid: het schip komt langzaam op gang in de bocht en draait na (tegenroer nodig)
+		double yawResp = 0.02 * (1.0 - 0.35 * load);
+		yawRate += (targetTurn - yawRate) * yawResp;
+		// snelheidsverlies in de bocht
+		speed *= 1.0 - Math.min(0.004, Math.abs(yawRate) * 0.15);
 		double thrusterTarget = thrusterInput * THRUSTER_TURN * (1.0 - 0.7 * Math.min(1.0, Math.abs(speed) / 0.15));
-		thrusterRate += (thrusterTarget - thrusterRate) * 0.08;
+		thrusterRate += (thrusterTarget - thrusterRate) * 0.03;
 		if (Math.abs(yawRate) < 1e-6) yawRate = 0;
 		if (Math.abs(thrusterRate) < 1e-6) thrusterRate = 0;
 
@@ -534,8 +540,13 @@ public class ShipEntity extends Entity {
 		nx = p[0];
 		nz = p[1];
 		nyaw += thrusterRate;
-		nx += speed * Math.cos(nyaw);
-		nz += speed * Math.sin(nyaw);
+		// drift: de vaarrichting volgt de koers met vertraging, het schip glijdt wat uit in de bocht
+		if (Double.isNaN(courseYaw)) courseYaw = shipYaw;
+		double slip = MathHelper.wrapDegrees(Math.toDegrees(nyaw - courseYaw));
+		slip = MathHelper.clamp(slip, -20, 20);
+		double courseNew = nyaw - Math.toRadians(slip) * (1.0 - 0.07);
+		nx += speed * Math.cos(courseNew);
+		nz += speed * Math.sin(courseNew);
 
 		double off = getY() - waterLayerY;
 		double targetOff = EMPTY_RISE * (1.0 - load);
@@ -565,6 +576,7 @@ public class ShipEntity extends Entity {
 		}
 		aground = groundedNow;
 
+		courseYaw = (nx == getX() && nz == getZ() && nyaw == shipYaw) ? nyaw : courseNew;
 		shipYaw = Math.toRadians(MathHelper.wrapDegrees(Math.toDegrees(nyaw)));
 		if (Math.abs(shipYaw - nyaw) > 1) {
 			// gewikkeld: niets aan de hand, alleen het getal is genormaliseerd

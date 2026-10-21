@@ -229,8 +229,8 @@ final class SelfTest {
 					for (int a = 0; a < 24; a++) {
 						ox = (int) (r * Math.cos(a * Math.PI / 12));
 						oz = (int) (r * Math.sin(a * Math.PI / 12));
-						double c = f.continentalness(ox, oz);
-						if (c < -0.6 && c > -0.95) {
+						double c = f.coastal(ox, oz);
+						if (c < Lowlands.COAST - 0.2 && c > -0.95) {
 							found = true;
 							break search;
 						}

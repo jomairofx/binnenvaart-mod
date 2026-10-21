@@ -237,8 +237,8 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 		Property<?> p = bin.getStateManager().getProperty("bin");
 		if (p != null && p.getValues().contains(n)) st = with(st, p, n);
 		set(w, m, x, Q + 1, z, st);
-		// the bins are full of the goods too
-		if (w.getBlockEntity(m.set(x, Q + 1, z)) instanceof Inventory inv) {
+		// two bins are full of the goods, two are empty so a ship can be unloaded straight away
+		if (n <= 2 && w.getBlockEntity(m.set(x, Q + 1, z)) instanceof Inventory inv) {
 			fill(inv, s.goods(), hash(x, z, 13));
 			w.getBlockEntity(m).markDirty();
 		}

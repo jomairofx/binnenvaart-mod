@@ -85,7 +85,7 @@ public class ShipEntity extends Entity {
 	private static final double PIVOT_THRUSTER = -38.0;   // draaipunt bij boegschroef (bij de achtersteven)
 	public static final int HOLD_SLOTS = 54;
 	public static final int COVERS = 16;
-	public static final double LOADED_OFFSET = -0.61; // fully loaded: side deck only half a block above the water
+	public static final double LOADED_OFFSET = 0.39;  // fully loaded: draught 4.5 m at most
 	public static final float COVER_STACK = 0.26f;
 
 	// ---- gesynchroniseerde gegevens ----

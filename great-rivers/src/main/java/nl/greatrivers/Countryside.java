@@ -27,6 +27,17 @@ final class Countryside {
 		if (top < 66 || top > 72) return;
 		BlockState st = w.getBlockState(m.set(x, top, z));
 		if (!st.isOf(Blocks.GRASS_BLOCK) && !st.isOf(Blocks.DIRT) && !st.isOf(Blocks.SNOW_BLOCK) && !st.isOf(Blocks.STONE)) return;
+		// no trees on the road: take away any tree that grew here, trunk and crown
+		boolean tree = false;
+		for (int y = top + 1; y <= top + 3 && !tree; y++) tree = w.getBlockState(m.set(x, y, z)).isIn(net.minecraft.registry.tag.BlockTags.LOGS);
+		if (tree) {
+			for (int dx = -3; dx <= 3; dx++)
+				for (int dz = -3; dz <= 3; dz++)
+					for (int y = top + 1; y <= top + 16; y++) {
+						BlockState b = w.getBlockState(m.set(x + dx, y, z + dz));
+						if (b.isIn(net.minecraft.registry.tag.BlockTags.LOGS) || b.isIn(net.minecraft.registry.tag.BlockTags.LEAVES)) set(w, m, x + dx, y, z + dz, AIR);
+					}
+		}
 		set(w, m, x, top, z, ROAD);
 		for (int y = top + 1; y <= top + 2; y++) {
 			BlockState a = w.getBlockState(m.set(x, y, z));

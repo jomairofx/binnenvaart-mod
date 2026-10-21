@@ -46,31 +46,25 @@ public abstract class MultiNoiseBiomeSourceMixin {
 		}
 		if (greatrivers$river == null || greatrivers$plains == null) return;   // not an overworld-like biome source
 		RegistryEntry<Biome> b = cir.getReturnValue();
-		// seas without ice
-		if (b.matchesKey(BiomeKeys.FROZEN_OCEAN)) {
-			if (greatrivers$coldOcean != null) cir.setReturnValue(greatrivers$coldOcean);
-			return;
-		}
-		if (b.matchesKey(BiomeKeys.DEEP_FROZEN_OCEAN)) {
-			if (greatrivers$deepColdOcean != null) cir.setReturnValue(greatrivers$deepColdOcean);
-			return;
-		}
-		if (b.isIn(BiomeTags.IS_OCEAN)) return;
-		if (b.matchesKey(BiomeKeys.FROZEN_RIVER)) {
-			cir.setReturnValue(greatrivers$river);
-			return;
-		}
-		if (b.isIn(BiomeTags.IS_RIVER)) return;
-		if (b.isIn(BiomeTags.IS_BEACH)) {
-			if (greatrivers$beach != null && !b.matchesKey(BiomeKeys.STONY_SHORE)) cir.setReturnValue(greatrivers$beach);
-			return;
-		}
 		int bx = (x << 2) + 2, bz = (z << 2) + 2;
+		double c = field.continentalness(bx, bz);
+		if (c < nl.greatrivers.Lowlands.COAST) {
+			// the sea, never frozen
+			if (b.matchesKey(BiomeKeys.FROZEN_OCEAN) || b.matchesKey(BiomeKeys.DEEP_FROZEN_OCEAN) || !b.isIn(BiomeTags.IS_OCEAN)) {
+				RegistryEntry<Biome> o = c < nl.greatrivers.Lowlands.COAST - 0.1 ? greatrivers$deepOcean : greatrivers$ocean;
+				if (o != null) cir.setReturnValue(o);
+			}
+			return;
+		}
 		if (y <= 20 && field.inChannel(bx, bz)) {
 			cir.setReturnValue(greatrivers$river);
 			return;
 		}
-		int wood = field.low.wood(bx, bz, field.polder(bx, bz));
+		if (c < nl.greatrivers.Lowlands.COAST + 0.045) {
+			if (greatrivers$beach != null) cir.setReturnValue(greatrivers$beach);
+			return;
+		}
+		int wood = field.low.wood(bx, bz, field.low.lowland(bx, bz));
 		RegistryEntry<Biome> land = wood == 2 && greatrivers$birch != null ? greatrivers$birch
 				: wood >= 1 && greatrivers$forest != null ? greatrivers$forest : greatrivers$plains;
 		cir.setReturnValue(land);

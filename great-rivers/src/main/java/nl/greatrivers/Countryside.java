@@ -233,7 +233,7 @@ final class Countryside {
 			double spacing = k == field.great ? 75 : 50;
 			double ph = Math.floorMod((long) Math.floor(s), (long) spacing);
 			if (e < 3 && e >= -reach) {
-				if (ph < 3) {
+				if (false) {   // no groynes: nothing in the water that a ship could hit
 					// the groyne: rubble from the bed up to just above the water, sloping down towards the tip
 					int top = e > -3 ? RiverField.WATER_TOP + 1 : (e > -reach + 3 ? RiverField.WATER_TOP : RiverField.WATER_TOP - 1);
 					if (ph >= 1 && ph < 2 && e > -reach + 3) top = Math.max(top, RiverField.WATER_TOP);

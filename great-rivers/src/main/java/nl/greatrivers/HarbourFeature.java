@@ -79,9 +79,10 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 					any = true;
 					Countryside.dikeRoad(w, m, x, z);
 				}
-				// ditches are too narrow for the aquifers to fill them: put the water in
-				if (p > 0.5 && field.low.ditch(x, z) && field.dutchHeight(x, z) < RiverField.WATER_TOP) {
-					for (int y = RiverField.WATER_TOP - 1; y <= RiverField.WATER_TOP; y++)
+				// ditches and lakes can be too narrow for the aquifers to fill them: put the water in
+				double t = field.dutchHeight(x, z);
+				if (t < RiverField.WATER_TOP && field.land(x, z)) {
+					for (int y = Math.max((int) Math.floor(t), RiverField.WATER_TOP - 12); y <= RiverField.WATER_TOP; y++)
 						if (w.getBlockState(m.set(x, y, z)).isAir()) set(w, m, x, y, z, Blocks.WATER.getDefaultState());
 				}
 			}
@@ -149,7 +150,7 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 				return;
 			}
 			if ((Math.abs(dx) == 2 && dz == 0) || (dx == 0 && Math.abs(dz) == 2)) {
-				bin(w, m, x, z, dz == -2 ? 1 : dx == 2 ? 2 : dz == 2 ? 3 : 4);
+				bin(w, m, s, x, z, dz == -2 ? 1 : dx == 2 ? 2 : dz == 2 ? 3 : 4);
 				return;
 			}
 		}
@@ -223,13 +224,18 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 		return st.with((Property<T>) p, (T) v);
 	}
 
-	private void bin(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int n) {
+	private void bin(StructureWorldAccess w, BlockPos.Mutable m, Harbours.Site s, int x, int z, int n) {
 		Block bin = block("kempenaar:kraanopslag");
 		if (bin == null) return;
 		BlockState st = bin.getDefaultState();
 		Property<?> p = bin.getStateManager().getProperty("bin");
 		if (p != null && p.getValues().contains(n)) st = with(st, p, n);
 		set(w, m, x, Q + 1, z, st);
+		// the bins are full of the goods too
+		if (w.getBlockEntity(m.set(x, Q + 1, z)) instanceof Inventory inv) {
+			fill(inv, s.goods(), hash(x, z, 13));
+			w.getBlockEntity(m).markDirty();
+		}
 	}
 
 	/** The goods of this harbour, as the crane loads them. */

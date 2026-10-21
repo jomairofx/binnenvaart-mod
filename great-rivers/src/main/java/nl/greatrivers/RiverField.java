@@ -195,8 +195,11 @@ public final class RiverField {
 		return c.pold[i];
 	}
 
+	/** How much this is low polder land (with ditches): 0 at sea and on the sandy rises. */
 	public double polder(int x, int z) {
-		return low.polder(x, z, continentalness(x, z));
+		double c = continentalness(x, z);
+		if (c < Lowlands.COAST + 0.06) return 0;
+		return low.lowland(x, z);
 	}
 
 	/** Is this column on the road on top of a dike? */
@@ -214,7 +217,20 @@ public final class RiverField {
 	}
 
 	private double dutch(int x, int z, double dg, double hwg, double dr, double hwr) {
-		double t = Lowlands.POLDER;
+		double cont = continentalness(x, z);
+		double lowl = low.lowland(x, z);
+		double t = Lowlands.POLDER + low.rise(x, z, lowl);
+		boolean sea = cont < Lowlands.COAST;
+		if (cont < Lowlands.COAST + 0.045) {
+			if (sea) {
+				// the sea floor: three deep at the shore, down to 100 out at sea
+				double f = Lowlands.smooth((Lowlands.COAST - cont) / 0.15);
+				return Math.min(WATER_TOP + 0.3 - 3 - (OCEAN_DEPTH - 3) * f, riverMin(dg, hwg, dr, hwr, WATER_TOP + 0.3 - 3));
+			}
+			double u = (cont - Lowlands.COAST) / 0.045;   // 0 at the waterline, 1 behind the dunes
+			if (u < 0.25) t = WATER_TOP + 1.3;          // the beach
+			else t = Math.max(t, Lowlands.POLDER + 6 * Math.sin(Math.PI * (u - 0.25) / 0.75));   // dunes
+		}
 		Kind[] ks = {great, river};
 		double[] ds = {dg, dr}, hs = {hwg, hwr};
 		boolean nearRiver = false;
@@ -235,17 +251,32 @@ public final class RiverField {
 			double u = dc / Lowlands.CANAL_HALF, u2 = u * u;
 			t = Math.min(t, WATER_TOP + 0.3 - Lowlands.CANAL_DEPTH * (1 - u2 * u2 * u2));
 		} else if (dc < Lowlands.CANAL_HALF + 2) t = Math.min(t, WATER_TOP + 1.3);                 // the canal bank
-		else if (!nearRiver && dc > Lowlands.CANAL_HALF + 12 && low.ditch(x, z)) t = Math.min(t, WATER_TOP - 1.7);   // ditch: two deep
+		else if (!nearRiver && dc > Lowlands.CANAL_HALF + 12 && lowl > 0.5 && cont > Lowlands.COAST + 0.06) {
+			if (low.lake(x, z)) t = Math.min(t, WATER_TOP - 3.7);                                       // a small lake
+			else if (low.ditch(x, z)) t = Math.min(t, WATER_TOP - 1.7);                                 // ditch: two deep
+		}
 		return t;
+	}
+
+	/** River bed where a river runs out into the sea. */
+	private double riverMin(double dg, double hwg, double dr, double hwr, double t) {
+		if (dg < hwg) t = Math.min(t, great.bed(dg, hwg));
+		if (dr < hwr) t = Math.min(t, river.bed(dr, hwr));
+		return t;
+	}
+
+	/** Is this column on land (not sea)? */
+	public boolean land(int x, int z) {
+		return continentalness(x, z) >= Lowlands.COAST;
 	}
 
 	private void fill(Cache c, int i, long key, int x, int z) {
 		double dg = great.distance(x, z), hwg = great.halfWidth(x, z);
 		double dr = river.distance(x, z), hwr = river.halfWidth(x, z);
-		double v = Math.min(Math.min(great.ceilingAt(x, z, dg, hwg), river.ceilingAt(x, z, dr, hwr)), oceanCeiling(x, z));
-		double p = low.polder(x, z, continentalness(x, z));
-		c.pold[i] = p;
-		c.dutch[i] = p > 0.001 ? dutch(x, z, dg, hwg, dr, hwr) : Double.NaN;
+		// the whole world is Dutch lowland now: our own height everywhere, vanilla only for the deep underground
+		double v = Double.POSITIVE_INFINITY;
+		c.pold[i] = 1;
+		c.dutch[i] = dutch(x, z, dg, hwg, dr, hwr);
 		double w = 0;
 		Harbours.Site s = harbours.siteAt(x, z);
 		if (s != null) {

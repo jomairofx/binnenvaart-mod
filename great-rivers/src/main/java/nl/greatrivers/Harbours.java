@@ -154,7 +154,7 @@ public final class Harbours {
 		for (double s = -along; s <= along; s += Math.max(20, along / 3))
 			for (double v = 0; v <= hw + inland; v += 40) {
 				int qx = (int) (x + tx * s + gx * v), qz = (int) (z + tz * s + gz * v);
-				if (field.continentalness(qx, qz) < -0.12) return NONE;
+				if (field.continentalness(qx, qz) < Lowlands.COAST + 0.06) return NONE;
 				if (field.low.canalDistance(qx, qz) < Lowlands.CANAL_HALF + 30) return NONE;
 			}
 		return new Site(x, z, tx, tz, gx, gz, hw, best.name(), size, goods, A, B, Q, side);

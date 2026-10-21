@@ -44,6 +44,26 @@ public final class Lowlands {
 		return wood2.sample((x + ox) / 700, (z + oz) / 700) > 0.35 ? 2 : 1;
 	}
 
+	/** Sea below this continentalness, land above it. Inland "oceans" of vanilla become land. */
+	public static final double COAST = -0.40;
+
+	/** 1 = low peat/clay polder (ditches, meadows), 0 = higher sandy ground (gentle rises, more woods). */
+	public double lowland(double x, double z) {
+		double n = 0.7 * p1.sample((x + ox) / 5200, (z + oz) / 5200) + 0.3 * p2.sample((x + ox) / 1500, (z + oz) / 1500);
+		return smooth((n + 0.25) / 0.3);
+	}
+
+	/** Gentle rises on the sandy ground: at most three blocks, like the Dutch "zandgronden". */
+	public double rise(double x, double z, double lowland) {
+		double n = 0.6 * wood2.sample((x + ox) / 380 + 7.7, (z + oz) / 380 - 3.1) + 0.4 * p2.sample((x + ox) / 120 - 5.3, (z + oz) / 120 + 9.9);
+		return Math.max(0, n) * 3.4 * (1 - lowland);
+	}
+
+	/** Now and then a small lake ("plas") in the polder. */
+	public boolean lake(double x, double z) {
+		return p1.sample((x + ox) / 260 + 41.3, (z + oz) / 260 - 17.9) > 0.78;
+	}
+
 	/** 0 = natural hills, 1 = flat polder land. */
 	public double polder(double x, double z, double continentalness) {
 		if (continentalness < -0.11) return 0;

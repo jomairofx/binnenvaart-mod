@@ -1359,6 +1359,7 @@ public class ShipEntity extends Entity {
 					for (int z = Math.max(z0, r[2]); z <= Math.min(z1, r[5]); z++) {
 						BlockState s = structure.get(x, y, z);
 						if (s.isAir()) continue;
+						if (!template.inLift(x, y, z)) continue;   // columns kept out of the lift (ladders) do not rise with it
 						m.set(x, y, z);
 						VoxelShape shape = s.getCollisionShape(structure, m, ctx);
 						if (!shape.isEmpty()) out.add(shape.offset(x, y + L, z));

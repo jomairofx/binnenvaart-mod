@@ -160,7 +160,7 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 	}
 
 	private void column(StructureWorldAccess w, BlockPos.Mutable m, Harbours.Site s, int x, int z) {
-		double a = s.a(x + 0.5, z + 0.5), v = s.v(x + 0.5, z + 0.5) - s.bank;
+		double a = s.a(x + 0.5, z + 0.5), v = s.v(x + 0.5, z + 0.5) - s.bank();
 		// clear everything above the quay (trees, grass, snow)
 		for (int y = Q + 1; y <= Q + 30; y++) if (!w.getBlockState(m.set(x, y, z)).isAir()) set(w, m, x, y, z, AIR);
 		// solid quay body

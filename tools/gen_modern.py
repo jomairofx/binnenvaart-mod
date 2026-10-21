@@ -458,6 +458,12 @@ def build(cfg):
     for xx in BOARD_X:
         S(xx, 2, 0, "air"); S(xx, 2, W - 1, "air"); S(xx, 3, 0, "air"); S(xx, 3, W - 1, "air")
 
+    # big working chests: one in the accommodation, one in the bow thruster room (under the fore hatch)
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    import chests
+    print("chest accommodation", (chests.place(B, S, R(8, 21), R(1, 3), R(1, W - 2)) or chests.place(B, S, R(8, 21), R(1, 3), R(1, W - 2), strict=False)), file=_sys.stderr)
+    print("chest fore", chests.place(B, S, R(FORE_START + 2, FORE_START + 12), R(-4, 0), R(1, W - 2)), file=_sys.stderr)
     B = {k: v for k, v in B.items() if v != "minecraft:air"}
 
     def base(s): return s.split("[")[0].replace("minecraft:", "")

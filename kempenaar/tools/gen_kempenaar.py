@@ -302,6 +302,13 @@ S(61, -1, 4, "grindstone[face=floor,facing=east]")
 for z in (3, 5): S(60, -2, z, "chain[axis=z]")
 S(63, -2, 6, "lantern[hanging=false]"); S(58, -2, 2, "barrel[facing=up]")
 
+# big working chests: one in the living room, one in the fore peak (under the hatch)
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "tools"))
+import chests
+# living room: against the front wall, in the sunken floor (the slab floor is lower here)
+S(16, 1, 2, "chest[facing=west,type=left]"); S(16, 1, 1, "chest[facing=west,type=right]")
+print("chest fore peak", chests.place(B, S, R(58, 66), R(-3, 0), R(1, 7)), file=_sys.stderr)
 B = {k: v for k, v in B.items() if v != "minecraft:air"}
 
 # ---------------- verbindingen ----------------

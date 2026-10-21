@@ -424,6 +424,12 @@ for y in R(-4, 1):
     for x in BOARD_X:
         S(x, y, -1, "ladder[facing=north]"); S(x, y, W_BEAM, "ladder[facing=south]")
 
+# big working chests: one in the accommodation, one in the bow thruster room (under the fore hatch)
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "..", "tools"))
+import chests
+print("chest accommodation", chests.place(B, S, R(8, 21), R(1, 2), R(2, 16)), file=_sys.stderr)
+print("chest fore", chests.place(B, S, R(FORE_START + 2, FORE_START + 12), R(-4, 0), R(1, 17)), file=_sys.stderr)
 B = {k: v for k, v in B.items() if v != "minecraft:air"}
 
 # ---------------- connections for panes/fences/walls ----------------

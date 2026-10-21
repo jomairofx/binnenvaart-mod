@@ -848,7 +848,34 @@ public class ShipEntity extends Entity {
 		return speed;
 	}
 
-	public enum Action { NONE, HELM_AFT, HELM_BOW, HOLD, TOGGLE, BED }
+	public enum Action { NONE, HELM_AFT, HELM_BOW, HOLD, TOGGLE, BED, STORAGE }
+
+	/** Working chests and cupboards on board (every chest and barrel in the ship): 54 slots each. */
+	private final java.util.Map<Long, net.minecraft.inventory.SimpleInventory> lockers = new java.util.HashMap<>();
+
+	/** Both halves of a double chest share one inventory: the key is the left half. */
+	private long lockerKey(int x, int y, int z) {
+		BlockState s = structure.get(x, y, z);
+		if (s.getBlock() instanceof net.minecraft.block.ChestBlock && s.get(net.minecraft.block.ChestBlock.CHEST_TYPE) == net.minecraft.block.enums.ChestType.RIGHT) {
+			Direction d = net.minecraft.block.ChestBlock.getFacing(s);
+			return BlockPos.asLong(x + d.getOffsetX(), y, z + d.getOffsetZ());
+		}
+		return BlockPos.asLong(x, y, z);
+	}
+
+	private net.minecraft.inventory.SimpleInventory locker(long key) {
+		return lockers.computeIfAbsent(key, k -> new net.minecraft.inventory.SimpleInventory(54));
+	}
+
+	private void openLocker(ServerPlayerEntity player, int x, int y, int z, Vec3d w) {
+		BlockState s = structure.get(x, y, z);
+		net.minecraft.inventory.SimpleInventory inv = locker(lockerKey(x, y, z));
+		Text title = Text.literal(s.getBlock() instanceof net.minecraft.block.ChestBlock ? "Ship's chest" : "Cupboard");
+		player.openHandledScreen(new net.minecraft.screen.SimpleNamedScreenHandlerFactory(
+				(id, pinv, p) -> net.minecraft.screen.GenericContainerScreenHandler.createGeneric9x6(id, pinv, inv), title));
+		getWorld().playSound(null, w.x, w.y, w.z, s.getBlock() instanceof net.minecraft.block.ChestBlock ? SoundEvents.BLOCK_CHEST_OPEN : SoundEvents.BLOCK_BARREL_OPEN,
+				SoundCategory.BLOCKS, 0.6f, 1f);
+	}
 
 	private static boolean inZone(int[] z, int x, int y, int zz) {
 		return x >= z[0] && x <= z[3] && y >= z[1] && y <= z[4] && zz >= z[2] && zz <= z[5];
@@ -873,6 +900,7 @@ public class ShipEntity extends Entity {
 		if (b instanceof BedBlock) return Action.BED;
 		if (b instanceof DoorBlock || (b instanceof TrapdoorBlock && !s.isOf(Blocks.IRON_TRAPDOOR)) || b instanceof LeverBlock)
 			return Action.TOGGLE;
+		if (b instanceof net.minecraft.block.ChestBlock || b instanceof net.minecraft.block.BarrelBlock) return Action.STORAGE;
 		if (holdAt(t) >= 0) return Action.HOLD;
 		return Action.NONE;
 	}
@@ -920,6 +948,7 @@ public class ShipEntity extends Entity {
 			}
 			case BED -> useBed(player, MathHelper.floor(t.x), MathHelper.floor(t.y), MathHelper.floor(t.z));
 			case TOGGLE -> toggleBlock(MathHelper.floor(t.x), MathHelper.floor(t.y), MathHelper.floor(t.z), w);
+			case STORAGE -> openLocker(player, MathHelper.floor(t.x), MathHelper.floor(t.y), MathHelper.floor(t.z), w);
 			case HOLD -> {
 				int h = holdAt(t);
 				if (h >= 0) openHold(player, h);
@@ -1228,6 +1257,12 @@ public class ShipEntity extends Entity {
 		while (it.hasNext()) {
 			m.set(it.nextLong());
 			{ BlockState back = plants.remove(m.asLong()); if (world.getBlockState(m).isOf(ModernBulk.DISPLACED_WATER)) world.setBlockState(m, back != null ? back : Blocks.WATER.getDefaultState(), flags); }
+		}
+		lockers.clear();
+		NbtList lk = nbt.getList("Lockers", NbtElement.COMPOUND_TYPE);
+		for (int i = 0; i < lk.size(); i++) {
+			NbtCompound c = lk.getCompound(i);
+			locker(c.getLong("P")).readNbtList(c.getList("Items", NbtElement.COMPOUND_TYPE), getRegistryManager());
 		}
 		displaced.clear();
 		plants.clear();
@@ -1636,6 +1671,15 @@ public class ShipEntity extends Entity {
 		NbtList hl = new NbtList();
 		for (CargoInventory h : holds) hl.add(h.toNbtList(getRegistryManager()));
 		nbt.put("Holds", hl);
+		NbtList lk = new NbtList();
+		for (java.util.Map.Entry<Long, net.minecraft.inventory.SimpleInventory> e : lockers.entrySet()) {
+			if (e.getValue().isEmpty()) continue;
+			NbtCompound c = new NbtCompound();
+			c.putLong("P", e.getKey());
+			c.put("Items", e.getValue().toNbtList(getRegistryManager()));
+			lk.add(c);
+		}
+		nbt.put("Lockers", lk);
 		nbt.putLongArray("Displaced", new LongArrayList(displaced).toLongArray());
 		NbtList ch = new NbtList();
 		for (Long2ObjectMap.Entry<BlockState> e : structure.changes.long2ObjectEntrySet()) {
@@ -1657,6 +1701,7 @@ public class ShipEntity extends Entity {
 			restoreAllWater();
 			if (reason == RemovalReason.KILLED) {
 				for (CargoInventory inv : holds) ItemScatterer.spawn(getWorld(), getBlockPos().up(3), inv);
+				for (net.minecraft.inventory.SimpleInventory inv : lockers.values()) ItemScatterer.spawn(getWorld(), getBlockPos().up(3), inv);
 			}
 		}
 		super.remove(reason);

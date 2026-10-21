@@ -70,6 +70,14 @@ public final class ClientSelfTest {
 			} else {
 				plan(f.river, f.great, "maas", 40, 85);
 				plan(f.great, f.river, "grote_rivier", 90, 110);
+				nl.greatrivers.Harbours.Site h = GreatRivers.nearestHarbour(f, 0, 0, 15);
+				if (h != null) {
+					double bk = h.bank();
+					double cx = h.cx() + h.gx() * (bk + 20), cz = h.cz() + h.gz() * (bk + 20);
+					add("haven_vanaf_het_water", h.cx() + h.gx() * (bk - 40) + h.tx() * 50, 68, h.cz() + h.gz() * (bk - 40) + h.tz() * 50, cx, 63, cz);
+					add("haven_op_de_kade", h.cx() + h.gx() * (bk + 40) - h.tx() * 70, 66.6, h.cz() + h.gz() * (bk + 40) - h.tz() * 70, cx + h.tx() * 30, 64, cz + h.tz() * 30);
+					add("haven_bovenaanzicht", cx - h.gx() * 60, 140, cz - h.gz() * 60, cx, 63, cz);
+				} else log.add("FAIL geen haven");
 			}
 			mc.options.hudHidden = true;
 		}

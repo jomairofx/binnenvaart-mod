@@ -2,6 +2,14 @@ package nl.greatrivers;
 
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
+import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.util.Identifier;
+import net.minecraft.world.gen.GenerationStep;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -17,8 +25,12 @@ public class GreatRivers implements ModInitializer {
 	public static final String MOD_ID = "greatrivers";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
+	public static final HarbourFeature HARBOUR = Registry.register(Registries.FEATURE, Identifier.of(MOD_ID, "harbour"), new HarbourFeature());
+
 	@Override
 	public void onInitialize() {
+		BiomeModifications.addFeature(BiomeSelectors.foundInOverworld(), GenerationStep.Feature.TOP_LAYER_MODIFICATION,
+				RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.of(MOD_ID, "harbour")));
 		CommandRegistrationCallback.EVENT.register((dispatcher, access, env) ->
 				dispatcher.register(CommandManager.literal("findriver").executes(GreatRivers::findRiver)));
 		SelfTest.register();
@@ -92,6 +104,45 @@ public class GreatRivers implements ModInitializer {
 			src.sendFeedback(() -> Text.literal("Nearest " + kind.name() + " (about " + width + " blocks wide): ").append(coords)
 					.append(Text.literal(", " + dist + " blocks away")), false);
 		}
+		Harbours.Site h = nearestHarbour(field, x, z, 12);
+		if (h == null) src.sendFeedback(() -> Text.literal("No harbour found nearby.").formatted(Formatting.GRAY), false);
+		else {
+			int[] q = quaySpot(h);
+			int dist = (int) Math.round(Math.hypot(q[0] - x, q[1] - z));
+			String tp = "/tp @s " + q[0] + " " + (Harbours.QUAY_Y + 1) + " " + q[1];
+			Text coords = Text.literal("[" + q[0] + ", " + q[1] + "]").formatted(Formatting.AQUA, Formatting.UNDERLINE)
+					.styled(st -> st.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp))
+							.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to teleport"))));
+			src.sendFeedback(() -> Text.literal("Nearest harbour (on a " + h.river() + "): ").append(coords)
+					.append(Text.literal(", " + dist + " blocks away")), false);
+		}
 		return 1;
+	}
+
+	/** Middle of the quay behind the basin. */
+	public static int[] quaySpot(Harbours.Site h) {
+		double v = h.bank() + Harbours.B + 6;
+		return new int[]{(int) Math.round(h.cx() + h.gx() * v), (int) Math.round(h.cz() + h.gz() * v)};
+	}
+
+	public static Harbours.Site nearestHarbour(RiverField field, int x, int z, int cells) {
+		int cx = Math.floorDiv(x, Harbours.CELL), cz = Math.floorDiv(z, Harbours.CELL);
+		Harbours.Site best = null;
+		double bd = Double.MAX_VALUE;
+		for (int r = 0; r <= cells; r++) {
+			for (int i = -r; i <= r; i++)
+				for (int j = -r; j <= r; j++) {
+					if (Math.max(Math.abs(i), Math.abs(j)) != r) continue;
+					Harbours.Site s = field.harbours.site(cx + i, cz + j);
+					if (s == null) continue;
+					double d = Math.hypot(s.cx() - x, s.cz() - z);
+					if (d < bd) {
+						bd = d;
+						best = s;
+					}
+				}
+			if (best != null && bd < (r) * Harbours.CELL) return best;
+		}
+		return best;
 	}
 }

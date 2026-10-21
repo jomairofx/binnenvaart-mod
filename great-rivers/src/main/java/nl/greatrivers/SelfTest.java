@@ -106,6 +106,30 @@ final class SelfTest {
 			if (f != null) {
 				testRiver(w, f.river, f.great, 50, 13);
 				testRiver(w, f.great, f.river, 250, 21);
+				// harbour
+				Harbours.Site h = GreatRivers.nearestHarbour(f, 0, 0, 15);
+				check("haven gevonden", h != null, h == null ? "geen" : "op " + h.cx() + ", " + h.cz() + " aan een " + h.river());
+				if (h != null) {
+					int[] q = GreatRivers.quaySpot(h);
+					w.getChunk(q[0] >> 4, q[1] >> 4);
+					BlockState top = w.getBlockState(new BlockPos(q[0], Harbours.QUAY_Y, q[1]));
+					boolean free = w.getBlockState(new BlockPos(q[0], Harbours.QUAY_Y + 1, q[1])).isAir()
+							|| w.getBlockState(new BlockPos(q[0], Harbours.QUAY_Y + 1, q[1])).isOf(net.minecraft.block.Blocks.BARREL);
+					check("kade vlak en verhard", (top.isOf(net.minecraft.block.Blocks.SMOOTH_STONE) || top.isOf(net.minecraft.block.Blocks.POLISHED_ANDESITE)) && free,
+							top.getBlock().getName().getString() + " op y " + Harbours.QUAY_Y + " bij " + q[0] + ", " + q[1]);
+					double bv = h.bank() + Harbours.B * 0.5;
+					int bx = (int) Math.round(h.cx() + h.gx() * bv), bz = (int) Math.round(h.cz() + h.gz() * bv);
+					int depth = 0;
+					for (int y = RiverField.WATER_TOP; y > 0 && water(w, bx, y, bz); y--) depth++;
+					check("havenbekken diep", depth >= 8, depth + " blokken water in het bekken bij " + bx + ", " + bz);
+					// a quay wall: walk from the basin towards the back quay and find the concrete face
+					boolean wallFound = false;
+					for (double vv = bv; vv < h.bank() + Harbours.B + 4 && !wallFound; vv += 0.5) {
+						int wx = (int) Math.floor(h.cx() + h.gx() * vv), wz = (int) Math.floor(h.cz() + h.gz() * vv);
+						wallFound = w.getBlockState(new BlockPos(wx, 60, wz)).isOf(net.minecraft.block.Blocks.GRAY_CONCRETE);
+					}
+					check("kademuur", wallFound, wallFound ? "betonnen kademuur gevonden" : "geen kademuur");
+				}
 				// deep sea
 				int ox = 0, oz = 0;
 				boolean found = false;

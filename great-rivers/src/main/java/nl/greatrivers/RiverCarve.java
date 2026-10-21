@@ -20,10 +20,17 @@ public final class RiverCarve implements DensityFunction {
 	@Override
 	public double sample(NoisePos pos) {
 		double base = input.sample(pos);
-		double top = field.ceiling(pos.blockX(), pos.blockZ());
-		if (top == Double.POSITIVE_INFINITY) return base;
-		double carve = (top - pos.blockY()) / 6.0;
-		return Math.min(base, carve);
+		int x = pos.blockX(), z = pos.blockZ(), y = pos.blockY();
+		double top = field.ceiling(x, z);
+		double v = top == Double.POSITIVE_INFINITY ? base : Math.min(base, (top - y) / 6.0);
+		double w = field.flatWeight(x, z);
+		if (w > 0) {
+			// harbour quay: exactly level at the quay height, sloping back into the land around it
+			double flat = (Harbours.QUAY_Y + 0.5 - y) / 6.0;
+			if (y < Harbours.QUAY_Y - 14) flat = base;   // deep below the quay: caves and ores as normal
+			v = v * (1 - w) + flat * w;
+		}
+		return v;
 	}
 
 	@Override

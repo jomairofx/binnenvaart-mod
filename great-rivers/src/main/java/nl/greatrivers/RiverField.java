@@ -103,6 +103,7 @@ public final class RiverField {
 	}
 
 	public final Kind great, river;
+	public final Harbours harbours;
 
 	/** Vanilla continentalness: below -0.19 is sea, below -0.455 deep sea, below -1.05 mushroom islands. */
 	private final DensityFunction continents;
@@ -127,8 +128,10 @@ public final class RiverField {
 	public RiverField(long seed, DensityFunction continents) {
 		this.continents = continents;
 		Random r = Random.create(seed * 0x9E3779B97F4A7C15L + 0x6772656174L);
-		great = new Kind("great river", r, 14000, 1900, 6500, 260, 1500, 300, 500, 18000, 25, 220, 360);
-		river = new Kind("river", r, 4600, 750, 2600, 170, 650, 70, 130, 7000, 15, 55, 150);
+		great = new Kind("great river", r, 15000, 1700, 7000, 120, 2600, 300, 500, 18000, 25, 220, 360);
+		// long, fairly straight reaches with wide bends (no sharp meanders)
+		river = new Kind("river", r, 7500, 520, 5200, 45, 2200, 70, 130, 7000, 15, 55, 150);
+		harbours = new Harbours(this, seed);
 	}
 
 	// ---------- small per-thread cache: every column is asked for many times while a chunk is generated ----------
@@ -137,6 +140,7 @@ public final class RiverField {
 	private static final class Cache {
 		final long[] keys = new long[CACHE];
 		final double[] vals = new double[CACHE];
+		final double[] flat = new double[CACHE];
 		final RiverField[] owner = new RiverField[CACHE];
 	}
 
@@ -147,12 +151,32 @@ public final class RiverField {
 		Cache c = CACHES.get();
 		long key = ((long) x << 32) ^ (z & 0xffffffffL);
 		int i = (int) ((x * 31L + z * 0x9E3779B1L) & (CACHE - 1));
-		if (c.owner[i] == this && c.keys[i] == key) return c.vals[i];
+		if (c.owner[i] != this || c.keys[i] != key) fill(c, i, key, x, z);
+		return c.vals[i];
+	}
+
+	/** Weight of the flat harbour quay at this column (0 = no harbour). */
+	public double flatWeight(int x, int z) {
+		Cache c = CACHES.get();
+		long key = ((long) x << 32) ^ (z & 0xffffffffL);
+		int i = (int) ((x * 31L + z * 0x9E3779B1L) & (CACHE - 1));
+		if (c.owner[i] != this || c.keys[i] != key) fill(c, i, key, x, z);
+		return c.flat[i];
+	}
+
+	private void fill(Cache c, int i, long key, int x, int z) {
 		double v = Math.min(Math.min(great.ceiling(x, z), river.ceiling(x, z)), oceanCeiling(x, z));
+		double w = 0;
+		Harbours.Site s = harbours.siteAt(x, z);
+		if (s != null) {
+			int k = Harbours.kind(s, x, z);
+			if (k == Harbours.WATER) v = Math.min(v, Harbours.BASIN_FLOOR + 0.5);
+			else w = Harbours.flatWeight(s, x, z);
+		}
 		c.owner[i] = this;
 		c.keys[i] = key;
 		c.vals[i] = v;
-		return v;
+		c.flat[i] = w;
 	}
 
 	/** Is this column inside a river channel (for the river biome)? */

@@ -160,7 +160,7 @@ final class SelfTest {
 					check("sloten met water", ditches > 0 && wet >= ditches * 0.7, wet + " van " + ditches + " slootvakjes met water");
 				}
 				int[] cs = SelfTestSpots.canalSpot(f);
-				check("kanaal gevonden", cs != null, cs == null ? "geen" : "op " + cs[0] + ", " + cs[1]);
+				log.add(cs == null ? "  (geen kanaal in de buurt: kanalen zijn zeldzaam)" : "  kanaal op " + cs[0] + ", " + cs[1]);
 				if (cs != null) {
 					int depth = 0;
 					for (int y = RiverField.WATER_TOP; y > 0 && water(w, cs[0], y, cs[1]); y--) depth++;

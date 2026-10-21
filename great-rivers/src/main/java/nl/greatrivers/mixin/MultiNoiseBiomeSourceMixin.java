@@ -47,7 +47,7 @@ public abstract class MultiNoiseBiomeSourceMixin {
 		if (greatrivers$river == null || greatrivers$plains == null) return;   // not an overworld-like biome source
 		RegistryEntry<Biome> b = cir.getReturnValue();
 		int bx = (x << 2) + 2, bz = (z << 2) + 2;
-		double c = field.continentalness(bx, bz);
+		double c = field.coastal(bx, bz);
 		if (c < nl.greatrivers.Lowlands.COAST) {
 			// the sea, never frozen
 			if (b.matchesKey(BiomeKeys.FROZEN_OCEAN) || b.matchesKey(BiomeKeys.DEEP_FROZEN_OCEAN) || !b.isIn(BiomeTags.IS_OCEAN)) {

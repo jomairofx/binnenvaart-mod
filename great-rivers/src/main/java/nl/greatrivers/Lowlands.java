@@ -45,7 +45,7 @@ public final class Lowlands {
 	}
 
 	/** Sea below this continentalness, land above it. Inland "oceans" of vanilla become land. */
-	public static final double COAST = -0.40;
+	public static final double COAST = -0.45;
 
 	/** 1 = low peat/clay polder (ditches, meadows), 0 = higher sandy ground (gentle rises, more woods). */
 	public double lowland(double x, double z) {

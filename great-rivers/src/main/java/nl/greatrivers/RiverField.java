@@ -235,7 +235,7 @@ public final class RiverField {
 	}
 
 	private double dutch(int x, int z, double dg, double hwg, double dr, double hwr) {
-		double cont = continentalness(x, z);
+		double cont = coastal(x, z);
 		double lowl = low.lowland(x, z);
 		double t = Lowlands.POLDER + low.rise(x, z, lowl);
 		if (cont > Lowlands.COAST + 0.06 && villages.flat(x, z)) return Lowlands.POLDER;   // villages and towns stand on level ground
@@ -285,8 +285,21 @@ public final class RiverField {
 	}
 
 	/** Is this column on land (not sea)? */
+	/**
+	 * Continentalness as used for the coast: small pockets and narrow arms of sea are filled in, so the only
+	 * open water besides the rivers is the real, wide sea.
+	 */
+	public double coastal(int x, int z) {
+		double c = continentalness(x, z);
+		if (c >= Lowlands.COAST + 0.05) return c;
+		int r = 128;
+		c = Math.max(c, Math.max(Math.max(continentalness(x + r, z), continentalness(x - r, z)),
+				Math.max(continentalness(x, z + r), continentalness(x, z - r))));
+		return c;
+	}
+
 	public boolean land(int x, int z) {
-		return continentalness(x, z) >= Lowlands.COAST;
+		return coastal(x, z) >= Lowlands.COAST;
 	}
 
 	private void fill(Cache c, int i, long key, int x, int z) {

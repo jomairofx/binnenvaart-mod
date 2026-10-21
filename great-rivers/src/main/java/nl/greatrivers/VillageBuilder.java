@@ -29,7 +29,7 @@ final class VillageBuilder {
 	private static final BlockState AIR = Blocks.AIR.getDefaultState();
 	static final int G = 62;          // ground level: top block of the polder
 	static final int Y0 = G + 1;      // ground floor
-	private static final Block[] BRICK = {Blocks.BRICKS, Blocks.BRICKS, Blocks.MUD_BRICKS, Blocks.GRANITE, Blocks.BRICKS};
+	private static final Block[] BRICK = {Blocks.BRICKS, Blocks.BRICKS, Blocks.MUD_BRICKS, Blocks.BRICKS, Blocks.BRICKS};
 	private static final Block[][] ROOF = {
 			{Blocks.DEEPSLATE_TILE_STAIRS, Blocks.DEEPSLATE_TILE_SLAB, Blocks.DEEPSLATE_TILES},
 			{Blocks.BRICK_STAIRS, Blocks.BRICK_SLAB, Blocks.BRICKS},

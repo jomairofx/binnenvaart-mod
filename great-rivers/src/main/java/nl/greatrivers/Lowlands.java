@@ -11,7 +11,7 @@ import net.minecraft.util.math.random.Random;
  * Outside the polder regions the land keeps its hills and mountains.
  */
 public final class Lowlands {
-	public static final double POLDER = 64.3;      // top block of the polder land: y 64
+	public static final double POLDER = 63.3;      // top block of the polder land: y 63, one above the water
 	public static final double DIKE_TOP = 69.3;    // top of the dikes: y 69
 	public static final int CANAL_X = 11000, CANAL_Z = 14000;
 	public static final double CANAL_HALF = 17, CANAL_DEPTH = 9;

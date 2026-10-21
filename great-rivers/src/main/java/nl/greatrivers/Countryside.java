@@ -50,13 +50,13 @@ final class Countryside {
 		for (int dx = -4; dx <= 4; dx += 4)
 			for (int dz = -4; dz <= 4; dz += 4) {
 				int t = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, mx + dx, mz + dz) - 1;
-				if (t != 64 || !w.getBlockState(m.set(mx + dx, t, mz + dz)).isOf(Blocks.GRASS_BLOCK)) return;
+				if (t != 63 || !w.getBlockState(m.set(mx + dx, t, mz + dz)).isOf(Blocks.GRASS_BLOCK)) return;
 			}
 		if (field.low.canalDistance(mx, mz) < 60) return;
 		BlockState brick = Blocks.BRICKS.getDefaultState(), wood = Blocks.DARK_OAK_PLANKS.getDefaultState();
 		BlockState cap = Blocks.DARK_OAK_PLANKS.getDefaultState(), white = Blocks.WHITE_WOOL.getDefaultState();
 		BlockState frame = Blocks.SPRUCE_FENCE.getDefaultState();
-		int base = 65;
+		int base = 64;
 		for (int y = base; y <= base + 14; y++) {
 			double r = y < base + 3 ? 3.6 : (y < base + 9 ? 3.1 : (y < base + 13 ? 2.4 : 1.6));
 			for (int dx = -4; dx <= 4; dx++)
@@ -124,12 +124,12 @@ final class Countryside {
 		for (int dx = 0; dx < lx; dx += 4)
 			for (int dz = 0; dz < lz; dz += 4) {
 				int t = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, bx + dx, bz + dz) - 1;
-				if (t != 64 || !w.getBlockState(m.set(bx + dx, t, bz + dz)).isOf(Blocks.GRASS_BLOCK)) return;
+				if (t != 63 || !w.getBlockState(m.set(bx + dx, t, bz + dz)).isOf(Blocks.GRASS_BLOCK)) return;
 				if (field.low.ditch(bx + dx, bz + dz)) return;
 			}
 		BlockState brick = Blocks.BRICKS.getDefaultState(), white = Blocks.WHITE_CONCRETE.getDefaultState();
 		BlockState glass = Blocks.WHITE_STAINED_GLASS_PANE.getDefaultState();
-		int base = 65, wallTop = base + 3;
+		int base = 64, wallTop = base + 3;
 		int len = alongX ? lx : lz, wid = alongX ? lz : lx;
 		for (int i = 0; i < len; i++)
 			for (int j = 0; j < wid; j++) {

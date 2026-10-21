@@ -59,6 +59,11 @@ public final class Lowlands {
 		return Math.max(0, n) * 3.4 * (1 - lowland);
 	}
 
+	/** Along the rivers: below -0.25 no trees, up to 0.3 a few, above 0.3 a row of pollard willows. */
+	public double treeZone(double x, double z) {
+		return wood1.sample((x + ox) / 420 - 13.7, (z + oz) / 420 + 29.1);
+	}
+
 	/** Now and then a small lake ("plas") in the polder. */
 	public boolean lake(double x, double z) {
 		return p1.sample((x + ox) / 260 + 41.3, (z + oz) / 260 - 17.9) > 0.78;

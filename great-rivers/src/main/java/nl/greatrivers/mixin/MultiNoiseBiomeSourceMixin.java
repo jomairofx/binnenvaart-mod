@@ -60,7 +60,10 @@ public abstract class MultiNoiseBiomeSourceMixin {
 			cir.setReturnValue(greatrivers$river);
 			return;
 		}
-		int wood = field.low.wood(bx, bz, field.low.lowland(bx, bz));
+		// no woods in the forelands and on the dikes: open grass along the water
+		var k = field.great;
+		boolean nearWater = k.distance(bx, bz) - k.halfWidth(bx, bz) < nl.greatrivers.Lowlands.foreland(k) + 40;
+		int wood = nearWater ? 0 : field.low.wood(bx, bz, field.low.lowland(bx, bz));
 		RegistryEntry<Biome> land = wood == 2 && greatrivers$birch != null ? greatrivers$birch
 				: wood >= 1 && greatrivers$forest != null ? greatrivers$forest : greatrivers$plains;
 		cir.setReturnValue(land);

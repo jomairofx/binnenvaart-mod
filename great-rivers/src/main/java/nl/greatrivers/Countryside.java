@@ -237,9 +237,11 @@ final class Countryside {
 			if (e < 3) continue;   // no sand: grass right down to the water
 			// trees in the foreland and a row of pollard willows along the foot of the dike
 			long hh = mix(x * 0x9E3779B97F4A7C15L + z * 0x632BE59BD9B4E019L);
-			boolean scatter = e > 8 && e < fore - 8 && (hh & 1023) < 3;
+			// stretches without trees, stretches with a few, and stretches with a regular row of willows
+			double zone = field.low.treeZone(x, z);
+			boolean scatter = zone > -0.25 && e > 8 && e < fore - 8 && (hh & 1023) < (zone > 0.3 ? 2 : 1);
 			boolean row = false;
-			if (!scatter && Math.abs(e - (fore - 3)) < 0.5) {
+			if (!scatter && zone > 0.3 && Math.abs(e - (fore - 3)) < 0.5) {
 				// along-river coordinate (only worked out here, it costs a few noise samples)
 				double g = 3, gx = k.distance(x + g, z) - k.distance(x - g, z), gz = k.distance(x, z + g) - k.distance(x, z - g);
 				double l = Math.hypot(gx, gz);

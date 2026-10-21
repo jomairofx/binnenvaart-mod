@@ -5,7 +5,8 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "NoiseConfigMixin",
-    "MultiNoiseBiomeSourceMixin"
+    "MultiNoiseBiomeSourceMixin",
+    "AquiferMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -29,6 +29,13 @@ public class GreatRivers implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		// no ravines and cave mouths cut through the flat land (the caves deep underground stay)
+		BiomeModifications.create(Identifier.of(MOD_ID, "no_carvers")).add(net.fabricmc.fabric.api.biome.v1.ModificationPhase.REMOVALS,
+				BiomeSelectors.foundInOverworld(), ctx -> {
+					ctx.getGenerationSettings().removeCarver(net.minecraft.world.gen.carver.ConfiguredCarvers.CAVE);
+					ctx.getGenerationSettings().removeCarver(net.minecraft.world.gen.carver.ConfiguredCarvers.CAVE_EXTRA_UNDERGROUND);
+					ctx.getGenerationSettings().removeCarver(net.minecraft.world.gen.carver.ConfiguredCarvers.CANYON);
+				});
 		BiomeModifications.addFeature(BiomeSelectors.foundInOverworld(), GenerationStep.Feature.TOP_LAYER_MODIFICATION,
 				RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.of(MOD_ID, "harbour")));
 		CommandRegistrationCallback.EVENT.register((dispatcher, access, env) ->

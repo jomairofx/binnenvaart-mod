@@ -250,7 +250,10 @@ public final class RiverField {
 		Harbours.Site s = harbours.siteAt(x, z);
 		if (s != null) {
 			int k = Harbours.kind(s, x, z);
-			if (k == Harbours.WATER) v = Math.min(v, Harbours.BASIN_FLOOR + 0.5);
+			if (k == Harbours.WATER) {
+				v = Math.min(v, Harbours.BASIN_FLOOR + 0.5);
+				if (!Double.isNaN(c.dutch[i])) c.dutch[i] = Math.min(c.dutch[i], Harbours.BASIN_FLOOR + 0.5);
+			}
 			else w = Harbours.flatWeight(s, x, z);
 		}
 		c.owner[i] = this;

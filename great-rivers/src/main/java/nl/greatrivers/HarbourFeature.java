@@ -58,6 +58,12 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 					any = true;
 					dikeRoad(w, m, x, z);
 				}
+				// ditches are too narrow for the aquifers to fill them: put the water in
+				if (s == null && field.polderWeight(x, z) > 0.5 && field.low.ditch(x, z)
+						&& field.dutchHeight(x, z) < RiverField.WATER_TOP) {
+					for (int y = RiverField.WATER_TOP - 1; y <= RiverField.WATER_TOP; y++)
+						if (w.getBlockState(m.set(x, y, z)).isAir()) set(w, m, x, y, z, Blocks.WATER.getDefaultState());
+				}
 			}
 		windmill(w, m, field, x0, z0);
 		return any;

@@ -35,6 +35,9 @@ public class GreatRivers implements ModInitializer {
 					ctx.getGenerationSettings().removeCarver(net.minecraft.world.gen.carver.ConfiguredCarvers.CAVE);
 					ctx.getGenerationSettings().removeCarver(net.minecraft.world.gen.carver.ConfiguredCarvers.CAVE_EXTRA_UNDERGROUND);
 					ctx.getGenerationSettings().removeCarver(net.minecraft.world.gen.carver.ConfiguredCarvers.CANYON);
+					// no lava pools on the land (or anywhere else)
+					ctx.getGenerationSettings().removeFeature(net.minecraft.world.gen.feature.MiscPlacedFeatures.LAKE_LAVA_SURFACE);
+					ctx.getGenerationSettings().removeFeature(net.minecraft.world.gen.feature.MiscPlacedFeatures.LAKE_LAVA_UNDERGROUND);
 				});
 		BiomeModifications.addFeature(BiomeSelectors.foundInOverworld(), GenerationStep.Feature.TOP_LAYER_MODIFICATION,
 				RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.of(MOD_ID, "harbour")));

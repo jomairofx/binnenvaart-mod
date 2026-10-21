@@ -103,6 +103,17 @@ final class SelfTest {
 			ServerWorld w = server.getOverworld();
 			RiverField f = RiverField.current;
 			check("riviernet actief", f != null, f == null ? "geen" : "ja");
+			{
+				int lava = 0;
+				for (var b : new net.minecraft.registry.RegistryKey[]{net.minecraft.world.biome.BiomeKeys.PLAINS, net.minecraft.world.biome.BiomeKeys.FOREST, net.minecraft.world.biome.BiomeKeys.BIRCH_FOREST}) {
+					var biome = server.getRegistryManager().get(net.minecraft.registry.RegistryKeys.BIOME).get(b);
+					for (var step : biome.getGenerationSettings().getFeatures())
+						for (var pf : step)
+							if (pf.matchesKey(net.minecraft.world.gen.feature.MiscPlacedFeatures.LAKE_LAVA_SURFACE)
+									|| pf.matchesKey(net.minecraft.world.gen.feature.MiscPlacedFeatures.LAKE_LAVA_UNDERGROUND)) lava++;
+				}
+				check("geen lavaplassen", lava == 0, lava + " lava-features over");
+			}
 			if (f != null) {
 				testRiver(w, f.river, f.great, 50, 13);
 				testRiver(w, f.great, f.river, 250, 21);

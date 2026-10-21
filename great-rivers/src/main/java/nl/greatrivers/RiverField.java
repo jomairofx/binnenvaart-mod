@@ -2,6 +2,7 @@ package nl.greatrivers;
 
 import net.minecraft.util.math.noise.SimplexNoiseSampler;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.world.gen.densityfunction.DensityFunction;
 
 /**
  * The river network of one world. Two kinds of rivers, each the zero line of a slow, warped noise:
@@ -103,10 +104,31 @@ public final class RiverField {
 
 	public final Kind great, river;
 
-	public RiverField(long seed) {
+	/** Vanilla continentalness: below -0.19 is sea, below -0.455 deep sea, below -1.05 mushroom islands. */
+	private final DensityFunction continents;
+	public static final double OCEAN_DEPTH = 100;
+
+	public double continentalness(int x, int z) {
+		return continents == null ? 0 : continents.sample(new DensityFunction.UnblendedNoisePos(x, 0, z));
+	}
+
+	/** Seas get a deep floor: from the normal shallow coast down to 100 blocks deep out at sea. */
+	public double oceanCeiling(int x, int z) {
+		double c = continentalness(x, z);
+		if (c > -0.17) return Double.POSITIVE_INFINITY;
+		double f = (-0.17 - c) / (0.50 - 0.17);           // 0 at the coast, 1 out at (deep) sea
+		if (c < -0.98) f = Math.max(0, (c + 1.06) / 0.08);   // keep the mushroom islands
+		f = Math.max(0, Math.min(1, f));
+		f = f * f * (3 - 2 * f);
+		if (f < 0.001) return Double.POSITIVE_INFINITY;
+		return WATER_TOP + 0.3 - 6 - (OCEAN_DEPTH - 6) * f;
+	}
+
+	public RiverField(long seed, DensityFunction continents) {
+		this.continents = continents;
 		Random r = Random.create(seed * 0x9E3779B97F4A7C15L + 0x6772656174L);
-		great = new Kind("great river", r, 14000, 1900, 6500, 260, 1500, 300, 500, 18000, 16, 220, 360);
-		river = new Kind("river", r, 4600, 750, 2600, 170, 650, 70, 130, 7000, 8, 55, 150);
+		great = new Kind("great river", r, 14000, 1900, 6500, 260, 1500, 300, 500, 18000, 25, 220, 360);
+		river = new Kind("river", r, 4600, 750, 2600, 170, 650, 70, 130, 7000, 15, 55, 150);
 	}
 
 	// ---------- small per-thread cache: every column is asked for many times while a chunk is generated ----------
@@ -126,7 +148,7 @@ public final class RiverField {
 		long key = ((long) x << 32) ^ (z & 0xffffffffL);
 		int i = (int) ((x * 31L + z * 0x9E3779B1L) & (CACHE - 1));
 		if (c.owner[i] == this && c.keys[i] == key) return c.vals[i];
-		double v = Math.min(great.ceiling(x, z), river.ceiling(x, z));
+		double v = Math.min(Math.min(great.ceiling(x, z), river.ceiling(x, z)), oceanCeiling(x, z));
 		c.owner[i] = this;
 		c.keys[i] = key;
 		c.vals[i] = v;

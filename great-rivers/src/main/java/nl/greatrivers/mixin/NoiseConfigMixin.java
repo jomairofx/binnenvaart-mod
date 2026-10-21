@@ -28,9 +28,9 @@ public abstract class NoiseConfigMixin {
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void greatrivers$carve(ChunkGeneratorSettings settings, RegistryEntryLookup<DoublePerlinNoiseSampler.NoiseParameters> params, long seed, CallbackInfo ci) {
 		if (settings.seaLevel() != 63 || !settings.defaultBlock().isOf(Blocks.STONE) || !settings.defaultFluid().isOf(Blocks.WATER)) return;
-		RiverField field = new RiverField(seed);
-		RiverField.current = field;
 		NoiseRouter r = noiseRouter;
+		RiverField field = new RiverField(seed, r.continents());
+		RiverField.current = field;
 		noiseRouter = new NoiseRouter(r.barrierNoise(), r.fluidLevelFloodednessNoise(), r.fluidLevelSpreadNoise(), r.lavaNoise(),
 				r.temperature(), r.vegetation(), r.continents(), r.erosion(), r.depth(), r.ridges(),
 				new RiverCarve(r.initialDensityWithoutJaggedness(), field), new RiverCarve(r.finalDensity(), field),

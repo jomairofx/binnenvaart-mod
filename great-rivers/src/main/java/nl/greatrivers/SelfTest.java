@@ -104,8 +104,28 @@ final class SelfTest {
 			RiverField f = RiverField.current;
 			check("riviernet actief", f != null, f == null ? "geen" : "ja");
 			if (f != null) {
-				testRiver(w, f.river, f.great, 50, 5);
-				testRiver(w, f.great, f.river, 250, 10);
+				testRiver(w, f.river, f.great, 50, 13);
+				testRiver(w, f.great, f.river, 250, 21);
+				// deep sea
+				int ox = 0, oz = 0;
+				boolean found = false;
+				search:
+				for (int r = 0; r < 30000; r += 256)
+					for (int a = 0; a < 24; a++) {
+						ox = (int) (r * Math.cos(a * Math.PI / 12));
+						oz = (int) (r * Math.sin(a * Math.PI / 12));
+						double c = f.continentalness(ox, oz);
+						if (c < -0.6 && c > -0.95) {
+							found = true;
+							break search;
+						}
+					}
+				check("diepe zee gevonden", found, "op " + ox + ", " + oz);
+				if (found) {
+					int depth = 0;
+					for (int y = RiverField.WATER_TOP; y > -64 && water(w, ox, y, oz); y--) depth++;
+					check("zee 100 blokken diep", depth >= 90, depth + " blokken water");
+				}
 				// survival: far from rivers the land is untouched
 				int lx = 0, lz = 0;
 				outer:

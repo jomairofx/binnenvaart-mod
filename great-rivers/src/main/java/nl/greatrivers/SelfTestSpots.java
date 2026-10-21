@@ -63,6 +63,11 @@ public final class SelfTestSpots {
 			boolean sea = false;
 			for (int k = -2; k <= 2 && !sea; k++)
 				sea = gen.getBiomeSource().getBiome((c[0] >> 2) + k * 40, 15, (c[1] >> 2) + k * 40, noise).isIn(net.minecraft.registry.tag.BiomeTags.IS_OCEAN);
+			RiverField rf = RiverField.current;
+			if (rf != null)
+				for (int k = -3; k <= 3 && !sea; k++)
+					for (int j = -3; j <= 3 && !sea; j++)
+						sea = rf.continentalness(c[0] + k * 150, c[1] + j * 150) < Lowlands.COAST + 0.08;
 			if (!sea) return c;
 		}
 		return GreatRivers.nearest(kind, 0, 0, 30000);

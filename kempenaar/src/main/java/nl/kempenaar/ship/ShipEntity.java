@@ -1256,12 +1256,6 @@ public class ShipEntity extends Entity {
 			m.set(it.nextLong());
 			{ BlockState back = plants.remove(m.asLong()); if (world.getBlockState(m).isOf(Kempenaar.DISPLACED_WATER)) world.setBlockState(m, back != null ? back : Blocks.WATER.getDefaultState(), flags); }
 		}
-		lockers.clear();
-		NbtList lk = nbt.getList("Lockers", NbtElement.COMPOUND_TYPE);
-		for (int i = 0; i < lk.size(); i++) {
-			NbtCompound c = lk.getCompound(i);
-			locker(c.getLong("P")).readNbtList(c.getList("Items", NbtElement.COMPOUND_TYPE), getRegistryManager());
-		}
 		displaced.clear();
 		plants.clear();
 	}
@@ -1645,6 +1639,12 @@ public class ShipEntity extends Entity {
 			dataTracker.set(FILL[i], Cargo.fill(holds[i]));
 			dataTracker.set(MATERIAL[i], Cargo.material(holds[i]));
 			dataTracker.set(BOXED[i], Cargo.containerShare(holds[i]));
+		}
+		lockers.clear();
+		NbtList lk = nbt.getList("Lockers", NbtElement.COMPOUND_TYPE);
+		for (int i = 0; i < lk.size(); i++) {
+			NbtCompound c = lk.getCompound(i);
+			locker(c.getLong("P")).readNbtList(c.getList("Items", NbtElement.COMPOUND_TYPE), getRegistryManager());
 		}
 		displaced.clear();
 		for (long p : nbt.getLongArray("Displaced")) displaced.add(p);

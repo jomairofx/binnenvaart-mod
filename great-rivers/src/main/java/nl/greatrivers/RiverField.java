@@ -67,8 +67,9 @@ public final class RiverField {
 			double gx = (value(x + h, z) - value(x - h, z)) / (2 * h);
 			double gz = (value(x, z + h) - value(x, z - h)) / (2 * h);
 			double g = Math.sqrt(gx * gx + gz * gz);
-			if (g < 1e-12) return 1e9;
-			return Math.abs(v) / g;
+			// where two stretches of river come close (a saddle of the noise) the gradient becomes small and the
+			// estimate would flood a wide area: keep a minimum gradient, so the river just runs on at its width
+			return Math.abs(v) / Math.max(g, 0.7 / scale);
 		}
 
 		public double halfWidth(double x, double z) {

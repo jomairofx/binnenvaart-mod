@@ -42,11 +42,9 @@ public final class ClientSelfTest {
 			log.add("FAIL geen " + k.name());
 			return;
 		}
-		double x = c[0], z = c[1], h = 4;
-		double gx = k.distance(x + h, z) - k.distance(x - h, z), gz = k.distance(x, z + h) - k.distance(x, z - h);
-		double l = Math.max(1e-9, Math.hypot(gx, gz));
-		gx /= l;
-		gz /= l;
+		double x = c[0], z = c[1];
+		double[] nrm = k.normal(x, z);
+		double gx = nrm[0], gz = nrm[1];
 		double hw = k.halfWidth(x, z);
 		add(tag + "_vanaf_de_oever", x + gx * (hw + across), high, z + gz * (hw + across), x - gx * hw * 0.3, 62, z - gz * hw * 0.3);
 		add(tag + "_langs_de_rivier", x + gx * hw * 0.3 - gz * 40, 70, z + gz * hw * 0.3 + gx * 40, x + gz * 250, 62, z - gx * 250);

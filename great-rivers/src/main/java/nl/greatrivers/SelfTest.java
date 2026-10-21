@@ -56,16 +56,8 @@ final class SelfTest {
 		BlockState bed = w.getBlockState(new BlockPos(x, RiverField.WATER_TOP - depth, z));
 		log.add("  bodem: " + bed.getBlock().getName().getString());
 		// across the river: along the gradient of the distance
-		double h = 4;
-		double gx = kind.distance(x + h, z) - kind.distance(x - h, z), gz = kind.distance(x, z + h) - kind.distance(x, z - h);
-		double l = Math.hypot(gx, gz);
-		if (l < 1e-9) {
-			gx = 1;
-			gz = 0;
-			l = 1;
-		}
-		gx /= l;
-		gz /= l;
+		double[] nrm = kind.normal(x, z);
+		double gx = nrm[0], gz = nrm[1];
 		int width = 0;
 		for (int sgn = -1; sgn <= 1; sgn += 2) {
 			for (int s = sgn < 0 ? 1 : 0; s < 800; s++) {

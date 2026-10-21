@@ -59,6 +59,15 @@ public final class RiverField {
 			return n.sample(px / scale, pz / scale);
 		}
 
+		/** Unit vector across the river (works in the middle of the river too, unlike the gradient of the distance). */
+		public double[] normal(double x, double z) {
+			double h = 6;
+			double gx = value(x + h, z) - value(x - h, z), gz = value(x, z + h) - value(x, z - h);
+			double l = Math.hypot(gx, gz);
+			if (l < 1e-12) return new double[]{1, 0};
+			return new double[]{gx / l, gz / l};
+		}
+
 		/** Approximate distance (blocks) to the middle of this river. */
 		public double distance(double x, double z) {
 			if (off) return 1e9;

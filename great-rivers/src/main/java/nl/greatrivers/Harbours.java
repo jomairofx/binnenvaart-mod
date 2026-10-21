@@ -131,12 +131,8 @@ public final class Harbours {
 		if (x < cellX * CELL + m || x > (cellX + 1) * CELL - m || z < cellZ * CELL + m || z > (cellZ + 1) * CELL - m) return NONE;
 		RiverField.Kind other = best == field.river ? field.great : field.river;
 		if (other.distance(x, z) < other.halfWidth(x, z) + 160) return NONE;      // not at a confluence
-		double e = 4;
-		double gx = best.distance(x + e, z) - best.distance(x - e, z), gz = best.distance(x, z + e) - best.distance(x, z - e);
-		double l = Math.hypot(gx, gz);
-		if (l < 1e-9) return NONE;
-		gx /= l;
-		gz /= l;
+		double[] nrm = best.normal(x, z);
+		double gx = nrm[0], gz = nrm[1];
 		if (((h >>> 40) & 1) == 0) {
 			gx = -gx;
 			gz = -gz;

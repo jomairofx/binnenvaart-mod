@@ -38,11 +38,8 @@ public final class SelfTestSpots {
 				int x = (int) (r * Math.cos(a * Math.PI / 12)), z = (int) (r * Math.sin(a * Math.PI / 12));
 				RiverField.Kind k = f.great;
 				if (k.distance(x, z) > k.halfWidth(x, z) * 0.3) continue;
-				double e = 4, gx = k.distance(x + e, z) - k.distance(x - e, z), gz = k.distance(x, z + e) - k.distance(x, z - e);
-				double l = Math.hypot(gx, gz);
-				if (l < 1e-9) continue;
-				gx /= l;
-				gz /= l;
+				double[] nrm = k.normal(x, z);
+				double gx = nrm[0], gz = nrm[1];
 				double hw = k.halfWidth(x, z), fo = Lowlands.foreland(k);
 				int cx = (int) Math.round(x + gx * (hw + fo + 17)), cz = (int) Math.round(z + gz * (hw + fo + 17));
 				if (f.polder(cx, cz) < 0.99 || f.polder(x, z) < 0.99) continue;

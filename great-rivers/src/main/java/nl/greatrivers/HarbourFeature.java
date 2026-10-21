@@ -64,6 +64,11 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 		for (int dx = 0; dx < 16; dx++)
 			for (int dz = 0; dz < 16; dz++) {
 				int x = x0 + dx, z = z0 + dz;
+				Villages.Town town = field.villages.at(x, z);
+				if (town != null && VillageBuilder.column(w, m, town, x, z)) {
+					any = true;
+					continue;
+				}
 				Harbours.Site s = field.harbours.siteAt(x, z);
 				if (s != null) {
 					int k = Harbours.kind(s, x + 0.5, z + 0.5);

@@ -24,6 +24,7 @@ public final class RiverField {
 		final double wMin, wMax, wScale, depth, flood, valley;
 		final SimplexNoiseSampler n, wx, wz, mx, mz, w, bank;
 		final double ox, oz;   // random shift per world: simplex noise is zero at the origin
+		boolean off;            // this family of rivers is not used
 
 		Kind(String name, Random r, double scale, double warpAmp, double warpScale, double meanderAmp, double meanderScale,
 			 double wMin, double wMax, double wScale, double depth, double flood, double valley) {
@@ -60,6 +61,7 @@ public final class RiverField {
 
 		/** Approximate distance (blocks) to the middle of this river. */
 		public double distance(double x, double z) {
+			if (off) return 1e9;
 			double v = value(x, z);
 			double h = 6;
 			double gx = (value(x + h, z) - value(x - h, z)) / (2 * h);
@@ -114,6 +116,7 @@ public final class RiverField {
 	public final Kind great, river;
 	public final Harbours harbours;
 	public final Lowlands low;
+	public final Villages villages;
 
 	/** Vanilla continentalness: below -0.19 is sea, below -0.455 deep sea, below -1.05 mushroom islands. */
 	private final DensityFunction continents;
@@ -138,11 +141,15 @@ public final class RiverField {
 	public RiverField(long seed, DensityFunction continents) {
 		this.continents = continents;
 		Random r = Random.create(seed * 0x9E3779B97F4A7C15L + 0x6772656174L);
-		great = new Kind("great river", r, 15000, 1700, 7000, 120, 2600, 300, 500, 18000, 25, 220, 360);
+		// one single family of rivers: their middle lines never cross each other, so you can sail for kilometres
+		// on the same river; the width changes slowly along it, from Maas-size (70) to Waal-size (240)
+		great = new Kind("river", r, 9000, 1100, 4300, 80, 1800, 70, 240, 9000, 20, 45, 200);
 		// long, fairly straight reaches with wide bends (no sharp meanders)
 		river = new Kind("river", r, 7500, 520, 5200, 45, 2200, 70, 130, 7000, 15, 55, 150);
+		river.off = true;
 		harbours = new Harbours(this, seed);
 		low = new Lowlands(r);
+		villages = new Villages(this, seed);
 	}
 
 	// ---------- small per-thread cache: every column is asked for many times while a chunk is generated ----------
@@ -231,6 +238,7 @@ public final class RiverField {
 		double cont = continentalness(x, z);
 		double lowl = low.lowland(x, z);
 		double t = Lowlands.POLDER + low.rise(x, z, lowl);
+		if (cont > Lowlands.COAST + 0.06 && villages.flat(x, z)) return Lowlands.POLDER;   // villages and towns stand on level ground
 		boolean sea = cont < Lowlands.COAST;
 		if (cont < Lowlands.COAST + 0.045) {
 			if (sea) {
@@ -238,9 +246,9 @@ public final class RiverField {
 				double f = Lowlands.smooth((Lowlands.COAST - cont) / 0.15);
 				return Math.min(WATER_TOP + 0.3 - 3 - (OCEAN_DEPTH - 3) * f, riverMin(dg, hwg, dr, hwr, WATER_TOP + 0.3 - 3));
 			}
-			double u = (cont - Lowlands.COAST) / 0.045;   // 0 at the waterline, 1 behind the dunes
-			if (u < 0.25) t = WATER_TOP + 1.3;          // the beach
-			else t = Math.max(t, Lowlands.POLDER + 6 * Math.sin(Math.PI * (u - 0.25) / 0.75));   // dunes
+			double u = (cont - Lowlands.COAST) / 0.045;   // 0 at the waterline, 1 behind the sea dike
+			if (u < 0.2) t = WATER_TOP + 1.3;           // grassy foreshore
+			else t = Math.max(t, Lowlands.POLDER + 6 * Math.sin(Math.PI * Math.min(1, (u - 0.2) / 0.6)));   // the sea dike
 		}
 		Kind[] ks = {great, river};
 		double[] ds = {dg, dr}, hs = {hwg, hwr};

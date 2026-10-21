@@ -46,17 +46,17 @@ final class Countryside {
 		if (mx < x0 || mx >= x0 + 16 || mz < z0 || mz >= z0 + 16) return;
 		mx = x0 + 8;
 		mz = z0 + 8;   // keep the whole mill inside the area this chunk may build in
-		if (field.polderWeight(mx, mz) < 0.95 || field.harbours.siteAt(mx, mz) != null) return;
+		if (field.polderWeight(mx, mz) < 0.95 || field.harbours.siteAt(mx, mz) != null || field.villages.at(mx, mz) != null) return;
 		for (int dx = -4; dx <= 4; dx += 4)
 			for (int dz = -4; dz <= 4; dz += 4) {
 				int t = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, mx + dx, mz + dz) - 1;
-				if (t != 63 || !w.getBlockState(m.set(mx + dx, t, mz + dz)).isOf(Blocks.GRASS_BLOCK)) return;
+				if (t != 62 || !w.getBlockState(m.set(mx + dx, t, mz + dz)).isOf(Blocks.GRASS_BLOCK)) return;
 			}
 		if (field.low.canalDistance(mx, mz) < 60) return;
 		BlockState brick = Blocks.BRICKS.getDefaultState(), wood = Blocks.DARK_OAK_PLANKS.getDefaultState();
 		BlockState cap = Blocks.DARK_OAK_PLANKS.getDefaultState(), white = Blocks.WHITE_WOOL.getDefaultState();
 		BlockState frame = Blocks.SPRUCE_FENCE.getDefaultState();
-		int base = 64;
+		int base = 63;
 		for (int y = base; y <= base + 14; y++) {
 			double r = y < base + 3 ? 3.6 : (y < base + 9 ? 3.1 : (y < base + 13 ? 2.4 : 1.6));
 			for (int dx = -4; dx <= 4; dx++)
@@ -119,17 +119,17 @@ final class Countryside {
 		int bx = x0 + 3, bz = z0 + 1;            // footprint 9 x 15 inside the area this chunk may build in
 		boolean alongX = ((h >>> 40) & 1) == 0;
 		int lx = alongX ? 15 : 9, lz = alongX ? 9 : 15;
-		if (field.polderWeight(bx + lx / 2, bz + lz / 2) < 0.95 || field.harbours.siteAt(bx, bz) != null) return;
+		if (field.polderWeight(bx + lx / 2, bz + lz / 2) < 0.95 || field.harbours.siteAt(bx, bz) != null || field.villages.at(bx, bz) != null) return;
 		if (field.low.canalDistance(bx, bz) < 50) return;
 		for (int dx = 0; dx < lx; dx += 4)
 			for (int dz = 0; dz < lz; dz += 4) {
 				int t = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, bx + dx, bz + dz) - 1;
-				if (t != 63 || !w.getBlockState(m.set(bx + dx, t, bz + dz)).isOf(Blocks.GRASS_BLOCK)) return;
+				if (t != 62 || !w.getBlockState(m.set(bx + dx, t, bz + dz)).isOf(Blocks.GRASS_BLOCK)) return;
 				if (field.low.ditch(bx + dx, bz + dz)) return;
 			}
 		BlockState brick = Blocks.BRICKS.getDefaultState(), white = Blocks.WHITE_CONCRETE.getDefaultState();
 		BlockState glass = Blocks.WHITE_STAINED_GLASS_PANE.getDefaultState();
-		int base = 64, wallTop = base + 3;
+		int base = 63, wallTop = base + 3;
 		int len = alongX ? lx : lz, wid = alongX ? lz : lx;
 		for (int i = 0; i < len; i++)
 			for (int j = 0; j < wid; j++) {
@@ -223,19 +223,7 @@ final class Countryside {
 			double d = dh[0], hw = dh[1], e = d - hw;
 			double fore = Lowlands.foreland(k);
 			if (e > fore + 2 || e < -5) continue;
-			if (e < 3) {
-				// sand beach along the water line
-				int y = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z) - 1;
-				BlockState st = w.getBlockState(m.set(x, y, z));
-				if (y >= RiverField.WATER_TOP - 4 && y <= RiverField.WATER_TOP + 2
-						&& (st.isOf(Blocks.GRASS_BLOCK) || st.isOf(Blocks.DIRT) || st.isOf(Blocks.GRAVEL) || st.isOf(Blocks.CLAY) || st.isOf(Blocks.MUD))) {
-					set(w, m, x, y, z, Blocks.SAND.getDefaultState());
-					BlockState up = w.getBlockState(m.set(x, y + 1, z));
-					if (!up.isAir() && up.isReplaceable() && up.getFluidState().isEmpty()) set(w, m, x, y + 1, z, AIR);
-					any = true;
-				}
-				continue;
-			}
+			if (e < 3) continue;   // no sand: grass right down to the water
 			// trees in the foreland and a row of pollard willows along the foot of the dike
 			long hh = mix(x * 0x9E3779B97F4A7C15L + z * 0x632BE59BD9B4E019L);
 			boolean scatter = e > 8 && e < fore - 8 && (hh & 1023) < 3;

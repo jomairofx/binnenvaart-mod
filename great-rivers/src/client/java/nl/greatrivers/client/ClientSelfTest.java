@@ -68,8 +68,18 @@ public final class ClientSelfTest {
 			if (f == null) {
 				log.add("FAIL geen riviernet");
 			} else {
-				plan(f.river, f.great, "maas", 40, 85);
-				plan(f.great, f.river, "grote_rivier", 90, 110);
+				plan(f.great, f.river, "rivier", 60, 95);
+				for (boolean city : new boolean[]{false, true}) {
+					nl.greatrivers.Villages.Town t = GreatRivers.findTown(f, 0, 0, 15, city);
+					if (t == null) continue;
+					String tag = city ? "stad" : "dorp";
+					add(tag + "_bovenaanzicht", t.cx() - 70, 120, t.cz() - 70, t.cx() + 10, 63, t.cz() + 10);
+					int sx = t.cx() + nl.greatrivers.Villages.PU + 2, sz = t.cz() + 2;
+					add(tag + "_straat", sx + 0.5, 64.6, sz + 0.5, sx + 40.5, 65, sz + 0.5);
+					add(tag + "_kerk", t.cx() - 14, 70, t.cz() + 30, t.cx() + 15, 72, t.cz() + 14);
+					int hx = t.cx() + nl.greatrivers.Villages.PU + nl.greatrivers.Villages.STREET + 3, hz = t.cz() + nl.greatrivers.Villages.STREET + 4;
+					add(tag + "_huis_binnen", hx + 0.5, 64.62, hz + 0.5, hx + 0.5, 64.2, hz + 4.5);
+				}
 				for (int size = 0; size <= 2; size++) {
 					nl.greatrivers.Harbours.Site h = GreatRivers.findHarbour(f, 0, 0, 25, size);
 					if (h == null) continue;

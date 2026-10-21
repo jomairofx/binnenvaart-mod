@@ -115,8 +115,25 @@ final class SelfTest {
 				check("geen lavaplassen", lava == 0, lava + " lava-features over");
 			}
 			if (f != null) {
-				testRiver(w, f.river, f.great, 50, 13);
-				testRiver(w, f.great, f.river, 250, 21);
+				testRiver(w, f.great, f.river, 60, 15);
+				// villages and towns
+				for (boolean city : new boolean[]{false, true}) {
+					Villages.Town t = GreatRivers.findTown(f, 0, 0, 15, city);
+					String nm = city ? "stad" : "dorp";
+					check(nm + " gevonden", t != null, t == null ? "geen" : "op " + t.cx() + ", " + t.cz());
+					if (t == null) continue;
+					int tx = t.cx() + Villages.STREET + 4, tz = t.cz() + Villages.STREET + 8;
+					w.getChunk(tx >> 4, tz >> 4);
+					var tower = w.getBlockState(new BlockPos(tx, VillageBuilder.Y0 + 12, tz));
+					check(nm + ": kerktoren", tower.isOf(net.minecraft.block.Blocks.BRICKS), tower.getBlock().getName().getString() + " op toren-hoogte");
+					int hx = t.cx() + Villages.PU + Villages.STREET, hz = t.cz() + Villages.STREET;
+					w.getChunk(hx >> 4, hz >> 4);
+					var wall = w.getBlockState(new BlockPos(hx, VillageBuilder.Y0 + 2, hz));
+					var street = w.getBlockState(new BlockPos(t.cx() + Villages.PU + 10, VillageBuilder.G, t.cz() + 2));
+					check(nm + ": huizen en straten", !wall.isAir() && !wall.isOf(net.minecraft.block.Blocks.GRASS_BLOCK)
+									&& (street.isOf(net.minecraft.block.Blocks.BRICKS) || street.isOf(net.minecraft.block.Blocks.SMOOTH_STONE)),
+							"gevel " + wall.getBlock().getName().getString() + ", straat " + street.getBlock().getName().getString());
+				}
 				// harbours: one of each size if we can find them
 				for (int size = 0; size <= 2; size++) {
 					Harbours.Site h = GreatRivers.findHarbour(f, 0, 0, 25, size);
@@ -158,7 +175,7 @@ final class SelfTest {
 						int t = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, px, pz) - 1;
 						hs.append(t).append(' ');
 						n++;
-						if (t >= 63 && t <= 65) flat++;
+						if (t >= 61 && t <= 63) flat++;
 					}
 					check("polder vlak", n > 0 && flat >= n - 2, "hoogtes " + hs + "(" + flat + " van " + n + " op polderhoogte 64)");
 					int ditches = 0, wet = 0;

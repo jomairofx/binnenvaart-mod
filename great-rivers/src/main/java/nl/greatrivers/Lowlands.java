@@ -11,7 +11,7 @@ import net.minecraft.util.math.random.Random;
  * Outside the polder regions the land keeps its hills and mountains.
  */
 public final class Lowlands {
-	public static final double POLDER = 63.3;      // top block of the polder land: y 63, one above the water
+	public static final double POLDER = 62.3;      // top block of the polder land: y 62, level with the water in the ditches
 	public static final double DIKE_TOP = 69.3;    // top of the dikes: y 69
 	public static final int CANAL_X = 11000, CANAL_Z = 14000;
 	public static final double CANAL_HALF = 17, CANAL_DEPTH = 9;
@@ -39,7 +39,7 @@ public final class Lowlands {
 	/** Woods: 0 = open grassland, 1 = oak forest, 2 = birch forest. Mostly open meadows, now and then a wood. */
 	public int wood(double x, double z, double polder) {
 		double n = 0.75 * wood1.sample((x + ox) / 900, (z + oz) / 900) + 0.25 * wood1.sample((x + ox) / 260, (z + oz) / 260);
-		double limit = 0.38 + 0.25 * polder;   // fewer woods in the polders
+		double limit = 0.5 + 0.2 * polder;     // mostly open meadows, now and then a wood
 		if (n < limit) return 0;
 		return wood2.sample((x + ox) / 700, (z + oz) / 700) > 0.35 ? 2 : 1;
 	}
@@ -79,6 +79,7 @@ public final class Lowlands {
 
 	/** Distance to the middle of the nearest canal. */
 	public double canalDistance(double x, double z) {
+		if (true) return 1e9;   // no canals: they cut the rivers into pieces
 		double a = Math.abs(Math.floorMod((long) Math.floor(x) - cx0, CANAL_X) + (x - Math.floor(x)));
 		a = Math.min(a, CANAL_X - a);
 		double b = Math.abs(Math.floorMod((long) Math.floor(z) - cz0, CANAL_Z) + (z - Math.floor(z)));
@@ -114,6 +115,6 @@ public final class Lowlands {
 	}
 
 	public static double foreland(RiverField.Kind k) {
-		return Math.min(k.flood * 0.55, 90);
+		return k.flood;
 	}
 }

@@ -60,10 +60,6 @@ public abstract class MultiNoiseBiomeSourceMixin {
 			cir.setReturnValue(greatrivers$river);
 			return;
 		}
-		if (c < nl.greatrivers.Lowlands.COAST + 0.045) {
-			if (greatrivers$beach != null) cir.setReturnValue(greatrivers$beach);
-			return;
-		}
 		int wood = field.low.wood(bx, bz, field.low.lowland(bx, bz));
 		RegistryEntry<Biome> land = wood == 2 && greatrivers$birch != null ? greatrivers$birch
 				: wood >= 1 && greatrivers$forest != null ? greatrivers$forest : greatrivers$plains;

@@ -36,7 +36,7 @@ public final class SelfTestSpots {
 		for (int r = 0; r < 20000; r += 160)
 			for (int a = 0; a < 24; a++) {
 				int x = (int) (r * Math.cos(a * Math.PI / 12)), z = (int) (r * Math.sin(a * Math.PI / 12));
-				RiverField.Kind k = f.river;
+				RiverField.Kind k = f.great;
 				if (k.distance(x, z) > k.halfWidth(x, z) * 0.3) continue;
 				double e = 4, gx = k.distance(x + e, z) - k.distance(x - e, z), gz = k.distance(x, z + e) - k.distance(x, z - e);
 				double l = Math.hypot(gx, gz);
@@ -47,7 +47,6 @@ public final class SelfTestSpots {
 				int cx = (int) Math.round(x + gx * (hw + fo + 17)), cz = (int) Math.round(z + gz * (hw + fo + 17));
 				if (f.polder(cx, cz) < 0.99 || f.polder(x, z) < 0.99) continue;
 				if (f.low.canalDistance(cx, cz) < 80 || f.harbours.siteAt(cx, cz) != null) continue;
-				if (f.great.distance(x, z) - f.great.halfWidth(x, z) < 400) continue;
 				return new double[]{x, z, gx, gz, hw, fo};
 			}
 		return null;

@@ -99,7 +99,7 @@ public class GreatRivers implements ModInitializer {
 		}
 		Vec3d p = src.getPosition();
 		int x = (int) Math.floor(p.x), z = (int) Math.floor(p.z);
-		for (RiverField.Kind kind : new RiverField.Kind[]{field.river, field.great}) {
+		for (RiverField.Kind kind : new RiverField.Kind[]{field.great}) {
 			int[] c = nearest(kind, x, z, 24000);
 			if (c == null) {
 				src.sendFeedback(() -> Text.literal("No " + kind.name() + " found within 24000 blocks.").formatted(Formatting.GRAY), false);
@@ -113,6 +113,16 @@ public class GreatRivers implements ModInitializer {
 							.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to teleport"))));
 			src.sendFeedback(() -> Text.literal("Nearest " + kind.name() + " (about " + width + " blocks wide): ").append(coords)
 					.append(Text.literal(", " + dist + " blocks away")), false);
+		}
+		for (int city = 1; city >= 0; city--) {
+			Villages.Town t = findTown(field, x, z, 12, city == 1);
+			if (t == null) continue;
+			int dist = (int) Math.round(Math.hypot(t.cx() - x, t.cz() - z));
+			String tp = "/tp @s " + t.cx() + " 66 " + t.cz();
+			Text coords = Text.literal("[" + t.cx() + ", " + t.cz() + "]").formatted(Formatting.AQUA, Formatting.UNDERLINE)
+					.styled(st -> st.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp))
+							.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to teleport"))));
+			src.sendFeedback(() -> Text.literal("Nearest " + t.kind() + ": ").append(coords).append(Text.literal(", " + dist + " blocks away")), false);
 		}
 		for (int size = 0; size <= 2; size++) {
 		Harbours.Site h = findHarbour(field, x, z, 14, size);
@@ -155,6 +165,28 @@ public class GreatRivers implements ModInitializer {
 					}
 				}
 			if (best != null && bd < r * Harbours.CELL) return best;
+		}
+		return best;
+	}
+
+	/** Nearest town (city true) or village. */
+	public static Villages.Town findTown(RiverField field, int x, int z, int cells, boolean city) {
+		int cx = Math.floorDiv(x, Villages.CELL), cz = Math.floorDiv(z, Villages.CELL);
+		Villages.Town best = null;
+		double bd = Double.MAX_VALUE;
+		for (int r = 0; r <= cells; r++) {
+			for (int i = -r; i <= r; i++)
+				for (int j = -r; j <= r; j++) {
+					if (Math.max(Math.abs(i), Math.abs(j)) != r) continue;
+					Villages.Town t = field.villages.town(cx + i, cz + j);
+					if (t == null || t.city() != city) continue;
+					double d = Math.hypot(t.cx() - x, t.cz() - z);
+					if (d < bd) {
+						bd = d;
+						best = t;
+					}
+				}
+			if (best != null && bd < r * Villages.CELL) return best;
 		}
 		return best;
 	}

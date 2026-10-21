@@ -240,8 +240,9 @@ for x in R(HX0 + 1, HX1 - 1):
         if (x, z) not in [(14, 4), (13, 5)]: S(x, 5, z, "spruce_slab[type=bottom]")
 S(HX0, 5, 4, "spruce_slab[type=bottom]")                         # threshold of the rear doorway
 S(15, 6, 5, "lever[face=floor,facing=east,powered=false]")      # throttle lever now on the floor slab
-for y in R(5, 8): S(10, y, 4, "andesite_wall")
-for y in R(5, 8): S(11, y, 4, "ladder[facing=east]")
+# just a ladder (no mast) on the left of the wider rear doorway, so the view aft stays free
+S(HX0, 5, 5, "spruce_slab[type=bottom]")                         # doorway now two wide
+for y in R(5, 8): S(11, y, 5, "ladder[facing=west]")
 
 # ---------------- looppad x=18 en ladders langs de romp ----------------
 for y in R(-2, 1):
@@ -343,7 +344,7 @@ out = {
         "aft": {"pos": [14.5, 5.45, 4.5], "yaw": 0},
         "bow": {"pos": [64.5, 3.0, 4.5], "yaw": 0}
     },
-    "lift": {"region": [11, 5, 1, 16, 12, 7], "max": 2.0, "column": [13, 3, 15, 5], "exclude": [[11, 4]]},
+    "lift": {"region": [11, 5, 1, 16, 12, 7], "max": 2.0, "column": [13, 3, 15, 5], "exclude": [[11, 5]]},
     "helmZones": {
         "aft": [14, 5, 3, 16, 6, 5],
         "bow": [64, 3, 3, 65, 4, 5]

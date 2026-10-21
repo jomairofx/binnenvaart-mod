@@ -106,29 +106,33 @@ final class SelfTest {
 			if (f != null) {
 				testRiver(w, f.river, f.great, 50, 13);
 				testRiver(w, f.great, f.river, 250, 21);
-				// harbour
-				Harbours.Site h = GreatRivers.nearestHarbour(f, 0, 0, 15);
-				check("haven gevonden", h != null, h == null ? "geen" : "op " + h.cx() + ", " + h.cz() + " aan een " + h.river());
-				if (h != null) {
+				// harbours: one of each size if we can find them
+				for (int size = 0; size <= 2; size++) {
+					Harbours.Site h = GreatRivers.findHarbour(f, 0, 0, 25, size);
+					String nm = new String[]{"kleine", "middelgrote", "grote"}[size];
+					check(nm + " haven gevonden", h != null, h == null ? "geen" : "op " + h.cx() + ", " + h.cz() + " aan een " + h.river() + ", lading " + h.goods());
+					if (h == null) continue;
 					int[] q = GreatRivers.quaySpot(h);
 					w.getChunk(q[0] >> 4, q[1] >> 4);
 					BlockState top = w.getBlockState(new BlockPos(q[0], Harbours.QUAY_Y, q[1]));
-					boolean free = w.getBlockState(new BlockPos(q[0], Harbours.QUAY_Y + 1, q[1])).isAir()
-							|| w.getBlockState(new BlockPos(q[0], Harbours.QUAY_Y + 1, q[1])).isOf(net.minecraft.block.Blocks.BARREL);
-					check("kade vlak en verhard", (top.isOf(net.minecraft.block.Blocks.SMOOTH_STONE) || top.isOf(net.minecraft.block.Blocks.POLISHED_ANDESITE)) && free,
+					check(nm + " haven: kade verhard", top.isOf(net.minecraft.block.Blocks.SMOOTH_STONE) || top.isOf(net.minecraft.block.Blocks.POLISHED_ANDESITE),
 							top.getBlock().getName().getString() + " op y " + Harbours.QUAY_Y + " bij " + q[0] + ", " + q[1]);
-					double bv = h.bank() + Harbours.B * 0.5;
-					int bx = (int) Math.round(h.cx() + h.gx() * bv), bz = (int) Math.round(h.cz() + h.gz() * bv);
+					double bv = h.bank() + h.B() * 0.5;
+					int bx = (int) Math.round(h.wx(0, bv)), bz = (int) Math.round(h.wz(0, bv));
 					int depth = 0;
 					for (int y = RiverField.WATER_TOP; y > 0 && water(w, bx, y, bz); y--) depth++;
-					check("havenbekken diep", depth >= 8, depth + " blokken water in het bekken bij " + bx + ", " + bz);
-					// a quay wall: walk from the basin towards the back quay and find the concrete face
-					boolean wallFound = false;
-					for (double vv = bv; vv < h.bank() + Harbours.B + 4 && !wallFound; vv += 0.5) {
-						int wx = (int) Math.floor(h.cx() + h.gx() * vv), wz = (int) Math.floor(h.cz() + h.gz() * vv);
-						wallFound = w.getBlockState(new BlockPos(wx, 60, wz)).isOf(net.minecraft.block.Blocks.GRAY_CONCRETE);
-					}
-					check("kademuur", wallFound, wallFound ? "betonnen kademuur gevonden" : "geen kademuur");
+					check(nm + " haven: bekken diep", depth >= 9, depth + " blokken water in het bekken bij " + bx + ", " + bz);
+					java.util.List<int[]> cranes = f.harbours.cranes(h);
+					int[] c = cranes.get(0);
+					w.getChunk(c[0] >> 4, c[1] >> 4);
+					var cb = w.getBlockState(new BlockPos(c[0], Harbours.QUAY_Y + 1, c[1]));
+					var be = w.getBlockEntity(new BlockPos(c[0], Harbours.QUAY_Y + 1, c[1]));
+					boolean full = be instanceof net.minecraft.inventory.Inventory inv && !inv.getStack(0).isEmpty() && !inv.getStack(inv.size() - 1).isEmpty();
+					check(nm + " haven: kranen", net.minecraft.registry.Registries.BLOCK.getId(cb.getBlock()).toString().equals("kempenaar:laadkraan") && full,
+							cranes.size() + " kranen, eerste: " + net.minecraft.registry.Registries.BLOCK.getId(cb.getBlock()) + (full ? ", vol met " + h.goods() : ", leeg"));
+					// the cranes stand 20 blocks back from the quay edge
+					double[] fr = Harbours.quayFrame(h, c[0] + 0.5, c[1] + 0.5);
+					check(nm + " haven: kraan op 20 van de rand", fr != null && Math.abs(fr[1] - Harbours.CRANE_BACK) < 1.5, fr == null ? "?" : String.format("%.1f blokken van de rand", fr[1]));
 				}
 				// Dutch landscape: flat polder with ditches
 				int[] pp = SelfTestSpots.polderSpot(f);

@@ -67,6 +67,12 @@ public final class ShipMesh {
 	 * aan de hand van de afstand tot de camera; {@code minLevelAll} dwingt een grover niveau af (schaduwen).
 	 */
 	public void render(MatrixStack matrices, VertexConsumerProvider consumers, @Nullable Frustum frustum, Vec3d shipPos, double yaw, Vec3d cam, int minLevelAll) {
+		render(matrices, consumers, frustum, shipPos, yaw, cam, minLevelAll, false);
+	}
+
+	/** {@code shadow}: shadow pass of the shaders. No back-face skipping there (the sun looks from another side)
+	 *  and full detail close to the camera, so the roof and walls throw clean shadows inside. */
+	public void render(MatrixStack matrices, VertexConsumerProvider consumers, @Nullable Frustum frustum, Vec3d shipPos, double yaw, Vec3d cam, int minLevelAll, boolean shadow) {
 		MatrixStack.Entry entry = matrices.peek();
 		Matrix4f m = entry.getPositionMatrix();
 		boolean[] visible = new boolean[sections];
@@ -90,7 +96,7 @@ public final class ShipMesh {
 			double dy = Math.max(0, Math.max(b.minY - cam.y, cam.y - b.maxY));
 			double dz = Math.max(0, Math.max(b.minZ - cam.z, cam.z - b.maxZ));
 			double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-			level[k] = Math.max(minLevelAll, d < NEAR ? 0 : d < MID ? 1 : 2);
+			level[k] = Math.max(shadow && d < 40 ? 0 : minLevelAll, d < NEAR ? 0 : d < MID ? 1 : 2);
 		}
 		// camera in sjablooncoördinaten, om afgewende vlakken over te slaan
 		double rx = cam.x - shipPos.x, rz = cam.z - shipPos.z;
@@ -111,7 +117,7 @@ public final class ShipMesh {
 					if (vc == null) vc = consumers.getBuffer(layers.get(l));
 					for (int q = 0; q < d.length; q += QUAD) {
 						// achterkant naar de camera: wordt toch niet getekend
-						if (d[q] * cx + d[q + 1] * cy + d[q + 2] * cz - d[q + 3] < -0.6f) continue;
+						if (!shadow && d[q] * cx + d[q + 1] * cy + d[q + 2] * cz - d[q + 3] < -0.6f) continue;
 						for (int i = q + 4, e = q + QUAD; i < e; i += STRIDE) {
 							float x = d[i], y = d[i + 1], z = d[i + 2];
 							vc.vertex(m00 * x + m10 * y + m20 * z + m30, m01 * x + m11 * y + m21 * z + m31, m02 * x + m12 * y + m22 * z + m32,

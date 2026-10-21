@@ -96,12 +96,12 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		Vec3d cam = this.dispatcher.camera.getPos();
 		Vec3d shipPos = ship.getLerpedPos(tickDelta);
 		boolean shadow = IrisCompat.isShadowPass();
-		mesh.render(matrices, consumers, lastFrustum, shipPos, y, cam, shadow ? 2 : 0);
+		mesh.render(matrices, consumers, lastFrustum, shipPos, y, cam, shadow ? 2 : 0, shadow);
 		if (meshes.length > 1) {
 			float lift = ship.liftLerp(tickDelta);
 			matrices.push();
 			matrices.translate(0, lift, 0);
-			meshes[1].render(matrices, consumers, lastFrustum, shipPos.add(0, lift, 0), y, cam, shadow ? 2 : 0);
+			meshes[1].render(matrices, consumers, lastFrustum, shipPos.add(0, lift, 0), y, cam, shadow ? 2 : 0, shadow);
 			matrices.pop();
 			if (lift > 0.01f) {
 				int[] r = ship.template.liftRegion, c = ship.template.liftColumn;

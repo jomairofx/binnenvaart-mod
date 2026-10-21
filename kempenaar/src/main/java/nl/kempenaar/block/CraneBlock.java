@@ -56,6 +56,32 @@ public class CraneBlock extends BlockWithEntity {
 		super.onPlaced(world, pos, state, placer, stack);
 		if (world.isClient) return;
 		placeStorage(world, pos);
+		// a new crane comes full with one kind of goods, ready to load a ship straight away
+		if (world.getBlockEntity(pos) instanceof CraneBlockEntity crane && crane.isEmpty())
+			fillWithGoods(crane, GOODS[world.random.nextInt(GOODS.length)], world.random);
+	}
+
+	/** Kinds of goods a crane can hold. Containers: mixed general cargo. */
+	public static final String[] GOODS = {"sand", "gravel", "coal", "grain", "iron_ore", "timber", "containers", "clay"};
+
+	public static void fillWithGoods(net.minecraft.inventory.Inventory inv, String kind, net.minecraft.util.math.random.Random r) {
+		net.minecraft.item.Item[] items = switch (kind) {
+			case "sand" -> new net.minecraft.item.Item[]{net.minecraft.item.Items.SAND};
+			case "gravel" -> new net.minecraft.item.Item[]{net.minecraft.item.Items.GRAVEL};
+			case "coal" -> new net.minecraft.item.Item[]{net.minecraft.item.Items.COAL};
+			case "grain" -> new net.minecraft.item.Item[]{net.minecraft.item.Items.WHEAT};
+			case "iron_ore" -> new net.minecraft.item.Item[]{net.minecraft.item.Items.RAW_IRON};
+			case "timber" -> new net.minecraft.item.Item[]{net.minecraft.item.Items.SPRUCE_LOG, net.minecraft.item.Items.OAK_LOG};
+			case "clay" -> new net.minecraft.item.Item[]{net.minecraft.item.Items.CLAY_BALL};
+			default -> new net.minecraft.item.Item[]{net.minecraft.item.Items.IRON_INGOT, net.minecraft.item.Items.BREAD, net.minecraft.item.Items.PAPER,
+					net.minecraft.item.Items.LEATHER, net.minecraft.item.Items.BOOK, net.minecraft.item.Items.COPPER_INGOT, net.minecraft.item.Items.WHITE_WOOL,
+					net.minecraft.item.Items.BRICK, net.minecraft.item.Items.GLASS_BOTTLE, net.minecraft.item.Items.STRING};
+		};
+		for (int i = 0; i < inv.size(); i++) {
+			net.minecraft.item.Item it = items[r.nextInt(items.length)];
+			inv.setStack(i, new net.minecraft.item.ItemStack(it, it.getMaxCount()));
+		}
+		inv.markDirty();
 	}
 
 	public static int placeStorage(World world, BlockPos pos) {

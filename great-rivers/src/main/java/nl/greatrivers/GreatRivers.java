@@ -104,25 +104,49 @@ public class GreatRivers implements ModInitializer {
 			src.sendFeedback(() -> Text.literal("Nearest " + kind.name() + " (about " + width + " blocks wide): ").append(coords)
 					.append(Text.literal(", " + dist + " blocks away")), false);
 		}
-		Harbours.Site h = nearestHarbour(field, x, z, 12);
-		if (h == null) src.sendFeedback(() -> Text.literal("No harbour found nearby.").formatted(Formatting.GRAY), false);
-		else {
+		for (int size = 0; size <= 2; size++) {
+		Harbours.Site h = findHarbour(field, x, z, 14, size);
+		if (h == null) continue;
+		{
 			int[] q = quaySpot(h);
 			int dist = (int) Math.round(Math.hypot(q[0] - x, q[1] - z));
 			String tp = "/tp @s " + q[0] + " " + (Harbours.QUAY_Y + 1) + " " + q[1];
 			Text coords = Text.literal("[" + q[0] + ", " + q[1] + "]").formatted(Formatting.AQUA, Formatting.UNDERLINE)
 					.styled(st -> st.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp))
 							.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to teleport"))));
-			src.sendFeedback(() -> Text.literal("Nearest harbour (on a " + h.river() + "): ").append(coords)
+			src.sendFeedback(() -> Text.literal("Nearest " + h.sizeName() + " harbour (" + h.goods().replace('_', ' ') + "): ").append(coords)
 					.append(Text.literal(", " + dist + " blocks away")), false);
+		}
 		}
 		return 1;
 	}
 
 	/** Middle of the quay behind the basin. */
 	public static int[] quaySpot(Harbours.Site h) {
-		double v = h.bank() + Harbours.B + 6;
-		return new int[]{(int) Math.round(h.cx() + h.gx() * v), (int) Math.round(h.cz() + h.gz() * v)};
+		double a = h.size() == Harbours.LARGE ? h.A() + 9 : 0, v = h.bank() + (h.size() == Harbours.LARGE ? h.B() * 0.5 : h.B() + 9);
+		return new int[]{(int) Math.floor(h.wx(a, v)), (int) Math.floor(h.wz(a, v))};
+	}
+
+	/** Nearest harbour of a given size (or any size with -1). */
+	public static Harbours.Site findHarbour(RiverField field, int x, int z, int cells, int size) {
+		int cx = Math.floorDiv(x, Harbours.CELL), cz = Math.floorDiv(z, Harbours.CELL);
+		Harbours.Site best = null;
+		double bd = Double.MAX_VALUE;
+		for (int r = 0; r <= cells; r++) {
+			for (int i = -r; i <= r; i++)
+				for (int j = -r; j <= r; j++) {
+					if (Math.max(Math.abs(i), Math.abs(j)) != r) continue;
+					Harbours.Site s = field.harbours.site(cx + i, cz + j);
+					if (s == null || (size >= 0 && s.size() != size)) continue;
+					double d = Math.hypot(s.cx() - x, s.cz() - z);
+					if (d < bd) {
+						bd = d;
+						best = s;
+					}
+				}
+			if (best != null && bd < r * Harbours.CELL) return best;
+		}
+		return best;
 	}
 
 	public static Harbours.Site nearestHarbour(RiverField field, int x, int z, int cells) {

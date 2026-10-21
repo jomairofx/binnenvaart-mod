@@ -20,7 +20,7 @@ public final class SelfTestSpots {
 	public static int[] canalSpot(RiverField f) {
 		int[] p = polderSpot(f);
 		if (p == null) return null;
-		for (int s = 0; s < 3600; s++)
+		for (int s = 0; s < 15000; s++)
 			for (int sg = -1; sg <= 1; sg += 2) {
 				int x = p[0] + sg * s, z = p[1];
 				if (f.low.canalDistance(x, z) < 0.6 && f.polder(x, z) > 0.97) return new int[]{x, z};

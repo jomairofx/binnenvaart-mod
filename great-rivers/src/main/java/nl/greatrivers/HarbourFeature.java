@@ -1,20 +1,33 @@
 package nl.greatrivers;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LadderBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.state.property.Properties;
+import net.minecraft.state.property.Property;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.Heightmap;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
 
+import java.util.List;
+
 /**
- * Dresses the harbour terrain (made level by {@link RiverCarve}) with concrete quay walls, paving,
- * bollards, ladders, lamp posts and a warehouse. Runs once per chunk, last of all features.
+ * Dresses the land after the terrain is made: harbours (quay walls, paving, cranes, goods, buildings),
+ * groynes and beaches along the rivers, dike roads, water in the ditches, windmills and farms.
+ * Runs once per chunk, last of all features.
  */
 public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 	private static final BlockState AIR = Blocks.AIR.getDefaultState();
@@ -22,15 +35,18 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 	private static final BlockState PAVING2 = Blocks.POLISHED_ANDESITE.getDefaultState();
 	private static final BlockState WALL = Blocks.GRAY_CONCRETE.getDefaultState();
 	private static final BlockState WALL_LOW = Blocks.CYAN_TERRACOTTA.getDefaultState();
-	private static final BlockState CAP = Blocks.SMOOTH_STONE_SLAB.getDefaultState();
 	private static final BlockState FILL = Blocks.STONE.getDefaultState();
-	private static final BlockState SHED = Blocks.LIGHT_GRAY_CONCRETE.getDefaultState();
-	private static final BlockState SHED_BAND = Blocks.WHITE_CONCRETE.getDefaultState();
-	private static final BlockState ROOF = Blocks.SMOOTH_STONE.getDefaultState();
 	private static final BlockState BOLLARD = Blocks.POLISHED_BLACKSTONE_WALL.getDefaultState();
 	private static final BlockState POST = Blocks.ANDESITE_WALL.getDefaultState();
 	private static final BlockState LAMP = Blocks.LANTERN.getDefaultState();
 	private static final int Q = Harbours.QUAY_Y;
+
+	private static final Block[][] CONTAINER = {
+			{Blocks.LIGHT_BLUE_CONCRETE, Blocks.LIGHT_BLUE_TERRACOTTA}, {Blocks.BLUE_CONCRETE, Blocks.BLUE_TERRACOTTA},
+			{Blocks.RED_CONCRETE, Blocks.RED_TERRACOTTA}, {Blocks.GREEN_CONCRETE, Blocks.GREEN_TERRACOTTA},
+			{Blocks.ORANGE_CONCRETE, Blocks.ORANGE_TERRACOTTA}, {Blocks.WHITE_CONCRETE, Blocks.WHITE_TERRACOTTA},
+			{Blocks.GRAY_CONCRETE, Blocks.GRAY_TERRACOTTA}, {Blocks.BROWN_CONCRETE, Blocks.BROWN_TERRACOTTA},
+			{Blocks.CYAN_CONCRETE, Blocks.CYAN_TERRACOTTA}, {Blocks.YELLOW_CONCRETE, Blocks.YELLOW_TERRACOTTA}};
 
 	public HarbourFeature() {
 		super(DefaultFeatureConfig.CODEC);
@@ -49,176 +65,313 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 			for (int dz = 0; dz < 16; dz++) {
 				int x = x0 + dx, z = z0 + dz;
 				Harbours.Site s = field.harbours.siteAt(x, z);
-				if (s != null && Harbours.kind(s, x, z) == Harbours.FLAT) {
-					any = true;
-					column(w, m, s, x, z);
-					continue;
+				if (s != null) {
+					int k = Harbours.kind(s, x + 0.5, z + 0.5);
+					if (k == Harbours.FLAT) {
+						any = true;
+						column(w, m, field, s, x, z);
+					}
+					if (k != Harbours.NO) continue;
 				}
-				if (s == null && field.polderWeight(x, z) > 0.8 && field.dikeRoad(x, z)) {
+				if (Countryside.riverBank(w, m, field, x, z)) any = true;
+				double p = field.polderWeight(x, z);
+				if (p > 0.8 && field.dikeRoad(x, z)) {
 					any = true;
-					dikeRoad(w, m, x, z);
+					Countryside.dikeRoad(w, m, x, z);
 				}
 				// ditches are too narrow for the aquifers to fill them: put the water in
-				if (s == null && field.polderWeight(x, z) > 0.5 && field.low.ditch(x, z)
-						&& field.dutchHeight(x, z) < RiverField.WATER_TOP) {
+				if (p > 0.5 && field.low.ditch(x, z) && field.dutchHeight(x, z) < RiverField.WATER_TOP) {
 					for (int y = RiverField.WATER_TOP - 1; y <= RiverField.WATER_TOP; y++)
 						if (w.getBlockState(m.set(x, y, z)).isAir()) set(w, m, x, y, z, Blocks.WATER.getDefaultState());
 				}
 			}
-		windmill(w, m, field, x0, z0);
+		Countryside.windmill(w, m, field, x0, z0);
+		Countryside.farm(w, m, field, x0, z0);
 		return any;
-	}
-
-	private static final BlockState ROAD = Blocks.GRAY_CONCRETE_POWDER.getDefaultState();
-
-	/** Asphalt road along the top of the dike. */
-	private static void dikeRoad(StructureWorldAccess w, BlockPos.Mutable m, int x, int z) {
-		int top = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z) - 1;
-		if (top < 66 || top > 72) return;
-		BlockState st = w.getBlockState(m.set(x, top, z));
-		if (!st.isOf(Blocks.GRASS_BLOCK) && !st.isOf(Blocks.DIRT) && !st.isOf(Blocks.SNOW_BLOCK) && !st.isOf(Blocks.STONE)) return;
-		set(w, m, x, top, z, ROAD);
-		for (int y = top + 1; y <= top + 2; y++) {
-			BlockState a = w.getBlockState(m.set(x, y, z));
-			if (!a.isAir() && (a.isReplaceable() || a.isOf(Blocks.SNOW))) set(w, m, x, y, z, AIR);
-		}
-	}
-
-	private static long mix(long h) {
-		h ^= h >>> 33;
-		h *= 0xff51afd7ed558ccdL;
-		h ^= h >>> 33;
-		h *= 0xc4ceb9fe1a85ec53L;
-		return h ^ (h >>> 33);
-	}
-
-	/** Now and then a Dutch windmill in the polder. */
-	private static void windmill(StructureWorldAccess w, BlockPos.Mutable m, RiverField field, int x0, int z0) {
-		int cell = 352;
-		int cx = Math.floorDiv(x0 + 8, cell), cz = Math.floorDiv(z0 + 8, cell);
-		long h = mix(w.getSeed() ^ mix(cx * 0x632BE59BD9B4E019L + cz * 31L));
-		if ((h & 3) == 0) return;   // three in four cells
-		int mx = cx * cell + 40 + (int) ((h >>> 8 & 0xffff) % (cell - 80));
-		int mz = cz * cell + 40 + (int) ((h >>> 24 & 0xffff) % (cell - 80));
-		if (mx < x0 || mx >= x0 + 16 || mz < z0 || mz >= z0 + 16) return;
-		mx = x0 + 8;
-		mz = z0 + 8;   // keep the whole mill inside the area this chunk may build in
-		if (field.polderWeight(mx, mz) < 0.95 || field.harbours.siteAt(mx, mz) != null) return;
-		for (int dx = -4; dx <= 4; dx += 4)
-			for (int dz = -4; dz <= 4; dz += 4) {
-				int t = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, mx + dx, mz + dz) - 1;
-				if (t != 64 || !w.getBlockState(m.set(mx + dx, t, mz + dz)).isOf(Blocks.GRASS_BLOCK)) return;
-			}
-		if (field.low.canalDistance(mx, mz) < 60) return;
-		BlockState brick = Blocks.BRICKS.getDefaultState(), wood = Blocks.DARK_OAK_PLANKS.getDefaultState();
-		BlockState cap = Blocks.DARK_OAK_PLANKS.getDefaultState(), white = Blocks.WHITE_WOOL.getDefaultState();
-		BlockState frame = Blocks.SPRUCE_FENCE.getDefaultState();
-		int base = 65;
-		for (int y = base; y <= base + 14; y++) {
-			double r = y < base + 3 ? 3.6 : (y < base + 9 ? 3.1 : (y < base + 13 ? 2.4 : 1.6));
-			for (int dx = -4; dx <= 4; dx++)
-				for (int dz = -4; dz <= 4; dz++) {
-					double d = Math.hypot(dx, dz);
-					if (d > r) continue;
-					boolean shell = d > r - 1.1;
-					BlockState st = !shell ? AIR : (y < base + 3 ? brick : (y >= base + 13 ? cap : wood));
-					if (y == base + 14) st = cap;
-					set(w, m, mx + dx, y, mz + dz, st);
-				}
-		}
-		// gallery (stelling) around the body
-		for (int dx = -4; dx <= 4; dx++)
-			for (int dz = -4; dz <= 4; dz++) {
-				double d = Math.hypot(dx, dz);
-				if (d > 3.2 && d <= 4.4) set(w, m, mx + dx, base + 4, mz + dz, Blocks.SPRUCE_SLAB.getDefaultState());
-			}
-		// door, a few windows, inside floors
-		for (int y = base; y <= base + 1; y++) set(w, m, mx - 3, y, mz, AIR);
-		set(w, m, mx - 3, base + 6, mz, AIR);
-		set(w, m, mx + 3, base + 6, mz, AIR);
-		for (int dx = -2; dx <= 2; dx++)
-			for (int dz = -2; dz <= 2; dz++) if (Math.hypot(dx, dz) <= 2.2) set(w, m, mx + dx, base + 5, mz + dz, Blocks.SPRUCE_PLANKS.getDefaultState());
-		set(w, m, mx + 1, base + 1, mz, Blocks.SPRUCE_LOG.getDefaultState());
-		set(w, m, mx + 1, base + 6, mz, Blocks.SPRUCE_LOG.getDefaultState());
-		// sails on the east side, a cross of four arms with white cloth
-		int hx = mx + 3, hy = base + 12;
-		set(w, m, hx, hy, mz, Blocks.SPRUCE_LOG.getDefaultState());
-		set(w, m, hx + 1, hy, mz, Blocks.SPRUCE_LOG.getDefaultState());
-		int ax = hx + 2;
-		for (int k = 1; k <= 10; k++) {
-			int[][] arms = {{0, k}, {0, -k}, {k, 0}, {-k, 0}};   // (dy, dz)
-			for (int[] a : arms) {
-				int yy = hy + a[0], zz = mz + a[1];
-				if (yy < base - 0) continue;
-				set(w, m, ax, yy, zz, frame);
-			}
-			if (k >= 3) {
-				if (hy + k > 0) set(w, m, ax, hy + k, mz + 1, white);
-				set(w, m, ax, hy - k, mz - 1, white);
-				set(w, m, ax, hy - 1, mz + k, white);
-				set(w, m, ax, hy + 1, mz - k, white);
-			}
-		}
 	}
 
 	private static void set(StructureWorldAccess w, BlockPos.Mutable m, int x, int y, int z, BlockState st) {
 		w.setBlockState(m.set(x, y, z), st, 2);
 	}
 
-	private void column(StructureWorldAccess w, BlockPos.Mutable m, Harbours.Site s, int x, int z) {
-		double a = s.a(x + 0.5, z + 0.5), v = s.v(x + 0.5, z + 0.5) - s.bank();
-		// clear everything above the quay (trees, grass, snow)
-		for (int y = Q + 1; y <= Q + 30; y++) if (!w.getBlockState(m.set(x, y, z)).isAir()) set(w, m, x, y, z, AIR);
-		// solid quay body
+	private static boolean natural(BlockState st) {
+		return st.isIn(BlockTags.LEAVES) || st.isIn(BlockTags.LOGS) || st.isReplaceable() || st.isOf(Blocks.GRASS_BLOCK)
+				|| st.isOf(Blocks.DIRT) || st.isOf(Blocks.STONE) || st.isOf(Blocks.COARSE_DIRT) || st.isOf(Blocks.SNOW_BLOCK)
+				|| st.isOf(Blocks.SAND) || st.isOf(Blocks.GRAVEL) || st.isOf(Blocks.CLAY) || st.isOf(Blocks.MUD) || st.isOf(Blocks.MOSS_BLOCK)
+				|| st.isOf(Blocks.BROWN_MUSHROOM_BLOCK) || st.isOf(Blocks.RED_MUSHROOM_BLOCK) || st.isOf(Blocks.MUSHROOM_STEM)
+				|| st.isOf(Blocks.PUMPKIN) || st.isOf(Blocks.MELON) || st.isOf(Blocks.BEE_NEST) || st.isOf(Blocks.ANDESITE)
+				|| st.isOf(Blocks.DIORITE) || st.isOf(Blocks.GRANITE) || st.isOf(Blocks.TUFF) || st.isOf(Blocks.CALCITE);
+	}
+
+	private static long hash(long a, long b, long c) {
+		return Harbours.mix(a * 0x9E3779B97F4A7C15L + b * 0x632BE59BD9B4E019L + c * 0x2545F4914F6CDD1DL);
+	}
+
+	private void column(StructureWorldAccess w, BlockPos.Mutable m, RiverField field, Harbours.Site s, int x, int z) {
+		double cxp = x + 0.5, czp = z + 0.5;
+		// clear the natural things above the quay (trees, grass, snow), keep what other columns of the harbour placed
+		for (int y = Q + 1; y <= Q + 40; y++) {
+			BlockState st = w.getBlockState(m.set(x, y, z));
+			if (!st.isAir() && natural(st)) set(w, m, x, y, z, AIR);
+		}
 		for (int y = Harbours.BASIN_FLOOR + 1; y < Q; y++) {
 			BlockState st = w.getBlockState(m.set(x, y, z));
 			if (st.isAir() || !st.getFluidState().isEmpty() || !st.isOpaqueFullCube(w, m)) set(w, m, x, y, z, FILL);
 		}
-		// which side touches the water?
+		// the quay wall where it touches the water
 		Direction waterSide = null;
 		for (Direction d : Direction.Type.HORIZONTAL) {
-			if (Harbours.kind(s, x + d.getOffsetX() + 0.5, z + d.getOffsetZ() + 0.5) == Harbours.WATER) {
+			if (Harbours.kind(s, cxp + d.getOffsetX(), czp + d.getOffsetZ()) == Harbours.WATER) {
 				waterSide = d;
 				break;
 			}
 		}
+		double a = s.a(cxp, czp), v = s.v(cxp, czp) - s.bank();
 		if (waterSide != null) {
-			// concrete quay wall with a dark lower band, smooth cap stone on top
 			for (int y = Harbours.BASIN_FLOOR + 1; y <= Q - 1; y++) set(w, m, x, y, z, y < 59 ? WALL_LOW : WALL);
 			set(w, m, x, Q, z, PAVING2);
 			int idx = Math.floorMod((int) Math.round(a + v), 24);
-			int wx = x + waterSide.getOffsetX(), wz = z + waterSide.getOffsetZ();
-			if (idx % 8 == 0) set(w, m, x, Q + 1, z, BOLLARD);                              // bollards
-			else if (idx == 4) {                                                            // ladder down the quay wall
+			if (idx % 8 == 0) set(w, m, x, Q + 1, z, BOLLARD);
+			else if (idx == 4) {
+				int wx = x + waterSide.getOffsetX(), wz = z + waterSide.getOffsetZ();
 				BlockState lad = Blocks.LADDER.getDefaultState().with(LadderBlock.FACING, waterSide);
-				for (int y = Harbours.BASIN_FLOOR + 3; y <= Q; y++) {
-					boolean wet = y <= RiverField.WATER_TOP;
-					set(w, m, wx, y, wz, lad.with(Properties.WATERLOGGED, wet));
-				}
+				for (int y = Harbours.BASIN_FLOOR + 3; y <= Q; y++)
+					set(w, m, wx, y, wz, lad.with(Properties.WATERLOGGED, y <= RiverField.WATER_TOP));
 			}
 			return;
 		}
-		boolean shed = Harbours.inShed(s, x + 0.5, z + 0.5);
-		set(w, m, x, Q, z, (Math.floorMod((int) Math.floor(v), 7) == 0) ? PAVING2 : PAVING);
-		if (shed) {
-			boolean edge = !Harbours.inShed(s, x + 1.5, z + 0.5) || !Harbours.inShed(s, x - 0.5, z + 0.5)
-					|| !Harbours.inShed(s, x + 0.5, z + 1.5) || !Harbours.inShed(s, x + 0.5, z - 0.5);
-			boolean door = Math.abs(a) < 4.5 && v < Harbours.B + 17;
-			if (edge) {
-				for (int y = Q + 1; y <= Q + 7; y++) {
-					if (door && y <= Q + 4) continue;
-					set(w, m, x, y, z, y == Q + 6 ? SHED_BAND : SHED);
-				}
+		set(w, m, x, Q, z, (Math.floorMod((int) Math.floor(v), 8) == 0 || Math.floorMod((int) Math.floor(a), 8) == 0) ? PAVING2 : PAVING);
+		// cranes and their four storage bins
+		for (int[] c : field.harbours.cranes(s)) {
+			int dx = x - c[0], dz = z - c[1];
+			if (dx == 0 && dz == 0) {
+				crane(w, m, s, x, z, c[2]);
+				return;
 			}
-			set(w, m, x, Q + 8, z, ROOF);
-			if (!edge && Math.floorMod(x * 7 + z * 3, 23) == 0) set(w, m, x, Q + 1, z, Blocks.BARREL.getDefaultState());
-			if (!edge && Math.floorMod(x + z * 5, 31) == 0) set(w, m, x, Q + 7, z, Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
+			if ((Math.abs(dx) == 2 && dz == 0) || (dx == 0 && Math.abs(dz) == 2)) {
+				bin(w, m, x, z, dz == -2 ? 1 : dx == 2 ? 2 : dz == 2 ? 3 : 4);
+				return;
+			}
+		}
+		if (Harbours.inBuilding(s, cxp, czp)) {
+			building(w, m, s, x, z);
 			return;
 		}
-		// lamp posts in a row behind the quay edge
-		if (Math.abs(v - (Harbours.B + 7)) < 0.5 && Math.floorMod((int) Math.round(a), 18) == 0) {
+		double[] f = Harbours.quayFrame(s, cxp, czp);
+		if (f != null) {
+			double sAlong = f[0], e = f[1];
+			// light masts behind the crane track
+			if (Math.abs(e - (Harbours.YARD_FROM - 2.5)) < 0.5 && Math.floorMod((int) Math.floor(sAlong) + 7, 40) == 0) {
+				for (int y = Q + 1; y <= Q + 11; y++) set(w, m, x, y, z, POST);
+				set(w, m, x, Q + 12, z, Blocks.SEA_LANTERN.getDefaultState());
+				return;
+			}
+			double yardEnd = s.Q() - 8;
+			if (e >= Harbours.YARD_FROM && e < yardEnd) {
+				goods(w, m, s, x, z, sAlong, e - Harbours.YARD_FROM, yardEnd - Harbours.YARD_FROM);
+				return;
+			}
+			// security fence at the back of the yard
+			if (Math.abs(e - (s.Q() - 3.5)) < 0.5) {
+				set(w, m, x, Q + 1, z, Blocks.IRON_BARS.getDefaultState());
+				set(w, m, x, Q + 2, z, Blocks.IRON_BARS.getDefaultState());
+				return;
+			}
+		}
+		// lamp posts on the rest of the quay
+		if (Math.floorMod((int) Math.floor(a) + 3, 30) == 0 && Math.floorMod((int) Math.floor(v) + 3, 30) == 0) {
 			for (int y = Q + 1; y <= Q + 4; y++) set(w, m, x, y, z, POST);
 			set(w, m, x, Q + 5, z, LAMP);
+		}
+	}
+
+	// ------------------------------------------------------------------ cranes (from the Kempenaar mod, if it is installed)
+
+	private static Block block(String id) {
+		Identifier i = Identifier.of(id);
+		return Registries.BLOCK.containsId(i) ? Registries.BLOCK.get(i) : null;
+	}
+
+	private static Direction cardinal(double x, double z) {
+		return Math.abs(x) > Math.abs(z) ? (x > 0 ? Direction.EAST : Direction.WEST) : (z > 0 ? Direction.SOUTH : Direction.NORTH);
+	}
+
+	private void crane(StructureWorldAccess w, BlockPos.Mutable m, Harbours.Site s, int x, int z, int side) {
+		Block crane = block("kempenaar:laadkraan");
+		if (crane == null) return;
+		// facing the water
+		Direction face = s.size() == Harbours.LARGE ? cardinal(-side * s.tx(), -side * s.tz()) : cardinal(-s.gx(), -s.gz());
+		BlockState st = crane.getDefaultState();
+		Property<?> p = crane.getStateManager().getProperty("facing");
+		if (p != null && p.getValues().contains(face)) st = with(st, p, face);
+		set(w, m, x, Q, z, PAVING2);
+		set(w, m, x, Q + 1, z, st);
+		BlockEntity be = w.getBlockEntity(m.set(x, Q + 1, z));
+		if (be instanceof Inventory inv) {
+			fill(inv, s.goods(), hash(x, z, 7));
+			// ready to work: switched on, loading
+			NbtCompound nbt = be.createNbt(w.getRegistryManager());
+			nbt.putBoolean("Enabled", true);
+			nbt.putBoolean("Unloading", false);
+			be.read(nbt, w.getRegistryManager());
+			be.markDirty();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T extends Comparable<T>> BlockState with(BlockState st, Property<?> p, Object v) {
+		return st.with((Property<T>) p, (T) v);
+	}
+
+	private void bin(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int n) {
+		Block bin = block("kempenaar:kraanopslag");
+		if (bin == null) return;
+		BlockState st = bin.getDefaultState();
+		Property<?> p = bin.getStateManager().getProperty("bin");
+		if (p != null && p.getValues().contains(n)) st = with(st, p, n);
+		set(w, m, x, Q + 1, z, st);
+	}
+
+	/** The goods of this harbour, as the crane loads them. */
+	static void fill(Inventory inv, String kind, long h) {
+		Item[] items = switch (kind) {
+			case "sand" -> new Item[]{Items.SAND};
+			case "gravel" -> new Item[]{Items.GRAVEL};
+			case "coal" -> new Item[]{Items.COAL};
+			case "grain" -> new Item[]{Items.WHEAT};
+			case "iron_ore" -> new Item[]{Items.RAW_IRON};
+			case "timber" -> new Item[]{Items.SPRUCE_LOG, Items.OAK_LOG};
+			case "clay" -> new Item[]{Items.CLAY_BALL};
+			default -> new Item[]{Items.IRON_INGOT, Items.BREAD, Items.PAPER, Items.LEATHER, Items.BOOK, Items.COPPER_INGOT,
+					Items.WHITE_WOOL, Items.BRICK, Items.GLASS_BOTTLE, Items.STRING};
+		};
+		for (int i = 0; i < inv.size(); i++) {
+			Item it = items[(int) Math.floorMod(Harbours.mix(h + i), (long) items.length)];
+			inv.setStack(i, new ItemStack(it, it.getMaxCount()));
+		}
+	}
+
+	// ------------------------------------------------------------------ the goods yard
+
+	private void goods(StructureWorldAccess w, BlockPos.Mutable m, Harbours.Site s, int x, int z, double sAlong, double e, double depth) {
+		switch (s.goods()) {
+			case "containers" -> containers(w, m, s, x, z, sAlong, e, depth);
+			case "grain" -> silos(w, m, s, x, z, sAlong, e, depth);
+			case "timber" -> timber(w, m, s, x, z, sAlong, e);
+			default -> pile(w, m, s, x, z, sAlong, e, depth);
+		}
+	}
+
+	/** Stacks of 20 ft and 40 ft containers in rows, with lanes for the straddle carriers. */
+	private void containers(StructureWorldAccess w, BlockPos.Mutable m, Harbours.Site s, int x, int z, double sAlong, double e, double depth) {
+		int ei = (int) Math.floor(e), row = ei / 4, across = ei % 4;
+		if (across == 3 || ei >= (int) (depth / 4) * 4) return;          // aisle between the rows
+		long rowKind = hash(row, 11, s.cx());
+		int len = (rowKind & 1) == 0 ? 12 : 6;                           // 40 ft or 20 ft rows
+		int si = (int) Math.floor(sAlong + 1000);
+		int pitch = len + 1, slot = si / pitch, along = si % pitch;
+		if (along == len || slot % 7 == 6) return;                       // gap between containers, cross lane
+		long hh = hash(row, slot, s.cz());
+		int levels = 1 + (int) ((hh >>> 3) % 4);
+		for (int k = 0; k < levels; k++) {
+			Block[] c = CONTAINER[(int) ((hash(row, slot, k) >>> 5) % CONTAINER.length)];
+			for (int dy = 0; dy < 3; dy++) {
+				int y = Q + 1 + k * 3 + dy;
+				boolean end = along == 0 || along == len - 1;
+				boolean rib = (across == 0 || across == 2) && dy < 2 && along % 2 == 1;
+				Block b = end || rib ? c[1] : c[0];
+				if (dy == 2) b = c[0];
+				set(w, m, x, y, z, b.getDefaultState());
+			}
+		}
+	}
+
+	/** A heap of bulk goods in bays separated by concrete block walls. */
+	private void pile(StructureWorldAccess w, BlockPos.Mutable m, Harbours.Site s, int x, int z, double sAlong, double e, double depth) {
+		BlockState mat = switch (s.goods()) {
+			case "sand" -> Blocks.SAND.getDefaultState();
+			case "gravel" -> Blocks.GRAVEL.getDefaultState();
+			case "coal" -> Blocks.COAL_BLOCK.getDefaultState();
+			case "iron_ore" -> Blocks.RAW_IRON_BLOCK.getDefaultState();
+			default -> Blocks.CLAY.getDefaultState();
+		};
+		double bay = 30, si = sAlong + 1000;
+		double ph = si - Math.floor(si / bay) * bay;
+		if (ph < 2) {                                                    // concrete block wall between the bays
+			for (int y = Q + 1; y <= Q + 4; y++) set(w, m, x, y, z, Blocks.SMOOTH_STONE.getDefaultState());
+			return;
+		}
+		double ds = (ph - 16) / 13.5, de = (e - depth / 2) / (depth / 2 + 0.5);
+		double d = Math.sqrt(ds * ds + de * de);
+		if (d >= 1) return;
+		long hh = hash((long) Math.floor(si / bay), 3, s.cx());
+		double peak = 7 + (hh & 3);
+		int top = (int) Math.round(peak * (1 - Math.pow(d, 1.3)) + 0.3);
+		for (int y = Q + 1; y <= Q + top; y++) set(w, m, x, y, z, mat);
+	}
+
+	/** Grain silos in two rows with a conveyor gallery on top. */
+	private void silos(StructureWorldAccess w, BlockPos.Mutable m, Harbours.Site s, int x, int z, double sAlong, double e, double depth) {
+		double pitch = 11, si = sAlong + 1000;
+		double ph = si - Math.floor(si / pitch) * pitch - pitch / 2;
+		int rows = depth >= 24 ? 2 : 1;
+		for (int r = 0; r < rows; r++) {
+			double ec = 6 + r * 11;
+			double d = Math.hypot(ph, e - ec);
+			int height = 22;
+			if (d <= 4.6) {
+				boolean wall = d > 3.4;
+				for (int y = Q + 1; y <= Q + height; y++) if (wall) set(w, m, x, y, z, Blocks.WHITE_CONCRETE.getDefaultState());
+				set(w, m, x, Q + height + 1, z, Blocks.LIGHT_GRAY_CONCRETE.getDefaultState());
+				if (d < 2) set(w, m, x, Q + height + 2, z, Blocks.LIGHT_GRAY_CONCRETE.getDefaultState());
+				return;
+			}
+			if (Math.abs(e - ec) < 1 && d > 4.6) {                     // gallery between the silos
+				set(w, m, x, Q + height + 2, z, Blocks.IRON_BLOCK.getDefaultState());
+				set(w, m, x, Q + height + 3, z, Blocks.IRON_BARS.getDefaultState());
+				return;
+			}
+		}
+	}
+
+	/** Stacks of logs, five deep and ten long, three high. */
+	private void timber(StructureWorldAccess w, BlockPos.Mutable m, Harbours.Site s, int x, int z, double sAlong, double e) {
+		int ei = (int) Math.floor(e), si = (int) Math.floor(sAlong + 1000);
+		if (ei % 7 >= 5 || si % 12 >= 10) return;
+		// logs lie along the quay
+		double ax = s.size() == Harbours.LARGE ? s.gx() : s.tx(), az = s.size() == Harbours.LARGE ? s.gz() : s.tz();
+		Direction.Axis axis = Math.abs(ax) > Math.abs(az) ? Direction.Axis.X : Direction.Axis.Z;
+		long hh = hash(ei / 7, si / 12, s.cz());
+		int levels = 2 + (int) (hh & 1);
+		BlockState log = ((hh >>> 4) & 1) == 0 ? Blocks.SPRUCE_LOG.getDefaultState() : Blocks.OAK_LOG.getDefaultState();
+		for (int y = Q + 1; y <= Q + levels; y++) set(w, m, x, y, z, log.with(Properties.AXIS, axis));
+	}
+
+	// ------------------------------------------------------------------ buildings
+
+	/** Warehouse with a white band, roller doors on the quay side, flat roof. */
+	private void building(StructureWorldAccess w, BlockPos.Mutable m, Harbours.Site s, int x, int z) {
+		double cx = x + 0.5, cz = z + 0.5;
+		boolean edge = !Harbours.inBuilding(s, cx + 1, cz) || !Harbours.inBuilding(s, cx - 1, cz)
+				|| !Harbours.inBuilding(s, cx, cz + 1) || !Harbours.inBuilding(s, cx, cz - 1);
+		int top = Q + 9;
+		if (edge) {
+			double a = s.a(cx, cz);
+			boolean door = Math.floorMod((int) Math.floor(a) + 2, 9) < 4;
+			for (int y = Q + 1; y < top; y++) {
+				BlockState st = y == Q + 7 ? Blocks.WHITE_CONCRETE.getDefaultState() : Blocks.LIGHT_GRAY_CONCRETE.getDefaultState();
+				if (door && y <= Q + 4) st = Blocks.GRAY_CONCRETE.getDefaultState();
+				if (y == Q + 6 && !door) st = Blocks.LIGHT_GRAY_STAINED_GLASS.getDefaultState();
+				set(w, m, x, y, z, st);
+			}
+			set(w, m, x, top, z, Blocks.GRAY_CONCRETE.getDefaultState());
+			set(w, m, x, top + 1, z, Blocks.SMOOTH_STONE_SLAB.getDefaultState());
+		} else {
+			set(w, m, x, top, z, Blocks.GRAY_CONCRETE.getDefaultState());
+			long hh = hash(x, z, 1);
+			if ((hh & 31) == 0) set(w, m, x, Q + 1, z, Blocks.BARREL.getDefaultState());
+			else if ((hh & 31) == 1) set(w, m, x, Q + 1, z, Blocks.HAY_BLOCK.getDefaultState());
+			if ((hh >>> 8 & 63) == 0) set(w, m, x, top - 1, z, Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
 		}
 	}
 }

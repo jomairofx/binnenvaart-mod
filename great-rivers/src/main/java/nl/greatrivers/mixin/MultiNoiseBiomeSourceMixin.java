@@ -22,32 +22,57 @@ public abstract class MultiNoiseBiomeSourceMixin {
 	@Unique
 	private boolean greatrivers$looked;
 	@Unique
-	private RegistryEntry<Biome> greatrivers$plains, greatrivers$snowyPlains;
+	private RegistryEntry<Biome> greatrivers$plains, greatrivers$forest, greatrivers$birch, greatrivers$beach,
+			greatrivers$ocean, greatrivers$deepOcean, greatrivers$coldOcean, greatrivers$deepColdOcean;
 
+	/** Only grassland and woods on the land, and no ice anywhere: you can sail everywhere, like in the Netherlands. */
 	@Inject(method = "getBiome", at = @At("RETURN"), cancellable = true)
 	private void greatrivers$river(int x, int y, int z, MultiNoiseUtil.MultiNoiseSampler noise, CallbackInfoReturnable<RegistryEntry<Biome>> cir) {
 		RiverField field = RiverField.current;
-		if (field == null || y < 10) return;
+		if (field == null || y < 10) return;     // caves keep their own biomes
 		if (!greatrivers$looked) {
 			greatrivers$looked = true;
 			for (RegistryEntry<Biome> e : ((BiomeSource) (Object) this).getBiomes()) {
 				if (e.matchesKey(BiomeKeys.RIVER)) greatrivers$river = e;
 				if (e.matchesKey(BiomeKeys.PLAINS)) greatrivers$plains = e;
-				if (e.matchesKey(BiomeKeys.SNOWY_PLAINS)) greatrivers$snowyPlains = e;
+				if (e.matchesKey(BiomeKeys.FOREST)) greatrivers$forest = e;
+				if (e.matchesKey(BiomeKeys.BIRCH_FOREST)) greatrivers$birch = e;
+				if (e.matchesKey(BiomeKeys.BEACH)) greatrivers$beach = e;
+				if (e.matchesKey(BiomeKeys.OCEAN)) greatrivers$ocean = e;
+				if (e.matchesKey(BiomeKeys.DEEP_OCEAN)) greatrivers$deepOcean = e;
+				if (e.matchesKey(BiomeKeys.COLD_OCEAN)) greatrivers$coldOcean = e;
+				if (e.matchesKey(BiomeKeys.DEEP_COLD_OCEAN)) greatrivers$deepColdOcean = e;
 			}
 		}
-		if (greatrivers$river == null) return;   // not an overworld-like biome source
+		if (greatrivers$river == null || greatrivers$plains == null) return;   // not an overworld-like biome source
 		RegistryEntry<Biome> b = cir.getReturnValue();
-		if (b.isIn(BiomeTags.IS_OCEAN) || b.isIn(BiomeTags.IS_RIVER)) return;
+		// seas without ice
+		if (b.matchesKey(BiomeKeys.FROZEN_OCEAN)) {
+			if (greatrivers$coldOcean != null) cir.setReturnValue(greatrivers$coldOcean);
+			return;
+		}
+		if (b.matchesKey(BiomeKeys.DEEP_FROZEN_OCEAN)) {
+			if (greatrivers$deepColdOcean != null) cir.setReturnValue(greatrivers$deepColdOcean);
+			return;
+		}
+		if (b.isIn(BiomeTags.IS_OCEAN)) return;
+		if (b.matchesKey(BiomeKeys.FROZEN_RIVER)) {
+			cir.setReturnValue(greatrivers$river);
+			return;
+		}
+		if (b.isIn(BiomeTags.IS_RIVER)) return;
+		if (b.isIn(BiomeTags.IS_BEACH)) {
+			if (greatrivers$beach != null && !b.matchesKey(BiomeKeys.STONY_SHORE)) cir.setReturnValue(greatrivers$beach);
+			return;
+		}
 		int bx = (x << 2) + 2, bz = (z << 2) + 2;
 		if (y <= 20 && field.inChannel(bx, bz)) {
 			cir.setReturnValue(greatrivers$river);
 			return;
 		}
-		// the polders are meadows (plains), snowy where it is cold; up to the sky so the whole column agrees
-		if (y <= 40 && greatrivers$plains != null && field.polder(bx, bz) > 0.6) {
-			boolean cold = b.value().getTemperature() < 0.15f;
-			cir.setReturnValue(cold && greatrivers$snowyPlains != null ? greatrivers$snowyPlains : greatrivers$plains);
-		}
+		int wood = field.low.wood(bx, bz, field.polder(bx, bz));
+		RegistryEntry<Biome> land = wood == 2 && greatrivers$birch != null ? greatrivers$birch
+				: wood >= 1 && greatrivers$forest != null ? greatrivers$forest : greatrivers$plains;
+		cir.setReturnValue(land);
 	}
 }

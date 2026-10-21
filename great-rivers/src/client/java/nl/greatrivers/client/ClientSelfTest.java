@@ -70,14 +70,16 @@ public final class ClientSelfTest {
 			} else {
 				plan(f.river, f.great, "maas", 40, 85);
 				plan(f.great, f.river, "grote_rivier", 90, 110);
-				nl.greatrivers.Harbours.Site h = GreatRivers.nearestHarbour(f, 0, 0, 15);
-				if (h != null) {
-					double bk = h.bank();
-					double cx = h.cx() + h.gx() * (bk + 20), cz = h.cz() + h.gz() * (bk + 20);
-					add("haven_vanaf_het_water", h.cx() + h.gx() * (bk - 40) + h.tx() * 50, 68, h.cz() + h.gz() * (bk - 40) + h.tz() * 50, cx, 63, cz);
-					add("haven_op_de_kade", h.cx() + h.gx() * (bk + 40) - h.tx() * 70, 66.6, h.cz() + h.gz() * (bk + 40) - h.tz() * 70, cx + h.tx() * 30, 64, cz + h.tz() * 30);
-					add("haven_bovenaanzicht", cx - h.gx() * 60, 140, cz - h.gz() * 60, cx, 63, cz);
-				} else log.add("FAIL geen haven");
+				for (int size = 0; size <= 2; size++) {
+					nl.greatrivers.Harbours.Site h = GreatRivers.findHarbour(f, 0, 0, 25, size);
+					if (h == null) continue;
+					String tag = "haven_" + h.sizeName() + "_" + h.goods();
+					int[] q = GreatRivers.quaySpot(h);
+					double big = h.size() == 2 ? 2.2 : h.size() == 1 ? 1.5 : 1.0;
+					double mx = h.wx(0, h.bank() + (h.size() == 2 ? h.B() * 0.5 : h.B())), mz = h.wz(0, h.bank() + (h.size() == 2 ? h.B() * 0.5 : h.B()));
+					add(tag + "_bovenaanzicht", mx - h.gx() * 90 * big, 120 + 40 * big, mz - h.gz() * 90 * big, mx + h.gx() * 20, 64, mz + h.gz() * 20);
+					add(tag + "_op_de_kade", q[0] - h.tx() * 40, 67, q[1] - h.tz() * 40, q[0] + h.tx() * 30 + h.gx() * 10, 66, q[1] + h.tz() * 30 + h.gz() * 10);
+				}
 				int[] pp = nl.greatrivers.SelfTestSpots.polderSpot(f);
 				if (pp != null) add("polder_met_sloten", pp[0] - 60, 95, pp[1] - 60, pp[0] + 20, 64, pp[1] + 20);
 				int[] cs = nl.greatrivers.SelfTestSpots.canalSpot(f);

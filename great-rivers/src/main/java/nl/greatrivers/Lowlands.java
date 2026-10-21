@@ -13,11 +13,11 @@ import net.minecraft.util.math.random.Random;
 public final class Lowlands {
 	public static final double POLDER = 64.3;      // top block of the polder land: y 64
 	public static final double DIKE_TOP = 69.3;    // top of the dikes: y 69
-	public static final int CANAL_X = 2700, CANAL_Z = 3500;
+	public static final int CANAL_X = 11000, CANAL_Z = 14000;
 	public static final double CANAL_HALF = 17, CANAL_DEPTH = 9;
 	public static final int DITCH_A = 46, DITCH_B = 230;
 
-	private final SimplexNoiseSampler p1, p2;
+	private final SimplexNoiseSampler p1, p2, wood1, wood2;
 	private final double ox, oz;
 	private final int cx0, cz0, dx0, dz0;
 	private final boolean ditchAlongX;
@@ -25,6 +25,8 @@ public final class Lowlands {
 	Lowlands(Random r) {
 		p1 = new SimplexNoiseSampler(r);
 		p2 = new SimplexNoiseSampler(r);
+		wood1 = new SimplexNoiseSampler(r);
+		wood2 = new SimplexNoiseSampler(r);
 		ox = (r.nextDouble() - 0.5) * 400000;
 		oz = (r.nextDouble() - 0.5) * 400000;
 		cx0 = r.nextInt(CANAL_X);
@@ -34,11 +36,19 @@ public final class Lowlands {
 		ditchAlongX = r.nextBoolean();
 	}
 
+	/** Woods: 0 = open grassland, 1 = oak forest, 2 = birch forest. Mostly open meadows, now and then a wood. */
+	public int wood(double x, double z, double polder) {
+		double n = 0.75 * wood1.sample((x + ox) / 900, (z + oz) / 900) + 0.25 * wood1.sample((x + ox) / 260, (z + oz) / 260);
+		double limit = 0.38 + 0.25 * polder;   // fewer woods in the polders
+		if (n < limit) return 0;
+		return wood2.sample((x + ox) / 700, (z + oz) / 700) > 0.35 ? 2 : 1;
+	}
+
 	/** 0 = natural hills, 1 = flat polder land. */
 	public double polder(double x, double z, double continentalness) {
 		if (continentalness < -0.11) return 0;
 		double n = 0.7 * p1.sample((x + ox) / 5200, (z + oz) / 5200) + 0.3 * p2.sample((x + ox) / 1500, (z + oz) / 1500);
-		double f = clamp((n + 0.12) / 0.3);
+		double f = clamp((n + 0.22) / 0.3);
 		f *= clamp((continentalness + 0.11) / 0.07);   // gentle towards the coast and the beaches
 		return f * f * (3 - 2 * f);
 	}

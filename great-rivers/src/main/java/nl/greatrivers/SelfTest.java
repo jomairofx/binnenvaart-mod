@@ -75,6 +75,14 @@ final class SelfTest {
 			}
 		}
 		double expect = kind.halfWidth(x, z) * 2;
+		RiverField rf = RiverField.current;
+		for (int s2 = -320; s2 <= 320; s2 += 20) {
+			int px = (int) Math.round(x + s2 * gx), pz = (int) Math.round(z + s2 * gz);
+			w.getChunk(px >> 4, pz >> 4);
+			log.add(String.format("  dwars %4d: afstand %.0f halfbreedte %.0f hoogte %.1f kust %.3f grond %d biome %s", s2, kind.distance(px, pz), kind.halfWidth(px, pz),
+					rf.dutchHeight(px, pz), rf.coastal(px, pz), w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, px, pz) - 1,
+					w.getBiome(new BlockPos(px, 62, pz)).getKey().map(k -> k.getValue().getPath()).orElse("?")));
+		}
 		check(kind.name() + " breedte klopt", width >= minWidth && width >= expect * 0.75 && (sea || width <= expect * 1.6 + 20),
 				width + " blokken water dwars over de rivier (ontwerp " + Math.round(expect) + ")");
 		// the bank: dry flood plain just above the water

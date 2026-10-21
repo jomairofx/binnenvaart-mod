@@ -158,6 +158,22 @@ final class SelfTest {
 						if (water(w, px, RiverField.WATER_TOP, pz)) wet++;
 					}
 					check("sloten met water", ditches > 0 && wet >= ditches * 0.7, wet + " van " + ditches + " slootvakjes met water");
+					// over a whole area, both directions of ditches
+					int all = 0, allWet = 0;
+					String dry = "";
+					for (int px = pp[0] - 100; px < pp[0] + 100; px++)
+						for (int pz = pp[1] - 100; pz < pp[1] + 100; pz += 3) {
+							if (!f.low.ditch(px, pz) || f.dutchHeight(px, pz) >= RiverField.WATER_TOP) continue;
+							all++;
+							w.getChunk(px >> 4, pz >> 4);
+							if (water(w, px, RiverField.WATER_TOP, pz)) allWet++;
+							else if (dry.isEmpty()) {
+								StringBuilder col = new StringBuilder();
+								for (int y = 58; y <= 65; y++) col.append(y).append('=').append(w.getBlockState(new BlockPos(px, y, pz)).getBlock().getName().getString()).append(' ');
+								dry = " droog bijv. " + px + "," + pz + " t=" + String.format("%.2f", f.dutchHeight(px, pz)) + " : " + col;
+							}
+						}
+					check("alle sloten met water", all > 0 && allWet >= all * 0.95, allWet + " van " + all + " slootvakjes in 200x200" + dry);
 				}
 				int[] cs = SelfTestSpots.canalSpot(f);
 				log.add(cs == null ? "  (geen kanaal in de buurt: kanalen zijn zeldzaam)" : "  kanaal op " + cs[0] + ", " + cs[1]);

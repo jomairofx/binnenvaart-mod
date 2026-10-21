@@ -359,6 +359,26 @@ public final class ClientSelfTest {
 		if (t == jump + 285) tp(srv, ship, new double[]{8.5, 6.4, 1.5}, new double[]{14.0, 5.5, 4.5});
 		if (t == jump + 300) {
 			shot(mc, "31b_onder_de_stuurhut");
+			cmd(srv, "gamemode survival @p");
+		}
+		// over the ladder into the raised wheelhouse
+		if (t == jump + 310) tp(srv, ship, new double[]{10.4, 5.0 + 1.62, 5.5}, new double[]{16.0, 6.6, 5.5});
+		if (t == jump + 320) {
+			ladderMax = -99;
+			mc.options.forwardKey.setPressed(true);
+		}
+		if (t > jump + 320 && t < jump + 420) {
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			if (l.y > ladderMax) ladderMax = l.y;
+			if (t % 5 == 0) log.add(String.format("stuurhutladder t=%d lokaal (%.2f, %.2f, %.2f)", t - jump - 320, l.x, l.y, l.z));
+		}
+		if (t == jump + 420) {
+			mc.options.forwardKey.setPressed(false);
+			Vec3d l = ship.toLocal(mc.player.getPos());
+			double floor = 5.5 + ship.liftOffset();
+			check("ladder naar opgeheven stuurhut", l.x > 12.0 && Math.abs(l.y - floor) < 0.35,
+					String.format("speler op lokaal (%.2f, %.2f, %.2f), vloer stuurhut op %.2f", l.x, l.y, l.z, floor));
+			shot(mc, "32_in_opgeheven_stuurhut");
 			finish(mc, failed ? "RESULT FAIL" : "RESULT PASS");
 		}
 	}

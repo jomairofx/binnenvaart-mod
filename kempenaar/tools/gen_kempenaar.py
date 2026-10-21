@@ -242,7 +242,11 @@ S(HX0, 5, 4, "spruce_slab[type=bottom]")                         # threshold of 
 S(15, 6, 5, "lever[face=floor,facing=east,powered=false]")      # throttle lever now on the floor slab
 # just a ladder (no mast) on the left of the wider rear doorway, so the view aft stays free
 S(HX0, 5, 5, "spruce_slab[type=bottom]")                         # doorway now two wide
-for y in R(5, 8): S(11, y, 5, "ladder[facing=west]")
+for y in R(5, 7): S(11, y, 5, "ladder[facing=west]")
+# when the wheelhouse is raised you climb over the top of the ladder straight into the door:
+# no lintel and no visor above the ladder side of the doorway
+S(HX0, 7, 5, "air")
+S(11, 8, 5, "air")
 
 # ---------------- looppad x=18 en ladders langs de romp ----------------
 for y in R(-2, 1):

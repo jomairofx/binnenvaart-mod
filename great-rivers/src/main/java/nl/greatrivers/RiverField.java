@@ -76,8 +76,17 @@ public final class RiverField {
 
 		/** Terrain may not stick out above this height here (the river bed, the banks and the valley sides). */
 		double ceiling(double x, double z) {
-			double hw = halfWidth(x, z);
-			double d = distance(x, z);
+			return ceilingAt(x, z, distance(x, z), halfWidth(x, z));
+		}
+
+		/** River bed depth profile inside the channel (u = 0 middle, 1 edge). */
+		double bed(double d, double hw) {
+			double u = d / hw;
+			double u2 = u * u;
+			return WATER_TOP - depth * (1 - u2 * u2) + 0.3;
+		}
+
+		double ceilingAt(double x, double z, double d, double hw) {
 			double reach = hw + flood + valley * 2.2;
 			if (d > reach) return Double.POSITIVE_INFINITY;
 			if (d < hw) {
@@ -104,6 +113,7 @@ public final class RiverField {
 
 	public final Kind great, river;
 	public final Harbours harbours;
+	public final Lowlands low;
 
 	/** Vanilla continentalness: below -0.19 is sea, below -0.455 deep sea, below -1.05 mushroom islands. */
 	private final DensityFunction continents;
@@ -132,6 +142,7 @@ public final class RiverField {
 		// long, fairly straight reaches with wide bends (no sharp meanders)
 		river = new Kind("river", r, 7500, 520, 5200, 45, 2200, 70, 130, 7000, 15, 55, 150);
 		harbours = new Harbours(this, seed);
+		low = new Lowlands(r);
 	}
 
 	// ---------- small per-thread cache: every column is asked for many times while a chunk is generated ----------
@@ -141,6 +152,8 @@ public final class RiverField {
 		final long[] keys = new long[CACHE];
 		final double[] vals = new double[CACHE];
 		final double[] flat = new double[CACHE];
+		final double[] dutch = new double[CACHE];
+		final double[] pold = new double[CACHE];
 		final RiverField[] owner = new RiverField[CACHE];
 	}
 
@@ -164,8 +177,75 @@ public final class RiverField {
 		return c.flat[i];
 	}
 
+	/** Dutch landscape target height at this column (polder, dikes, canals, ditches). */
+	public double dutchHeight(int x, int z) {
+		Cache c = CACHES.get();
+		long key = ((long) x << 32) ^ (z & 0xffffffffL);
+		int i = (int) ((x * 31L + z * 0x9E3779B1L) & (CACHE - 1));
+		if (c.owner[i] != this || c.keys[i] != key) fill(c, i, key, x, z);
+		return c.dutch[i];
+	}
+
+	/** How much of the Dutch landscape is used here (0 hills .. 1 polder). */
+	public double polderWeight(int x, int z) {
+		Cache c = CACHES.get();
+		long key = ((long) x << 32) ^ (z & 0xffffffffL);
+		int i = (int) ((x * 31L + z * 0x9E3779B1L) & (CACHE - 1));
+		if (c.owner[i] != this || c.keys[i] != key) fill(c, i, key, x, z);
+		return c.pold[i];
+	}
+
+	public double polder(int x, int z) {
+		return low.polder(x, z, continentalness(x, z));
+	}
+
+	/** Is this column on the road on top of a dike? */
+	public boolean dikeRoad(int x, int z) {
+		for (Kind k : new Kind[]{great, river}) {
+			double e = k.distance(x, z) - k.halfWidth(x, z);
+			double f = Lowlands.foreland(k);
+			if (e > f && e < f + 25 && Lowlands.crest(e, f)) {
+				// not where a canal or the other river cuts through
+				if (low.canalDistance(x, z) < Lowlands.CANAL_HALF + 8) return false;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private double dutch(int x, int z, double dg, double hwg, double dr, double hwr) {
+		double t = Lowlands.POLDER;
+		Kind[] ks = {great, river};
+		double[] ds = {dg, dr}, hs = {hwg, hwr};
+		boolean nearRiver = false;
+		for (int k = 0; k < 2; k++) {
+			double e = ds[k] - hs[k], f = Lowlands.foreland(ks[k]);
+			if (e < f + 60) nearRiver = true;
+			double h = Lowlands.dike(e, f);
+			if (!Double.isNaN(h)) t = Math.max(t, h);
+		}
+		for (int k = 0; k < 2; k++) {
+			double e = ds[k] - hs[k], f = Lowlands.foreland(ks[k]);
+			if (e < 0) t = Math.min(t, ks[k].bed(ds[k], hs[k]));
+			else if (e < 4) t = Math.min(t, WATER_TOP + 0.3 + e / 4 * 0.9);
+			else if (e < f) t = Math.min(t, WATER_TOP + 1.3 + 0.6 * Lowlands.smooth((e - 4) / Math.max(1, f - 4)));  // the foreland, just above the water
+		}
+		double dc = low.canalDistance(x, z);
+		if (dc < Lowlands.CANAL_HALF) {
+			double u = dc / Lowlands.CANAL_HALF, u2 = u * u;
+			t = Math.min(t, WATER_TOP + 0.3 - Lowlands.CANAL_DEPTH * (1 - u2 * u2 * u2));
+		} else if (dc < Lowlands.CANAL_HALF + 2) t = Math.min(t, WATER_TOP + 1.3);                 // the canal bank
+		else if (!nearRiver && dc > Lowlands.CANAL_HALF + 12 && low.ditch(x, z)) t = Math.min(t, WATER_TOP - 1.7);   // ditch: two deep
+		return t;
+	}
+
 	private void fill(Cache c, int i, long key, int x, int z) {
-		double v = Math.min(Math.min(great.ceiling(x, z), river.ceiling(x, z)), oceanCeiling(x, z));
+		double dg = great.distance(x, z), hwg = great.halfWidth(x, z);
+		double dr = river.distance(x, z), hwr = river.halfWidth(x, z);
+		double v = Math.min(Math.min(great.ceilingAt(x, z, dg, hwg), river.ceilingAt(x, z, dr, hwr)), oceanCeiling(x, z));
+		double p = low.polder(x, z, continentalness(x, z));
+		c.pold[i] = p;
+		c.dutch[i] = p > 0.001 ? dutch(x, z, dg, hwg, dr, hwr) : Double.NaN;
 		double w = 0;
 		Harbours.Site s = harbours.siteAt(x, z);
 		if (s != null) {

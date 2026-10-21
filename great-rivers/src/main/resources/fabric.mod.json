@@ -3,15 +3,23 @@
   "id": "greatrivers",
   "version": "${version}",
   "name": "Great Rivers",
-  "description": "Endless navigable rivers for inland shipping: meandering Maas-size rivers (70-130 blocks wide) and great rivers up to 500 blocks wide, with flood plains and valleys, flowing into the seas and oceans. Normal survival terrain, caves and ores everywhere else. Use /findriver to find the nearest river. Works in new worlds.",
-  "authors": ["jomairofx"],
+  "description": "Dutch-style waterways for inland shipping: endless rivers (Maas-size 70-130 wide and great rivers up to 500 wide, 15-25 deep) with forelands and dikes, straight canals, flat polders with drainage ditches and windmills, small harbours with concrete quays, and seas 100 blocks deep. Hills and mountains remain between the polders. Survival terrain, caves and ores as normal. /findriver shows the nearest river, great river and harbour. Works in new worlds (also Large Biomes).",
+  "authors": [
+    "jomairofx"
+  ],
   "license": "All-Rights-Reserved",
   "environment": "*",
   "entrypoints": {
-    "main": ["nl.greatrivers.GreatRivers"],
-    "client": ["nl.greatrivers.client.GreatRiversClient"]
+    "main": [
+      "nl.greatrivers.GreatRivers"
+    ],
+    "client": [
+      "nl.greatrivers.client.GreatRiversClient"
+    ]
   },
-  "mixins": ["greatrivers.mixins.json"],
+  "mixins": [
+    "greatrivers.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.16.0",
     "minecraft": "~1.21.1",

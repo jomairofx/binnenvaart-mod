@@ -23,6 +23,12 @@ public final class RiverCarve implements DensityFunction {
 		int x = pos.blockX(), z = pos.blockZ(), y = pos.blockY();
 		double top = field.ceiling(x, z);
 		double v = top == Double.POSITIVE_INFINITY ? base : Math.min(base, (top - y) / 6.0);
+		double p = field.polderWeight(x, z);
+		if (p > 0.001 && y >= 44) {
+			// Dutch landscape: level polders, dikes along the rivers, canals and ditches
+			double t = field.dutchHeight(x, z);
+			v = v * (1 - p) + ((t - y) / 6.0) * p;
+		}
 		double w = field.flatWeight(x, z);
 		if (w > 0) {
 			// harbour quay: exactly level at the quay height, sloping back into the land around it

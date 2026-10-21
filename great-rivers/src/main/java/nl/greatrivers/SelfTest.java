@@ -130,6 +130,49 @@ final class SelfTest {
 					}
 					check("kademuur", wallFound, wallFound ? "betonnen kademuur gevonden" : "geen kademuur");
 				}
+				// Dutch landscape: flat polder with ditches
+				int[] pp = SelfTestSpots.polderSpot(f);
+				check("polder gevonden", pp != null, pp == null ? "geen" : "op " + pp[0] + ", " + pp[1]);
+				if (pp != null) {
+					int flat = 0, n = 0;
+					StringBuilder hs = new StringBuilder();
+					for (int k = 0; k < 9; k++) {
+						int px = pp[0] + (k % 3 - 1) * 37, pz = pp[1] + (k / 3 - 1) * 37;
+						if (f.low.ditch(px, pz) || f.low.ditch(px + 1, pz) || f.low.ditch(px, pz + 1)) continue;
+						w.getChunk(px >> 4, pz >> 4);
+						int t = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, px, pz) - 1;
+						hs.append(t).append(' ');
+						n++;
+						if (t >= 63 && t <= 65) flat++;
+					}
+					check("polder vlak", n > 0 && flat >= n - 2, "hoogtes " + hs + "(" + flat + " van " + n + " op polderhoogte 64)");
+					int ditches = 0, wet = 0;
+					for (int s = 0; s < 300; s++) {
+						int px = pp[0] + s, pz = pp[1];
+						if (!f.low.ditch(px, pz) || f.polder(px, pz) < 0.9 || f.low.canalDistance(px, pz) < 40) continue;
+						ditches++;
+						if (water(w, px, RiverField.WATER_TOP, pz)) wet++;
+					}
+					check("sloten met water", ditches > 0 && wet >= ditches * 0.7, wet + " van " + ditches + " slootvakjes met water");
+				}
+				int[] cs = SelfTestSpots.canalSpot(f);
+				check("kanaal gevonden", cs != null, cs == null ? "geen" : "op " + cs[0] + ", " + cs[1]);
+				if (cs != null) {
+					int depth = 0;
+					for (int y = RiverField.WATER_TOP; y > 0 && water(w, cs[0], y, cs[1]); y--) depth++;
+					check("kanaal diep", depth >= 7, depth + " blokken water in het kanaal");
+				}
+				double[] ds = SelfTestSpots.dikeSpot(f);
+				check("rivier met dijk gevonden", ds != null, ds == null ? "geen" : "op " + (int) ds[0] + ", " + (int) ds[1]);
+				if (ds != null) {
+					int maxT = 0;
+					for (double e = ds[5]; e < ds[5] + 35; e += 1) {
+						int px = (int) Math.round(ds[0] + ds[2] * (ds[4] + e)), pz = (int) Math.round(ds[1] + ds[3] * (ds[4] + e));
+						w.getChunk(px >> 4, pz >> 4);
+						maxT = Math.max(maxT, w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, px, pz) - 1);
+					}
+					check("dijk langs de rivier", maxT >= 68 && maxT <= 71, "dijk tot y " + maxT);
+				}
 				// deep sea
 				int ox = 0, oz = 0;
 				boolean found = false;

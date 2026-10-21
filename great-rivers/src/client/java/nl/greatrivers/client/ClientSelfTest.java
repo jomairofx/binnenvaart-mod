@@ -78,6 +78,17 @@ public final class ClientSelfTest {
 					add("haven_op_de_kade", h.cx() + h.gx() * (bk + 40) - h.tx() * 70, 66.6, h.cz() + h.gz() * (bk + 40) - h.tz() * 70, cx + h.tx() * 30, 64, cz + h.tz() * 30);
 					add("haven_bovenaanzicht", cx - h.gx() * 60, 140, cz - h.gz() * 60, cx, 63, cz);
 				} else log.add("FAIL geen haven");
+				int[] pp = nl.greatrivers.SelfTestSpots.polderSpot(f);
+				if (pp != null) add("polder_met_sloten", pp[0] - 60, 95, pp[1] - 60, pp[0] + 20, 64, pp[1] + 20);
+				int[] cs = nl.greatrivers.SelfTestSpots.canalSpot(f);
+				if (cs != null) add("kanaal", cs[0] + 25, 72, cs[1] + 25, cs[0] - 60, 63, cs[1] - 60);
+				double[] ds = nl.greatrivers.SelfTestSpots.dikeSpot(f);
+				if (ds != null) {
+					double ex = ds[0] + ds[2] * (ds[4] + ds[5] + 60), ez = ds[1] + ds[3] * (ds[4] + ds[5] + 60);
+					add("dijk_en_uiterwaard", ex - ds[3] * 50, 80, ez + ds[2] * 50, ds[0], 63, ds[1]);
+					double cx = ds[0] + ds[2] * (ds[4] + ds[5] + 17), cz = ds[1] + ds[3] * (ds[4] + ds[5] + 17);
+					add("op_de_dijk", cx, 71, cz, cx - ds[3] * 80, 69, cz + ds[2] * 80);
+				}
 			}
 			mc.options.hudHidden = true;
 		}

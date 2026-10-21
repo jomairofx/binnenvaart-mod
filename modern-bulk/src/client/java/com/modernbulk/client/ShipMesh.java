@@ -46,7 +46,7 @@ public final class ShipMesh {
 	/** Sommige schepen (tanker) hebben dichte tanks: vlakken daarheen zijn nooit te zien. */
 	private static final boolean SEALED_CULL = false;
 	/** Afstanden (blokken) waaronder detailniveau 0 en 1 nog getekend worden. */
-	public static final double NEAR = 200, MID = 400;
+	public static final double NEAR = 150, MID = 320;
 
 	public final int version;
 	public final boolean lights;
@@ -77,6 +77,7 @@ public final class ShipMesh {
 		Matrix4f m = entry.getPositionMatrix();
 		boolean[] visible = new boolean[sections];
 		int[] level = new int[sections];
+		boolean[] near = new boolean[sections];
 		double c = Math.cos(yaw), s = Math.sin(yaw);
 		for (int k = 0; k < sections; k++) {
 			double x0 = ShipTemplate.MIN_X + k * SEC - ShipTemplate.CX, x1 = x0 + SEC;
@@ -96,7 +97,8 @@ public final class ShipMesh {
 			double dy = Math.max(0, Math.max(b.minY - cam.y, cam.y - b.maxY));
 			double dz = Math.max(0, Math.max(b.minZ - cam.z, cam.z - b.maxZ));
 			double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-			level[k] = Math.max(shadow && d < 40 ? 0 : minLevelAll, d < NEAR ? 0 : d < MID ? 1 : 2);
+			near[k] = shadow && d < 28;
+			level[k] = Math.max(near[k] ? 0 : minLevelAll, d < NEAR ? 0 : d < MID ? 1 : 2);
 		}
 		// camera in sjablooncoördinaten, om afgewende vlakken over te slaan
 		double rx = cam.x - shipPos.x, rz = cam.z - shipPos.z;
@@ -111,13 +113,14 @@ public final class ShipMesh {
 			VertexConsumer vc = null;
 			for (int k = 0; k < sections; k++) {
 				if (!visible[k]) continue;
+				boolean keepAll = near[k];
 				for (int lev = level[k]; lev < 3; lev++) {
 					float[] d = parts[k * 3 + lev];
 					if (d == null || d.length == 0) continue;
 					if (vc == null) vc = consumers.getBuffer(layers.get(l));
 					for (int q = 0; q < d.length; q += QUAD) {
 						// achterkant naar de camera: wordt toch niet getekend
-						if (!shadow && d[q] * cx + d[q + 1] * cy + d[q + 2] * cz - d[q + 3] < -0.6f) continue;
+						if (!keepAll && d[q] * cx + d[q + 1] * cy + d[q + 2] * cz - d[q + 3] < -0.6f) continue;
 						for (int i = q + 4, e = q + QUAD; i < e; i += STRIDE) {
 							float x = d[i], y = d[i + 1], z = d[i + 2];
 							vc.vertex(m00 * x + m10 * y + m20 * z + m30, m01 * x + m11 * y + m21 * z + m31, m02 * x + m12 * y + m22 * z + m32,

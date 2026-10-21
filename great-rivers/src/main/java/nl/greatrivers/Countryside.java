@@ -219,51 +219,36 @@ final class Countryside {
 	static boolean riverBank(StructureWorldAccess w, BlockPos.Mutable m, RiverField field, int x, int z) {
 		boolean any = false;
 		for (RiverField.Kind k : new RiverField.Kind[]{field.river, field.great}) {
-			double d = k.distance(x, z), hw = k.halfWidth(x, z), e = d - hw;
-			double reach = k == field.great ? 26 : 15;
+			double[] dh = field.riverAt(x, z, k == field.great);
+			double d = dh[0], hw = dh[1], e = d - hw;
 			double fore = Lowlands.foreland(k);
-			if (e > fore + 40 || e < -reach - 2) continue;
-			// along-river coordinate, measured from a nearby fixed point so it stays consistent locally
-			double g = 3, gx = k.distance(x + g, z) - k.distance(x - g, z), gz = k.distance(x, z + g) - k.distance(x, z - g);
-			double l = Math.hypot(gx, gz);
-			if (l < 1e-9) continue;
-			double tx = -gz / l, tz = gx / l;
-			int cx = Math.round(x / 160f) * 160, cz = Math.round(z / 160f) * 160;
-			double s = (x - cx) * tx + (z - cz) * tz;
-			double spacing = k == field.great ? 75 : 50;
-			double ph = Math.floorMod((long) Math.floor(s), (long) spacing);
-			if (e < 3 && e >= -reach) {
-				if (false) {   // no groynes: nothing in the water that a ship could hit
-					// the groyne: rubble from the bed up to just above the water, sloping down towards the tip
-					int top = e > -3 ? RiverField.WATER_TOP + 1 : (e > -reach + 3 ? RiverField.WATER_TOP : RiverField.WATER_TOP - 1);
-					if (ph >= 1 && ph < 2 && e > -reach + 3) top = Math.max(top, RiverField.WATER_TOP);
-					int y = RiverField.WATER_TOP;
-					while (y > 30 && !w.getBlockState(m.set(x, y, z)).isOpaqueFullCube(w, m)) y--;
-					long hh = mix(x * 31L + z);
-					for (int yy = y + 1; yy <= top; yy++) set(w, m, x, yy, z, STONES[(int) ((hh >>> (yy & 15)) & 3)]);
-					if (top >= RiverField.WATER_TOP + 1) set(w, m, x, top + 1, z, AIR);
+			if (e > fore + 2 || e < -5) continue;
+			if (e < 3) {
+				// sand beach along the water line
+				int y = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z) - 1;
+				BlockState st = w.getBlockState(m.set(x, y, z));
+				if (y >= RiverField.WATER_TOP - 4 && y <= RiverField.WATER_TOP + 2
+						&& (st.isOf(Blocks.GRASS_BLOCK) || st.isOf(Blocks.DIRT) || st.isOf(Blocks.GRAVEL) || st.isOf(Blocks.CLAY) || st.isOf(Blocks.MUD))) {
+					set(w, m, x, y, z, Blocks.SAND.getDefaultState());
+					BlockState up = w.getBlockState(m.set(x, y + 1, z));
+					if (!up.isAir() && up.isReplaceable() && up.getFluidState().isEmpty()) set(w, m, x, y + 1, z, AIR);
 					any = true;
-					continue;
-				}
-				// sand beach between the groynes
-				if (e > -5) {
-					int y = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z) - 1;
-					BlockState st = w.getBlockState(m.set(x, y, z));
-					if (y >= RiverField.WATER_TOP - 4 && y <= RiverField.WATER_TOP + 2
-							&& (st.isOf(Blocks.GRASS_BLOCK) || st.isOf(Blocks.DIRT) || st.isOf(Blocks.GRAVEL) || st.isOf(Blocks.CLAY) || st.isOf(Blocks.MUD))) {
-						set(w, m, x, y, z, Blocks.SAND.getDefaultState());
-						BlockState up = w.getBlockState(m.set(x, y + 1, z));
-						if (!up.isAir() && up.isReplaceable() && up.getFluidState().isEmpty()) set(w, m, x, y + 1, z, AIR);
-						any = true;
-					}
 				}
 				continue;
 			}
-			// trees in the foreland and a row along the foot of the dike
-			if (field.polderWeight(x, z) < 0.6) continue;
+			// trees in the foreland and a row of pollard willows along the foot of the dike
 			long hh = mix(x * 0x9E3779B97F4A7C15L + z * 0x632BE59BD9B4E019L);
-			boolean row = Math.abs(e - (fore - 3)) < 0.5 && Math.floorMod((long) Math.floor(s), 9L) == 0;
 			boolean scatter = e > 8 && e < fore - 8 && (hh & 1023) < 3;
+			boolean row = false;
+			if (!scatter && Math.abs(e - (fore - 3)) < 0.5) {
+				// along-river coordinate (only worked out here, it costs a few noise samples)
+				double g = 3, gx = k.distance(x + g, z) - k.distance(x - g, z), gz = k.distance(x, z + g) - k.distance(x, z - g);
+				double l = Math.hypot(gx, gz);
+				if (l < 1e-9) continue;
+				int cx = Math.round(x / 160f) * 160, cz = Math.round(z / 160f) * 160;
+				double s = (x - cx) * (-gz / l) + (z - cz) * (gx / l);
+				row = Math.floorMod((long) Math.floor(s), 9L) == 0;
+			}
 			if (row || scatter) {
 				int y = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z);
 				if (y < RiverField.WATER_TOP + 1 || y > RiverField.WATER_TOP + 4) continue;

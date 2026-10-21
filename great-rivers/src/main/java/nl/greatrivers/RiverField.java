@@ -154,6 +154,7 @@ public final class RiverField {
 		final double[] flat = new double[CACHE];
 		final double[] dutch = new double[CACHE];
 		final double[] pold = new double[CACHE];
+		final double[] riv = new double[CACHE * 4];
 		final RiverField[] owner = new RiverField[CACHE];
 	}
 
@@ -193,6 +194,16 @@ public final class RiverField {
 		int i = (int) ((x * 31L + z * 0x9E3779B1L) & (CACHE - 1));
 		if (c.owner[i] != this || c.keys[i] != key) fill(c, i, key, x, z);
 		return c.pold[i];
+	}
+
+	/** Distance to and half width of the great river ({@code great} true) or the Maas-size river, cached per column. */
+	public double[] riverAt(int x, int z, boolean great) {
+		Cache c = CACHES.get();
+		long key = ((long) x << 32) ^ (z & 0xffffffffL);
+		int i = (int) ((x * 31L + z * 0x9E3779B1L) & (CACHE - 1));
+		if (c.owner[i] != this || c.keys[i] != key) fill(c, i, key, x, z);
+		int o = i * 4 + (great ? 0 : 2);
+		return new double[]{c.riv[o], c.riv[o + 1]};
 	}
 
 	/** How much this is low polder land (with ditches): 0 at sea and on the sandy rises. */
@@ -277,6 +288,10 @@ public final class RiverField {
 		double v = Double.POSITIVE_INFINITY;
 		c.pold[i] = 1;
 		c.dutch[i] = dutch(x, z, dg, hwg, dr, hwr);
+		c.riv[i * 4] = dg;
+		c.riv[i * 4 + 1] = hwg;
+		c.riv[i * 4 + 2] = dr;
+		c.riv[i * 4 + 3] = hwr;
 		double w = 0;
 		Harbours.Site s = harbours.siteAt(x, z);
 		if (s != null) {

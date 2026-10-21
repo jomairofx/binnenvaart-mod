@@ -52,6 +52,10 @@ public class BinRenderer implements BlockEntityRenderer<CraneStorageBlockEntity>
 
 	private void renderSafe(CraneStorageBlockEntity be, float tickDelta, MatrixStack m, VertexConsumerProvider v, int light, int overlay) {
 		if (be.getWorld() == null) return;
+		if (IrisCompat.isShadowPass()) {
+			net.minecraft.util.math.Vec3d cam = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
+			if (cam.squaredDistanceTo(net.minecraft.util.math.Vec3d.ofCenter(be.getPos())) > 32 * 32) return;
+		}
 		BlockState st = be.getCachedState();
 		int l = WorldRenderer.getLightmapCoordinates(be.getWorld(), be.getPos().up(2));
 		Sprite side = particle(st), grate = top(st);

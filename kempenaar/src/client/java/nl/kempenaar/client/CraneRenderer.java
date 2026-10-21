@@ -30,7 +30,7 @@ public class CraneRenderer implements BlockEntityRenderer<CraneBlockEntity> {
 	private static final float H = (float) CraneBlockEntity.TOWER;
 	private static final float JIB = 44f, CJIB = 15f;
 
-	private Geo tower, slew;
+	private Geo tower, slew, towerFar, slewFar;
 	private Sprite yellowRef;
 	private Sprite yellow, white, gray, dark, black, iron, concrete, lamp, crate;
 
@@ -44,7 +44,7 @@ public class CraneRenderer implements BlockEntityRenderer<CraneBlockEntity> {
 
 	@Override
 	public int getRenderDistance() {
-		return 256;
+		return 224;
 	}
 
 	private static Sprite sprite(BlockState s) {
@@ -66,6 +66,7 @@ public class CraneRenderer implements BlockEntityRenderer<CraneBlockEntity> {
 		crate = sprite(Blocks.BARREL.getDefaultState());
 		buildTower();
 		buildSlew();
+		buildFar();
 	}
 
 	// ------------------------------------------------------------------ vaste delen
@@ -142,6 +143,22 @@ public class CraneRenderer implements BlockEntityRenderer<CraneBlockEntity> {
 		slew = g;
 	}
 
+	/** Simple shapes for cranes far away: mast, jib, counter jib and cab (a few boxes instead of the lattice). */
+	private void buildFar() {
+		Geo g = new Geo();
+		g.box(concrete, -0.2f, 0, -0.2f, 1.2f, 0.9f, 1.2f, 1f);
+		g.box(yellow, 0.05f, 0.9f, 0.05f, 0.95f, H, 0.95f, 1f);
+		towerFar = g;
+		Geo s = new Geo();
+		s.box(gray, -1.0f, H, -1.0f, 1.0f, H + 0.62f, 1.0f, 0.9f);
+		s.box(white, 0.3f, H + 0.62f, 1.05f, 1.9f, H + 2.0f, 2.15f, 1f);
+		s.box(yellow, 0.8f, H + 0.62f, -0.6f, JIB, H + 1.6f, 0.6f, 1f);
+		s.box(yellow, -CJIB, H + 0.62f, -0.8f, -0.8f, H + 0.9f, 0.8f, 1f);
+		s.box(concrete, -CJIB + 0.3f, H - 1.8f, -0.95f, -CJIB + 3f, H + 0.62f, 0.95f, 1f);
+		s.box(yellow, -0.3f, H + 0.62f, -0.3f, 0.3f, H + 8f, 0.3f, 1f);
+		slewFar = s;
+	}
+
 	// ------------------------------------------------------------------ tekenen
 
 	@Override
@@ -165,6 +182,20 @@ public class CraneRenderer implements BlockEntityRenderer<CraneBlockEntity> {
 		double time = w.getTime() + tickDelta;
 		CraneBlockEntity.Pose p = be.pose(time);
 		VertexConsumer vc = v.getBuffer(TexturedRenderLayers.getEntityCutout());
+		net.minecraft.util.math.Vec3d cam = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
+		double dist2 = cam.squaredDistanceTo(be.getPos().getX() + 0.5, be.getPos().getY() + H * 0.5, be.getPos().getZ() + 0.5);
+		boolean shadow = IrisCompat.isShadowPass();
+		if (shadow && dist2 > 64 * 64) return;            // far cranes throw no shadow: saves a lot with shaders
+		if (dist2 > 90 * 90 || (shadow && dist2 > 32 * 32)) {
+			// far away: the simple crane, no moving parts drawn in detail
+			towerFar.emit(vc, m.peek(), lLow);
+			m.push();
+			m.translate(0.5, 0, 0.5);
+			m.multiply(RotationAxis.POSITIVE_Y.rotation(-p.yaw()));
+			slewFar.emit(vc, m.peek(), lHigh);
+			m.pop();
+			return;
+		}
 		tower.emit(vc, m.peek(), lLow);
 
 		m.push();

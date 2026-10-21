@@ -248,4 +248,42 @@ final class Countryside {
 		}
 		return any;
 	}
+
+	// ------------------------------------------------------------------ street lights on the dikes
+
+	/**
+	 * Modern street lights along the dike road, about every 40 blocks: a slim grey pole on the polder side of the
+	 * road, an arm over the road and a flat lamp head; an invisible light under the head lights up the road.
+	 */
+	static boolean dikeLamp(StructureWorldAccess w, BlockPos.Mutable m, RiverField field, int x, int z) {
+		RiverField.Kind k = field.great;
+		double[] dh = field.riverAt(x, z, true);
+		double f = Lowlands.foreland(k);
+		double kk = dh[0] - dh[1] - f;                 // across the dike: road on 15.5..19.5
+		if (kk < 20 || kk >= 21) return false;
+		double g = 3, gx = k.distance(x + g, z) - k.distance(x - g, z), gz = k.distance(x, z + g) - k.distance(x, z - g);
+		double l = Math.hypot(gx, gz);
+		if (l < 1e-9) return false;
+		gx /= l;
+		gz /= l;
+		int cx = Math.round(x / 160f) * 160, cz = Math.round(z / 160f) * 160;
+		double s = (x - cx) * (-gz) + (z - cz) * gx;
+		if (Math.floorMod((long) Math.floor(s), 40L) != 0) return false;
+		int top = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z) - 1;
+		if (top < 66 || top > 72) return false;
+		// the arm points towards the river, over the road
+		net.minecraft.util.math.Direction toRoad = Math.abs(gx) > Math.abs(gz)
+				? (gx > 0 ? net.minecraft.util.math.Direction.WEST : net.minecraft.util.math.Direction.EAST)
+				: (gz > 0 ? net.minecraft.util.math.Direction.NORTH : net.minecraft.util.math.Direction.SOUTH);
+		int poleTop = top + 7;
+		for (int y = top + 1; y <= poleTop; y++) set(w, m, x, y, z, Blocks.IRON_BARS.getDefaultState());
+		net.minecraft.state.property.Property<net.minecraft.util.math.Direction.Axis> axis = Properties.AXIS;
+		net.minecraft.util.math.Direction.Axis ax = toRoad.getAxis();
+		for (int i = 1; i <= 2; i++)
+			set(w, m, x + toRoad.getOffsetX() * i, poleTop, z + toRoad.getOffsetZ() * i, Blocks.CHAIN.getDefaultState().with(axis, ax));
+		int hx = x + toRoad.getOffsetX() * 3, hz = z + toRoad.getOffsetZ() * 3;
+		set(w, m, hx, poleTop, hz, Blocks.SMOOTH_STONE_SLAB.getDefaultState());
+		set(w, m, hx, poleTop - 1, hz, Blocks.LIGHT.getDefaultState().with(Properties.LEVEL_15, 15));
+		return true;
+	}
 }

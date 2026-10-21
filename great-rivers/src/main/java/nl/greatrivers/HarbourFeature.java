@@ -84,6 +84,7 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 					any = true;
 					Countryside.dikeRoad(w, m, x, z);
 				}
+				if (p > 0.8 && Countryside.dikeLamp(w, m, field, x, z)) any = true;
 				// ditches and lakes can be too narrow for the aquifers to fill them: put the water in
 				double t = field.dutchHeight(x, z);
 				if (t < RiverField.WATER_TOP && field.land(x, z)) {

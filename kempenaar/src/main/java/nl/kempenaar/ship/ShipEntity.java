@@ -1061,18 +1061,36 @@ public class ShipEntity extends Entity {
 	public Vec3d bedWakeSpot(int[] h) {
 		Direction f = structure.get(h[0], h[1], h[2]).get(BedBlock.FACING);
 		int fx = h[0] - f.getOffsetX(), fz = h[2] - f.getOffsetZ();
-		int[][] cand = new int[16][];
-		int n = 0;
-		for (int[] c : new int[][]{{fx, fz}, {h[0], h[2]}})
-			for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) cand[n++] = new int[]{c[0] + d[0], c[1] + d[1]};
 		BlockPos.Mutable m = new BlockPos.Mutable();
-		for (int i = 0; i < n; i++) {
-			int x = cand[i][0], z = cand[i][1], y = h[1];
-			if (free(m, x, y, z) && free(m, x, y + 1, z) && !structure.get(x, y - 1, z).isAir())
-				return toWorld(x + 0.5, y + 0.01, z + 0.5);
+		int[] best = null;
+		double bestD = Double.MAX_VALUE;
+		for (int dy = 0; dy <= 1; dy++)
+			for (int dx = -2; dx <= 2; dx++)
+				for (int dz = -2; dz <= 2; dz++) {
+					int x = fx + dx, z = fz + dz, y = h[1] + dy;
+					if (!free(m, x, y, z) || !free(m, x, y + 1, z)) continue;
+					BlockState below = structure.get(x, y - 1, z);
+					if (below.isAir() || below.getBlock() instanceof BedBlock) continue;
+					m.set(x, y - 1, z);
+					if (below.getCollisionShape(structure, m).isEmpty()) continue;
+					// room around it too, so the player (0.6 wide) is not pushed into a wall when the ship lies at an angle
+					int open = 0;
+					for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) if (free(m, x + d[0], y, z + d[1]) && free(m, x + d[0], y + 1, z + d[1])) open++;
+					double dd = dx * dx + dz * dz + dy * 3 - open * 0.6;
+					if (dd < bestD) {
+						bestD = dd;
+						best = new int[]{x, y, z};
+					}
+				}
+		if (best != null) {
+			double top = structure.get(best[0], best[1] - 1, best[2]).getCollisionShape(structure, m.set(best[0], best[1] - 1, best[2])).getMax(Direction.Axis.Y);
+			return toWorld(best[0] + 0.5, best[1] - 1 + top + 0.02, best[2] + 0.5);
 		}
 		return toWorld(h[0] + 0.5, h[1] + 0.6, h[2] + 0.5);
 	}
+
+	/** Who was asleep in a ship bed last tick: when they wake up they are put beside the bed, not inside it. */
+	private static final java.util.Map<java.util.UUID, BedRef> SLEEPERS = new java.util.HashMap<>();
 
 	private boolean free(BlockPos.Mutable m, int x, int y, int z) {
 		BlockState s = structure.get(x, y, z);
@@ -1107,12 +1125,21 @@ public class ShipEntity extends Entity {
 	public static void keepSleepers(net.minecraft.server.MinecraftServer server) {
 		for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
 			try {
-				if (!p.isSleeping()) continue;
+				if (!p.isSleeping()) {
+					BedRef was = SLEEPERS.remove(p.getUuid());
+					if (was != null && !was.ship().isRemoved()) {
+						// just woke up: stand up next to the bed, on the floor of the cabin
+						Vec3d w = was.ship().bedWakeSpot(was.head());
+						p.networkHandler.requestTeleport(w.x, w.y, w.z, p.getYaw(), p.getPitch());
+					}
+					continue;
+				}
 				var sp = p.getSleepingPosition();
 				if (sp.isEmpty() || p.getWorld().getBlockState(sp.get()).getBlock() instanceof BedBlock) continue;
 				BedRef ref = findBed(p.getWorld(), sp.get());
 				if (ref == null) ref = findBed(p.getWorld(), BlockPos.ofFloored(p.getX(), p.getY() - 0.5, p.getZ()));
 				if (ref == null) continue;
+				SLEEPERS.put(p.getUuid(), ref);
 				Vec3d spot = ref.ship().bedSpot(ref.head());
 				BlockPos bp = BlockPos.ofFloored(spot.x, spot.y - 0.6875 + 0.01, spot.z);
 				if (!bp.equals(sp.get())) p.setSleepingPosition(bp);

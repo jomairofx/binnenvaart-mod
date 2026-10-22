@@ -128,6 +128,7 @@ public final class RiverField {
 	public final Lowlands low;
 	public final Villages villages;
 	public final Infra infra;
+	public final Roads roads;
 
 	/** Vanilla continentalness: below -0.19 is sea, below -0.455 deep sea, below -1.05 mushroom islands. */
 	private final DensityFunction continents;
@@ -161,6 +162,7 @@ public final class RiverField {
 		harbours = new Harbours(this, seed);
 		low = new Lowlands(r);
 		villages = new Villages(this, seed);
+		roads = new Roads(this);
 		infra = new Infra(this, seed);
 	}
 
@@ -252,7 +254,6 @@ public final class RiverField {
 		// hills fade out towards the river, so the dikes and forelands stay as they are
 		double eRiver = dg - hwg - Lowlands.foreland(great);
 		double t = Lowlands.POLDER + low.rise(x, z, lowl) * Lowlands.smooth((eRiver - 40) / 220);
-		if (cont > Lowlands.COAST + 0.06 && villages.flat(x, z)) return Lowlands.POLDER;   // villages and towns stand on level ground
 		boolean sea = cont < Lowlands.COAST;
 		if (cont < Lowlands.COAST + 0.045) {
 			if (sea) {
@@ -284,9 +285,18 @@ public final class RiverField {
 			double u = dc / Lowlands.CANAL_HALF, u2 = u * u;
 			t = Math.min(t, WATER_TOP + 0.3 - Lowlands.CANAL_DEPTH * (1 - u2 * u2 * u2));
 		} else if (dc < Lowlands.CANAL_HALF + 2) t = Math.min(t, WATER_TOP + 1.3);                 // the canal bank
-		else if (!nearRiver && dc > Lowlands.CANAL_HALF + 12 && lowl > 0.75 && cont > Lowlands.COAST + 0.06) {
+		else if (!nearRiver && dc > Lowlands.CANAL_HALF + 12 && lowl > 0.75 && cont > Lowlands.COAST + 0.06 && villages.site(x, z) == null) {
 			if (low.lake(x, z)) t = Math.min(t, WATER_TOP - 3.7);                                       // a small lake
 			else if (low.ditch(x, z)) t = Math.min(t, WATER_TOP - 1.7);                                 // ditch: two deep
+		}
+		// villages and towns stand on a level, slightly raised site that slopes gently back to the land; in a
+		// river city the quays stand straight up from the water
+		Villages.Town tw = villages.site(x, z);
+		if (tw != null && cont > Lowlands.COAST + 0.06) {
+			double d = Math.hypot(x - tw.cx(), z - tw.cz()), flatR = tw.radius() + 16;
+			double g = d <= flatR ? 1 : 1 - Lowlands.smooth((d - flatR) / Villages.RING);
+			boolean water = tw.river() && dg - hwg < 0;
+			if (!water && g > 0) t = t * (1 - g) + (Villages.GROUND + 0.3) * g;
 		}
 		// motorways, bridge ramps, viaducts, locks and the roads to them
 		return infra.shape(x, z, t);

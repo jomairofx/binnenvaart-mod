@@ -114,11 +114,11 @@ public class GreatRivers implements ModInitializer {
 			src.sendFeedback(() -> Text.literal("Nearest " + kind.name() + " (about " + width + " blocks wide): ").append(coords)
 					.append(Text.literal(", " + dist + " blocks away")), false);
 		}
-		for (int city = 1; city >= 0; city--) {
-			Villages.Town t = findTown(field, x, z, 12, city == 1);
+		for (int kind = 2; kind >= 0; kind--) {
+			Villages.Town t = findTown(field, x, z, 14, kind >= 1, kind == 2 ? Boolean.TRUE : kind == 1 ? Boolean.FALSE : null);
 			if (t == null) continue;
 			int dist = (int) Math.round(Math.hypot(t.cx() - x, t.cz() - z));
-			String tp = "/tp @s " + t.cx() + " 66 " + t.cz();
+			String tp = "/tp @s " + t.cx() + " 80 " + t.cz();
 			Text coords = Text.literal("[" + t.cx() + ", " + t.cz() + "]").formatted(Formatting.AQUA, Formatting.UNDERLINE)
 					.styled(st -> st.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp))
 							.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to teleport"))));
@@ -138,7 +138,9 @@ public class GreatRivers implements ModInitializer {
 					.append(Text.literal(", " + dist + " blocks away")), false);
 		}
 		}
-		double[] br = field.infra.findBridge(x, z, 12000);
+		int[] sea = findSea(field, x, z);
+		if (sea != null) report(src, "Nearest open sea (big water)", sea[0], 64, sea[1], x, z);
+		double[] br = field.infra.findBridge(x, z, 40000);
 		if (br != null) report(src, "Nearest river bridge (motorway)", (int) br[0], Infra.DECK + 1, (int) br[1], x, z);
 		double[] vd = field.infra.findViaduct(x, z, 3);
 		if (vd != null) report(src, "Nearest viaduct", (int) vd[0], 80, (int) vd[1], x, z);
@@ -149,6 +151,25 @@ public class GreatRivers implements ModInitializer {
 					(int) Math.floor(lk.wx(la, lw)), Locks.WALL_TOP + 1, (int) Math.floor(lk.wz(la, lw)), x, z);
 		}
 		return 1;
+	}
+
+	/** A point out on the open sea, at least 600 blocks from any land, nearest to x, z. */
+	public static int[] findSea(RiverField field, int x, int z) {
+		for (int r = 0; r <= 40000; r += 250) {
+			int n = Math.max(1, (int) Math.round(2 * Math.PI * r / 250));
+			for (int i = 0; i < n; i++) {
+				double a = 2 * Math.PI * i / n;
+				int px = x + (int) Math.round(r * Math.cos(a)), pz = z + (int) Math.round(r * Math.sin(a));
+				if (field.coastal(px, pz) > Lowlands.COAST - 0.12) continue;
+				boolean open = true;
+				for (int k = 0; k < 8 && open; k++) {
+					double b = k * Math.PI / 4;
+					open = field.coastal(px + (int) (600 * Math.cos(b)), pz + (int) (600 * Math.sin(b))) < Lowlands.COAST;
+				}
+				if (open) return new int[]{px, pz};
+			}
+		}
+		return null;
 	}
 
 	private static void report(ServerCommandSource src, String what, int tx, int ty, int tz, int x, int z) {
@@ -190,6 +211,11 @@ public class GreatRivers implements ModInitializer {
 
 	/** Nearest town (city true) or village. */
 	public static Villages.Town findTown(RiverField field, int x, int z, int cells, boolean city) {
+		return findTown(field, x, z, cells, city, null);
+	}
+
+	/** Nearest town of a kind; river null = with or without a river through it. */
+	public static Villages.Town findTown(RiverField field, int x, int z, int cells, boolean city, Boolean river) {
 		int cx = Math.floorDiv(x, Villages.CELL), cz = Math.floorDiv(z, Villages.CELL);
 		Villages.Town best = null;
 		double bd = Double.MAX_VALUE;
@@ -198,7 +224,7 @@ public class GreatRivers implements ModInitializer {
 				for (int j = -r; j <= r; j++) {
 					if (Math.max(Math.abs(i), Math.abs(j)) != r) continue;
 					Villages.Town t = field.villages.town(cx + i, cz + j);
-					if (t == null || t.city() != city) continue;
+					if (t == null || t.city() != city || (river != null && t.river() != river)) continue;
 					double d = Math.hypot(t.cx() - x, t.cz() - z);
 					if (d < bd) {
 						bd = d;

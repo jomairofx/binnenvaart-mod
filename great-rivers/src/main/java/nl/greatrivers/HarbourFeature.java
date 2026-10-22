@@ -65,7 +65,7 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 			for (int dz = 0; dz < 16; dz++) {
 				int x = x0 + dx, z = z0 + dz;
 				Villages.Town town = field.villages.at(x, z);
-				if (town != null && VillageBuilder.column(w, m, town, x, z)) {
+				if (town != null && VillageBuilder.column(w, m, field, town, x, z)) {
 					any = true;
 					continue;
 				}
@@ -82,6 +82,7 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 				if (inf > 0) any = true;
 				if (inf == 2) continue;
 				if (Countryside.riverBank(w, m, field, x, z)) any = true;
+				if (Landscape.column(w, m, field, x, z)) any = true;
 				double p = field.polderWeight(x, z);
 				if (p > 0.8 && field.dikeRoad(x, z)) {
 					any = true;

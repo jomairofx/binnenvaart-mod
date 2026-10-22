@@ -97,7 +97,7 @@ final class InfraBuilder {
 		for (int fam = 1; fam >= 0; fam--) {
 			Infra.Hit h = hits[fam];
 			if (h == null || h.kind == Infra.BRIDGE || h.kind == Infra.VIADUCT) continue;
-			if (groundRoad(w, m, h, x, z)) res = 2;
+			if (groundRoad(w, m, f, h, x, z)) res = 2;
 		}
 		for (int fam = 1; fam >= 0; fam--) {
 			Infra.Hit h = hits[fam];
@@ -111,6 +111,14 @@ final class InfraBuilder {
 		for (Locks.Site s : f.infra.locks.around(x, z)) {
 			int r = lock(w, m, f, s, x, z);
 			if (r > res) res = r;
+		}
+		// provincial roads between the villages
+		if (res < 2) {
+			Object[] rh = f.roads.hit(x + 0.5, z + 0.5, Roads.OUTER + 1);
+			if (rh != null) {
+				double[] p = (double[]) rh[0];
+				if (Roads.build(w, m, (Roads.Seg) rh[1], p[0], p[1], x, z)) res = 2;
+			}
 		}
 		return res;
 	}
@@ -128,7 +136,7 @@ final class InfraBuilder {
 		return ASPHALT;                                                          // hard shoulder
 	}
 
-	private static boolean groundRoad(StructureWorldAccess w, BlockPos.Mutable m, Infra.Hit h, int x, int z) {
+	private static boolean groundRoad(StructureWorldAccess w, BlockPos.Mutable m, RiverField f0, Infra.Hit h, int x, int z) {
 		double a = Math.abs(h.c);
 		int y = h.y;
 		if (a > Infra.EDGE + 1.5) return false;
@@ -136,6 +144,11 @@ final class InfraBuilder {
 		clearAbove(w, m, x, y, z, 14);
 		if (a >= Infra.HALF) return true;   // grass verge
 		set(w, m, x, y, z, surface(a, h.u));
+		// where the motorway ends (before the open sea) a crash barrier closes it off
+		if (f0 != null && Math.abs(h.u - Math.round(h.u)) < 0.6 && f0.infra.endsNear(h.fam, h.k, h.u, 2)) {
+			set(w, m, x, y + 1, z, Blocks.RED_CONCRETE.getDefaultState());
+			set(w, m, x, y + 2, z, Blocks.WHITE_CONCRETE.getDefaultState());
+		}
 		BlockState below = w.getBlockState(m.set(x, y - 1, z));
 		if (below.isAir() || !below.getFluidState().isEmpty()) set(w, m, x, y - 1, z, Blocks.STONE.getDefaultState());
 		if (a < 1.0) set(w, m, x, y + 1, z, BARRIER);
@@ -340,20 +353,9 @@ final class InfraBuilder {
 		}
 		// the provincial road to the village
 		double[] rd = s.road(px, pz);
-		if (rd != null && Math.abs(rd[0]) <= Locks.ROAD_HALF + 1) {
-			double c = Math.abs(rd[0]);
-			int top = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z) - 1;
-			if (top >= RiverField.WATER_TOP - 1) {
-				clearAbove(w, m, x, top, z, 14);
-				if (c < Locks.ROAD_HALF) {
-					// lines as wide as one block seen along the road, so they stay unbroken on a slanting road
-					double dx = s.rx1() - s.rx0(), dz = s.rz1() - s.rz0(), l = Math.hypot(dx, dz);
-					double lw = (Math.abs(dx) + Math.abs(dz)) / l;
-					BlockState st = c >= Locks.ROAD_HALF - lw ? LINE : c < lw / 2 && Math.floorMod((long) Math.floor(rd[1]), 9L) < 3 ? LINE : ASPHALT;
-					set(w, m, x, top, z, st);
-				}
-				return 2;
-			}
+		if (rd != null && Math.abs(rd[0]) <= Roads.OUTER + 1) {
+			Roads.Seg seg = new Roads.Seg(s.rx0(), s.rz0(), s.rx1(), s.rz1(), s.side());
+			if (Roads.build(w, m, seg, rd[0], rd[1], x, z)) return 2;
 		}
 		return res;
 	}

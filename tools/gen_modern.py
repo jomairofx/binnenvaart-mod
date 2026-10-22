@@ -394,10 +394,6 @@ def build(cfg):
             S(MX, 2, z, "polished_andesite_slab[type=bottom]")
         for z in (2, W - 3):
             S(MX, 3, z, "blue_concrete"); S(MX + 1, 3, z, "polished_blackstone_button[face=floor,facing=east,powered=false]")
-        for y in R(2, 7): S(MX + 2, y, ZC + 2, "yellow_concrete")
-        for k, (dx, dz) in enumerate([(3, 1), (4, 0), (5, -1)]):
-            S(MX + 2 + dx - 2, 8, ZC + 2 + dz - 1, "yellow_concrete")
-        S(MX + 3, 7, ZC, "chain[axis=y]"); S(MX + 3, 6, ZC, "chain[axis=y]")
         # blue painted area around the manifold like on the photos
         for xx in R(MX - 4, MX + 4):
             for z in (1, W - 2): S(xx, 1, z, "blue_concrete")

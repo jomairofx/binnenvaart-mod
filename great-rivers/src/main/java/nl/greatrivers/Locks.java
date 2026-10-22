@@ -22,7 +22,7 @@ public final class Locks {
 	public static final int CH = 24, OW = 6, MWL = 8;
 	public static final int WALL_L = 132, GATE0 = 116, GATE1 = 130, GUIDE = 110;
 	public static final int WALL_TOP = 64, WEIR_A = 7, WEIR_DECK = 72, PIER_EVERY = 30;
-	public static final double LAND = 16, ROAD_HALF = 3.5;
+	public static final double LAND = 16, ROAD_HALF = Roads.OUTER;
 
 	public record Site(int cx, int cz, double tx, double tz, double gx, double gz, double hw, int side,
 					   double rx0, double rz0, double rx1, double rz1, String town) {

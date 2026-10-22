@@ -105,6 +105,26 @@ public final class Lowlands {
 		return Math.floorMod(a - dx0, DITCH_A) < 2 || Math.floorMod(b - dz0, DITCH_B) < 2;
 	}
 
+	/**
+	 * The parcel between the ditches this column lies in: {id, across (0..139), along (0..139)}. The long strips
+	 * between the main ditches are cut into parcels of 140 x 140.
+	 */
+	public long[] parcel(int x, int z) {
+		int a = ditchAlongX ? z : x, b = ditchAlongX ? x : z;
+		long ia = Math.floorDiv(a - dx0, DITCH_A), ib = Math.floorDiv(b - dz0, DITCH_B);
+		int la = Math.floorMod(a - dx0, DITCH_A), lb = Math.floorMod(b - dz0, DITCH_B);
+		long sub = lb / 140;
+		return new long[]{(ia * 0x9E3779B97F4A7C15L) ^ (ib * 0x632BE59BD9B4E019L) ^ (sub * 0x2545F4914F6CDD1DL), la, lb % 140,
+				ia, ib * 5 + sub};
+	}
+
+	/** World coordinates of a corner of a parcel (ia, row) at local (la, lb). */
+	public int[] parcelPoint(long ia, long row, int la, int lb) {
+		long ib = Math.floorDiv(row, 5), sub = Math.floorMod(row, 5);
+		long a = ia * DITCH_A + dx0 + la, b = ib * DITCH_B + dz0 + sub * 140 + lb;
+		return ditchAlongX ? new int[]{(int) b, (int) a} : new int[]{(int) a, (int) b};
+	}
+
 	/** Height of the dike profile at e blocks from the river edge, behind a foreland of width f; NaN past the dike. */
 	public static double dike(double e, double f) {
 		if (e < f) return Double.NaN;

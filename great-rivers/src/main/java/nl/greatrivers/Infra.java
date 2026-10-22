@@ -1,7 +1,7 @@
 package nl.greatrivers;
 
 /**
- * Motorways ("snelwegen") across the whole land: two families of long, gently curving roads about 4.3 km apart,
+ * Motorways ("snelwegen") across the whole land: two families of long, gently curving roads about 13 km apart,
  * one running roughly north-south and one roughly east-west. 2 x 2 lanes with hard shoulders and a central
  * reservation, on a low embankment in the polder and graded through the rises.
  * - Where a motorway meets the river it climbs on an earth ramp to a high bridge: steel arch over the fairway,
@@ -13,7 +13,7 @@ package nl.greatrivers;
  * Everything is a pure function of the seed and the position, so every chunk agrees on the roads.
  */
 public final class Infra {
-	public static final int MW = 4300;               // distance between the motorways of one family
+	public static final int MW = 13000;              // distance between the motorways of one family
 	public static final int ROAD_Y = 63;             // road surface block in the polder (one above the land)
 	public static final int DECK = 88;               // road surface block on the river bridges: underside at 86
 	public static final double HALF = 12.5;          // half width of the paved road
@@ -98,7 +98,39 @@ public final class Infra {
 		return f.low.rise(ix, iz, lowl) * Lowlands.smooth((eRiver - 40) / 220);
 	}
 
-	/** {on land 0/1, smoothed rise of the land, distance of the road middle to the river's edge}. */
+	private static final int SC = 1 << 13;
+
+	private static final class Sea {
+		final long[] key = new long[SC];
+		final Infra[] owner = new Infra[SC];
+		final boolean[] sea = new boolean[SC];
+	}
+
+	private static final ThreadLocal<Sea> SEA = ThreadLocal.withInitial(Sea::new);
+
+	/** Is the road middle at grid point g (every 40 blocks along the road) over the sea (or its foreshore)? */
+	private boolean seaAt(int fam, int k, int g) {
+		Sea c = SEA.get();
+		long key = ((long) fam << 62) ^ ((long) (k & 0xfffff) << 40) ^ (g & 0xffffffffffL) ^ 0x5EA5EA5EA5L;
+		int i = (int) (Harbours.mix(key) & (SC - 1));
+		if (c.owner[i] == this && c.key[i] == key) return c.sea[i];
+		double[] p = centre(fam, k, g * 40.0);
+		boolean sea = f.coastal((int) Math.floor(p[0]), (int) Math.floor(p[1])) < Lowlands.COAST + 0.03;
+		c.owner[i] = this;
+		c.key[i] = key;
+		c.sea[i] = sea;
+		return sea;
+	}
+
+	/** Length of the stretch of sea around grid point g (in grid steps, capped). */
+	private int seaRun(int fam, int k, int g, int cap) {
+		int n = 1;
+		for (int d = 1; d <= cap && seaAt(fam, k, g + d); d++) n++;
+		for (int d = 1; d <= cap && seaAt(fam, k, g - d); d++) n++;
+		return n;
+	}
+
+	/** {on land 0/1, smoothed rise of the land, distance of the road middle to the water's edge (river or sea)}. */
 	private int node(int fam, int k, int un) {
 		Nodes n = NODES.get();
 		long key = ((long) fam << 62) ^ ((long) (k & 0xfffff) << 40) ^ (un & 0xffffffffffL);
@@ -107,14 +139,31 @@ public final class Infra {
 		double u = un * 8.0;
 		double[] c = centre(fam, k, u);
 		int cx = (int) Math.floor(c[0]), cz = (int) Math.floor(c[1]);
-		n.land[i] = f.coastal(cx, cz) >= Lowlands.COAST + 0.07 ? 1 : 0;
+		// the sea along the road: a narrow arm is bridged like a river, at open sea the motorway ends well before
+		// the coast (so it never stops on a ramp or halfway a bridge)
+		int g0 = (int) Math.floor(u / 40);
+		double seaE = Double.MAX_VALUE;
+		boolean open = false;
+		int reach = (int) ((BR_END + RAMP + 120) / 40);
+		for (int d = 0; d <= reach + 4; d++) {
+			for (int sg = -1; sg <= 1; sg += 2) {
+				int g = g0 + sg * d;
+				if (!seaAt(fam, k, g)) continue;
+				double dist = Math.max(0, Math.abs(g * 40.0 - u) - 40);
+				if (seaRun(fam, k, g, 26) > 25) {
+					open = true;
+				} else if (dist < seaE) seaE = dist;
+			}
+			if (open) break;
+		}
+		n.land[i] = open ? 0 : 1;
 		double r = 0;
 		for (int s = -96; s <= 96; s += 32) {
 			double[] q = centre(fam, k, u + s);
 			r += riseAt(q[0], q[1]);
 		}
 		n.rise[i] = r / 7;
-		n.e[i] = f.great.distance(cx, cz) - f.great.halfWidth(cx, cz);
+		n.e[i] = Math.min(seaE, f.great.distance(cx, cz) - f.great.halfWidth(cx, cz));
 		n.owner[i] = this;
 		n.key[i] = key;
 		return i;
@@ -192,6 +241,11 @@ public final class Infra {
 		return h;
 	}
 
+	/** Does the motorway end within d blocks along it (at open sea)? */
+	public boolean endsNear(int fam, int k, double u, double d) {
+		return prof(fam, k, u + d) == null || prof(fam, k, u - d) == null;
+	}
+
 	/** The motorway of a family that runs within maxC of this column, or null. */
 	public Hit hit(int fam, double x, double z, double maxC) {
 		double[] nl = nearestLine(fam, x, z);
@@ -205,6 +259,7 @@ public final class Infra {
 	/** Is anything of the roads (motorways, lock roads, locks) within r of this point? For windmills, farms ... */
 	public boolean near(int x, int z, double r) {
 		if (motorwayDistance(x, z) < EDGE + r) return true;
+		if (f.roads.near(x, z, r)) return true;
 		return locks.near(x, z, r);
 	}
 
@@ -234,6 +289,7 @@ public final class Infra {
 				if (t > hi) t = hi;
 			}
 		}
+		t = f.roads.shape(x, z, t);
 		return locks.shape(x, z, t);
 	}
 

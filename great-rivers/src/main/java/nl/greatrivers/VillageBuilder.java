@@ -27,7 +27,7 @@ import net.minecraft.world.StructureWorldAccess;
  */
 final class VillageBuilder {
 	private static final BlockState AIR = Blocks.AIR.getDefaultState();
-	static final int G = 62;          // ground level: top block of the polder
+	static final int G = Villages.GROUND;   // ground level: top block of the streets
 	static final int Y0 = G + 1;      // ground floor
 	private static final Block[] BRICK = {Blocks.BRICKS, Blocks.BRICKS, Blocks.MUD_BRICKS, Blocks.BRICKS, Blocks.BRICKS};
 	private static final Block[][] ROOF = {
@@ -46,23 +46,60 @@ final class VillageBuilder {
 		return Harbours.mix(a * 0x9E3779B97F4A7C15L + b * 0x632BE59BD9B4E019L + c * 0x2545F4914F6CDD1DL);
 	}
 
+	/** How far the quays and the boulevard reach from the water in a river city. */
+	static final double QUAY = 12;
+
 	/** Builds this column of the town. Returns true if anything was placed. */
-	static boolean column(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z) {
+	static boolean column(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Villages.Town t, int x, int z) {
+		double e = Double.MAX_VALUE;
+		if (t.river()) {
+			double[] rv = f.riverAt(x, z, true);
+			e = rv[0] - rv[1];
+			if (e < 0) return ferry(w, m, f, t, x, z, e);
+		}
 		// clear trees and plants above the ground
 		for (int y = G + 1; y <= G + 40; y++) {
 			BlockState st = w.getBlockState(m.set(x, y, z));
-			if (!st.isAir() && (st.isIn(BlockTags.LEAVES) || st.isIn(BlockTags.LOGS) || st.isReplaceable())) set(w, m, x, y, z, AIR);
+			if (!st.isAir() && (st.isIn(BlockTags.LEAVES) || st.isIn(BlockTags.LOGS) || st.isReplaceable() || st.isIn(BlockTags.FLOWERS))) set(w, m, x, y, z, AIR);
+		}
+		if (e < QUAY) {
+			quay(w, m, f, x, z, e);
+			return true;
 		}
 		int u = Math.floorMod(x - t.cx(), Villages.PU), wv = Math.floorMod(z - t.cz(), Villages.PW);
 		if (Villages.street(t, x, z)) {
 			street(w, m, t, x, z, u, wv);
 			return true;
 		}
-		if (!Villages.blockIn(t, x, z)) return false;
+		if (!Villages.blockIn(t, x, z)) return edge(w, m, t, x, z);
 		int bu = u - Villages.STREET, bw = wv - Villages.STREET;   // 0..28, 0..20
 		int bx = Math.floorDiv(x - t.cx(), Villages.PU), bz = Math.floorDiv(z - t.cz(), Villages.PW);
+		if (t.river() && blockNearWater(f, t, bx, bz)) {
+			park(w, m, x, z, bu, bw);
+			return true;
+		}
 		if (bx == 0 && bz == 0) {
 			church(w, m, t, x, z, bu, bw);
+			return true;
+		}
+		double zone = Math.hypot(t.cx() + bx * Villages.PU + Villages.PU / 2.0 - t.cx(), t.cz() + bz * Villages.PW + Villages.PW / 2.0 - t.cz()) / t.radius();
+		long bh = hash(t.seed(), bx * 31L + bz, 99);
+		if (t.city()) {
+			double tall = t.river() ? 0.42 : 0.3, flats = t.river() ? 0.72 : 0.62;
+			if (zone < tall && (bh & 7) != 0) {
+				tower(w, m, x, z, bu, bw, bh, zone / tall);
+				return true;
+			}
+			if (zone < flats && (bh & 3) != 0) {
+				flats(w, m, x, z, bu, bw, bh);
+				return true;
+			}
+			if ((bh & 15) == 1) {
+				park(w, m, x, z, bu, bw);
+				return true;
+			}
+		} else if ((bh & 15) == 3 && zone > 0.3) {
+			park(w, m, x, z, bu, bw);
 			return true;
 		}
 		// two rows of houses back to back: the front row faces north (-z), the back row south (+z)
@@ -78,8 +115,220 @@ final class VillageBuilder {
 		}
 		int pw = front ? bw : 20 - bw;                     // 0 at the street facade, 9 at the back
 		long hh = hash(t.seed(), bx * 31L + bz, house * 2L + (front ? 0 : 1));
-		house(w, m, t, x, z, hx, pw, front, hh);
+		house(w, m, t, x, z, hx, pw, front, hh, !t.city());
 		return true;
+	}
+
+	/** Is any part of this block of a river city on the quays or in the water? */
+	private static boolean blockNearWater(RiverField f, Villages.Town t, int bx, int bz) {
+		int x0 = t.cx() + bx * Villages.PU, z0 = t.cz() + bz * Villages.PW;
+		for (int i = 0; i <= 2; i++)
+			for (int j = 0; j <= 2; j++) {
+				int x = x0 + i * Villages.PU / 2, z = z0 + j * Villages.PW / 2;
+				double[] rv = f.riverAt(x, z, true);
+				if (rv[0] - rv[1] < QUAY + 3) return true;
+			}
+		return false;
+	}
+
+	// ------------------------------------------------------------------ the edge of the town
+
+	/** Just outside the outer streets: a hedge with trees, so the town ends in green, not in stone. */
+	private static boolean edge(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z) {
+		int k = 0;
+		for (int d = 1; d <= 3 && k == 0; d++)
+			if (Villages.street(t, x + d, z) || Villages.street(t, x - d, z) || Villages.street(t, x, z + d) || Villages.street(t, x, z - d)) k = d;
+		if (k == 0) return false;
+		if (k == 2) {
+			long h = hash(x, z, 11);
+			if ((h & 7) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 3);
+			else set(w, m, x, G + 1, z, Blocks.OAK_LEAVES.getDefaultState().with(Properties.PERSISTENT, true));
+			return true;
+		}
+		return false;
+	}
+
+	// ------------------------------------------------------------------ river city: quays, boulevard, ferry
+
+	private static void quay(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, int x, int z, double e) {
+		long h = hash(x, z, 21);
+		if (e < 1.5) {
+			// the quay wall: brick-faced, standing on the river bed, smooth stone coping
+			int g = G - 1;
+			while (g > 30 && !w.getBlockState(m.set(x, g, z)).isOpaqueFullCube(w, m)) g--;
+			for (int y = Math.min(g, G - 1) - 1; y < G; y++) set(w, m, x, y, z, y < RiverField.WATER_TOP - 2 ? Blocks.STONE_BRICKS.getDefaultState() : Blocks.BRICKS.getDefaultState());
+			set(w, m, x, G, z, Blocks.SMOOTH_STONE.getDefaultState());
+			if ((h & 31) == 0) set(w, m, x, G + 1, z, Blocks.POLISHED_BLACKSTONE_WALL.getDefaultState());   // bollard
+			return;
+		}
+		// the boulevard: paving, a row of trees, benches and lights
+		set(w, m, x, G, z, ((x + z) & 3) == 0 ? Blocks.SMOOTH_STONE.getDefaultState() : Blocks.POLISHED_ANDESITE.getDefaultState());
+		if (e >= 6 && e < 7 && (h % 9) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 8);
+		else if (e >= 3 && e < 4 && (h % 23) == 0) set(w, m, x, G + 1, z, Blocks.SPRUCE_STAIRS.getDefaultState());
+		else if (e >= 10 && e < 11 && (h % 17) == 0) {
+			for (int y = G + 1; y <= G + 4; y++) set(w, m, x, y, z, Blocks.DARK_OAK_FENCE.getDefaultState());
+			set(w, m, x, G + 5, z, Blocks.LANTERN.getDefaultState());
+		}
+	}
+
+	/** The ferry ("pont") across the river in the middle of the city: a landing stage on both banks and the ferry. */
+	private static boolean ferry(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Villages.Town t, int x, int z, double e) {
+		if (e < -16) return false;
+		double[] n = f.great.normal(t.cx(), t.cz());
+		double tx = -n[1], tz = n[0];
+		double a = (x + 0.5 - t.cx()) * tx + (z + 0.5 - t.cz()) * tz;
+		double aa = Math.abs(a);
+		if (aa < 3 && e > -12) {
+			// landing stage of timber on piles, at quay height
+			int g = ground(w, m, x, z);
+			if (aa > 2 && ((x + z) & 3) == 0) for (int y = g; y < G; y++) set(w, m, x, y, z, Blocks.DARK_OAK_LOG.getDefaultState());
+			set(w, m, x, G, z, Blocks.SPRUCE_PLANKS.getDefaultState());
+			if (aa > 2) set(w, m, x, G + 1, z, Blocks.SPRUCE_FENCE.getDefaultState());
+			return true;
+		}
+		// the ferry itself, moored at the stage on one bank: white hull with a blue band, a small wheelhouse
+		double side = (n[0] * (x - t.cx()) + n[1] * (z - t.cz())) >= 0 ? 1 : -1;
+		if (side > 0 && a >= 3.5 && a < 9.5 && e > -14 && e < -1) {
+			boolean rim = a < 4.5 || a >= 8.5 || e < -13 || e >= -2;
+			set(w, m, x, RiverField.WATER_TOP - 1, z, Blocks.BLUE_CONCRETE.getDefaultState());
+			set(w, m, x, RiverField.WATER_TOP, z, Blocks.WHITE_CONCRETE.getDefaultState());
+			set(w, m, x, RiverField.WATER_TOP + 1, z, rim ? Blocks.WHITE_CONCRETE.getDefaultState() : Blocks.GRAY_CONCRETE.getDefaultState());
+			if (rim) set(w, m, x, RiverField.WATER_TOP + 2, z, Blocks.IRON_BARS.getDefaultState());
+			if (!rim && e >= -9 && e < -6 && a >= 5.5 && a < 7.5) {
+				for (int y = RiverField.WATER_TOP + 2; y <= RiverField.WATER_TOP + 3; y++) set(w, m, x, y, z, Blocks.WHITE_CONCRETE.getDefaultState());
+				set(w, m, x, RiverField.WATER_TOP + 4, z, Blocks.LIGHT_BLUE_STAINED_GLASS.getDefaultState());
+				set(w, m, x, RiverField.WATER_TOP + 5, z, Blocks.SMOOTH_QUARTZ_SLAB.getDefaultState());
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private static int ground(StructureWorldAccess w, BlockPos.Mutable m, int x, int z) {
+		int g = G;
+		while (g > 30 && (w.getBlockState(m.set(x, g, z)).isAir() || !w.getBlockState(m).getFluidState().isEmpty())) g--;
+		return g;
+	}
+
+	// ------------------------------------------------------------------ parks
+
+	private static void park(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw) {
+		long h = hash(x, z, 31);
+		boolean path = bu == 14 || bw == 10;
+		if (path) {
+			set(w, m, x, G, z, Blocks.GRAVEL.getDefaultState());
+			if ((h % 19) == 0) set(w, m, x, G + 1, z, Blocks.SPRUCE_STAIRS.getDefaultState());
+			return;
+		}
+		set(w, m, x, G, z, Blocks.GRASS_BLOCK.getDefaultState());
+		if (bu > 0 && bu < 28 && bw > 0 && bw < 20) {
+			if ((h % 37) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 8);
+			else if ((h % 11) == 0) set(w, m, x, G + 1, z, Blocks.SHORT_GRASS.getDefaultState());
+			else if ((h % 29) == 0) set(w, m, x, G + 1, z, Blocks.POPPY.getDefaultState());
+		}
+	}
+
+	// ------------------------------------------------------------------ office towers and flats
+
+	private static final Block[][] TOWER = {
+			{Blocks.CYAN_TERRACOTTA, Blocks.LIGHT_GRAY_CONCRETE}, {Blocks.LIGHT_BLUE_TERRACOTTA, Blocks.WHITE_CONCRETE},
+			{Blocks.BLACK_CONCRETE, Blocks.GRAY_CONCRETE}, {Blocks.BLUE_TERRACOTTA, Blocks.LIGHT_GRAY_CONCRETE},
+			{Blocks.GRAY_TERRACOTTA, Blocks.SMOOTH_QUARTZ}};
+
+	/** An office or apartment tower filling the block, 25 to 75 high: taller towards the middle of the city. */
+	private static void tower(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh, double zone) {
+		int x0 = 3, x1 = 25, z0 = 3, z1 = 17;
+		boolean in = bu >= x0 && bu <= x1 && bw >= z0 && bw <= z1;
+		if (!in) {
+			// plaza around the tower
+			set(w, m, x, G, z, ((bu + bw) & 1) == 0 ? Blocks.SMOOTH_STONE.getDefaultState() : Blocks.POLISHED_ANDESITE.getDefaultState());
+			if ((bu == 1 || bu == 27) && (bw == 1 || bw == 19)) Countryside.tree(w, m, x, G + 1, z, bh >>> 5);
+			return;
+		}
+		Block[] pal = TOWER[(int) ((bh >>> 8) % TOWER.length)];
+		BlockState win = pal[0].getDefaultState(), frame = pal[1].getDefaultState();
+		int H = (int) Math.round((24 + ((bh >>> 16) % 7) * 8) * (1.35 - 0.6 * zone));
+		H = Math.max(22, Math.min(80, H)) / 4 * 4;
+		boolean edge = bu == x0 || bu == x1 || bw == z0 || bw == z1;
+		boolean corner = (bu == x0 || bu == x1) && (bw == z0 || bw == z1);
+		int along = (bw == z0 || bw == z1) ? bu : bw;
+		set(w, m, x, G, z, Blocks.SMOOTH_STONE.getDefaultState());
+		set(w, m, x, Y0, z, edge ? frame : Blocks.SMOOTH_STONE.getDefaultState());
+		for (int y = Y0 + 1; y <= Y0 + H; y++) {
+			int rel = y - Y0;
+			BlockState st;
+			if (edge) {
+				if (corner || rel % 4 == 0) st = frame;
+				else if (rel <= 3) st = Blocks.LIGHT_GRAY_STAINED_GLASS.getDefaultState();     // glass lobby
+				else st = along % 3 == 0 ? frame : win;
+				if (rel <= 2 && bw == z0 && (bu == 13 || bu == 14 || bu == 15)) st = AIR;      // entrance
+			} else {
+				st = rel % 4 == 0 ? Blocks.SMOOTH_STONE.getDefaultState() : AIR;
+				if (rel == 3 && bu % 5 == 0 && bw % 5 == 0) st = Blocks.SEA_LANTERN.getDefaultState();
+			}
+			set(w, m, x, y, z, st);
+		}
+		// roof: parapet, plant rooms, a mast on the tallest
+		int roof = Y0 + H + 1;
+		set(w, m, x, roof, z, edge ? frame : Blocks.SMOOTH_STONE.getDefaultState());
+		if (edge) set(w, m, x, roof + 1, z, Blocks.SMOOTH_STONE_SLAB.getDefaultState());
+		else if (bu >= 9 && bu <= 15 && bw >= 7 && bw <= 12) {
+			for (int y = roof + 1; y <= roof + 3; y++) set(w, m, x, y, z, Blocks.LIGHT_GRAY_CONCRETE.getDefaultState());
+		}
+		if (H >= 56 && bu == 12 && bw == 9) {
+			for (int y = roof + 4; y <= roof + 12; y++) set(w, m, x, y, z, Blocks.IRON_BARS.getDefaultState());
+			set(w, m, x, roof + 13, z, Blocks.REDSTONE_LAMP.getDefaultState());
+		}
+		for (int y = roof + 2; y <= Y0 + 90; y++) {
+			BlockState st = w.getBlockState(m.set(x, y, z));
+			if (st.isIn(BlockTags.LEAVES) || st.isIn(BlockTags.LOGS)) set(w, m, x, y, z, AIR);
+		}
+	}
+
+	/** Two "galerijflats": long blocks of flats of 4 to 8 floors with open galleries, gardens between them. */
+	private static void flats(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh) {
+		boolean front = bw <= 9;
+		int pw = front ? bw : 20 - bw;                          // 0 at the street
+		int floors = 4 + (int) ((bh >>> 12) % 5);
+		int H = floors * 3;
+		boolean body = bu >= 1 && bu <= 27 && pw >= 2 && pw <= 8;
+		boolean gallery = bu >= 1 && bu <= 27 && pw == 1;
+		if (!body && !gallery) {
+			set(w, m, x, G, z, pw == 0 ? Blocks.SMOOTH_STONE.getDefaultState() : Blocks.GRASS_BLOCK.getDefaultState());
+			if (pw == 10 && ((bh + bu) % 9) == 0) Countryside.tree(w, m, x, G + 1, z, bh >>> 3);
+			return;
+		}
+		BlockState wall = (((bh >>> 4) & 1) == 0 ? Blocks.WHITE_CONCRETE : Blocks.LIGHT_GRAY_CONCRETE).getDefaultState();
+		BlockState brick = (((bh >>> 5) & 1) == 0 ? Blocks.BRICKS : Blocks.WHITE_CONCRETE).getDefaultState();
+		BlockState win = Blocks.LIGHT_BLUE_TERRACOTTA.getDefaultState();
+		set(w, m, x, G, z, Blocks.SMOOTH_STONE.getDefaultState());
+		if (gallery) {
+			// open galleries along the street side, one per floor, with a concrete balustrade
+			for (int f = 1; f < floors; f++) {
+				int y = Y0 + f * 3;
+				set(w, m, x, y, z, Blocks.SMOOTH_STONE_SLAB.getDefaultState().with(Properties.SLAB_TYPE, SlabType.TOP));
+				set(w, m, x, y + 1, z, wall);
+			}
+			return;
+		}
+		boolean edge = bu == 1 || bu == 27 || pw == 2 || pw == 8;
+		set(w, m, x, Y0, z, edge ? brick : Blocks.SMOOTH_STONE.getDefaultState());
+		for (int y = Y0 + 1; y <= Y0 + H; y++) {
+			int rel = y - Y0;
+			BlockState st;
+			if (edge) {
+				if (rel % 3 == 0) st = wall;                                      // floor slabs show on the facade
+				else if (bu == 1 || bu == 27) st = brick;                         // closed end walls
+				else if (rel <= 2) st = brick;                                    // brick plinth
+				else st = (bu % 4 == 2 || bu % 4 == 3) ? win : brick;
+				if (pw == 2 && rel % 3 != 0 && bu % 4 == 0) st = AIR;             // front doors from the gallery
+				if (rel <= 2 && pw == 2 && bu == 14) st = AIR;                    // main entrance
+			} else {
+				st = rel % 3 == 0 ? Blocks.SMOOTH_STONE.getDefaultState() : AIR;
+			}
+			set(w, m, x, y, z, st);
+		}
+		set(w, m, x, Y0 + H + 1, z, edge ? wall : Blocks.GRAY_CONCRETE.getDefaultState());
 	}
 
 	// ------------------------------------------------------------------ streets
@@ -115,7 +364,7 @@ final class VillageBuilder {
 		return b.getDefaultState().with(Properties.HORIZONTAL_FACING, f);
 	}
 
-	private static void house(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z, int hx, int pw, boolean front, long hh) {
+	private static void house(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z, int hx, int pw, boolean front, long hh, boolean residents) {
 		Block wall = BRICK[(int) (hh & 3)];
 		Block[] roof = ROOF[(int) ((hh >>> 3) & 3)];
 		Direction out = out(front), in = out.getOpposite();
@@ -207,7 +456,7 @@ final class VillageBuilder {
 		if (pw == 2 && hx == 3) set(w, m, x, fl1, z, Blocks.CRAFTING_TABLE.getDefaultState());
 		if (pw == 4 && hx == 3) set(w, m, x, Y0 + 7, z, Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
 		// someone lives here
-		if (pw == 3 && hx == 2 && (t.seed() + hx * 7 + pw) % 3 == 0) {
+		if (residents && pw == 3 && hx == 2 && (hh & 7) == 0) {
 			VillagerEntity v = EntityType.VILLAGER.create(w.toServerWorld());
 			if (v != null) {
 				v.refreshPositionAndAngles(x + 0.5, fl0, z + 0.5, 0, 0);

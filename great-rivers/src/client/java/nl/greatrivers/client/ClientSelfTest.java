@@ -68,15 +68,16 @@ public final class ClientSelfTest {
 			} else {
 				plan(f.great, f.river, "rivier", 60, 95);
 				for (boolean city : new boolean[]{false, true}) {
-					nl.greatrivers.Villages.Town t = GreatRivers.findTown(f, 0, 0, 15, city);
+					nl.greatrivers.Villages.Town t = GreatRivers.findTown(f, 0, 0, 15, city, Boolean.FALSE);
 					if (t == null) continue;
 					String tag = city ? "stad" : "dorp";
-					add(tag + "_bovenaanzicht", t.cx() - 70, 120, t.cz() - 70, t.cx() + 10, 63, t.cz() + 10);
+					add(tag + "_bovenaanzicht", t.cx() - 70, 122, t.cz() - 70, t.cx() + 10, 65, t.cz() + 10);
 					int sx = t.cx() + nl.greatrivers.Villages.PU + 2, sz = t.cz() + 2;
-					add(tag + "_straat", sx + 0.5, 64.6, sz + 0.5, sx + 40.5, 65, sz + 0.5);
-					add(tag + "_kerk", t.cx() - 14, 70, t.cz() + 30, t.cx() + 15, 72, t.cz() + 14);
+					add(tag + "_straat", sx + 0.5, 66.6, sz + 0.5, sx + 40.5, 67, sz + 0.5);
+					add(tag + "_kerk", t.cx() - 14, 72, t.cz() + 30, t.cx() + 15, 74, t.cz() + 14);
 					int hx = t.cx() + nl.greatrivers.Villages.PU + nl.greatrivers.Villages.STREET + 3, hz = t.cz() + nl.greatrivers.Villages.STREET + 4;
-					add(tag + "_huis_binnen", hx + 0.5, 64.62, hz + 0.5, hx + 0.5, 64.2, hz + 4.5);
+					add(tag + "_huis_binnen", hx + 0.5, 66.62, hz + 0.5, hx + 0.5, 66.2, hz + 4.5);
+					add(tag + "_rand", t.cx() + t.radius() + 60, 76, t.cz() + 20, t.cx(), 66, t.cz());
 				}
 				for (int size = 0; size <= 2; size++) {
 					nl.greatrivers.Harbours.Site h = GreatRivers.findHarbour(f, 0, 0, 25, size);
@@ -99,8 +100,17 @@ public final class ClientSelfTest {
 					double cx = ds[0] + ds[2] * (ds[4] + ds[5] + 17), cz = ds[1] + ds[3] * (ds[4] + ds[5] + 17);
 					add("op_de_dijk", cx, 71, cz, cx - ds[3] * 80, 69, cz + ds[2] * 80);
 				}
+				nl.greatrivers.Villages.Town rc = GreatRivers.findTown(f, 0, 0, 25, true, Boolean.TRUE);
+				if (rc != null) {
+					double[] n = f.great.normal(rc.cx(), rc.cz());
+					double tx = -n[1], tz = n[0];
+					add("rivierstad_vanaf_het_water", rc.cx() + tx * 120, 70, rc.cz() + tz * 120, rc.cx() - tx * 40, 80, rc.cz() - tz * 40);
+					add("rivierstad_kade", rc.cx() + n[0] * (f.great.halfWidth(rc.cx(), rc.cz()) + 6) + tx * 60, 66.6,
+							rc.cz() + n[1] * (f.great.halfWidth(rc.cx(), rc.cz()) + 6) + tz * 60, rc.cx() + n[0] * (f.great.halfWidth(rc.cx(), rc.cz()) + 6), 66, rc.cz() + n[1] * (f.great.halfWidth(rc.cx(), rc.cz()) + 6));
+					add("rivierstad_boven", rc.cx() - 150, 170, rc.cz() - 150, rc.cx(), 70, rc.cz());
+				}
 				// bridges, viaducts, motorways, locks
-				double[] br = f.infra.findBridge(0, 0, 15000);
+				double[] br = f.infra.findBridge(0, 0, 40000);
 				if (br != null) {
 					double[] n = f.great.normal(br[0], br[1]);
 					double tx = -n[1], tz = n[0];

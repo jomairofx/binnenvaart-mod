@@ -118,7 +118,7 @@ final class SelfTest {
 				testRiver(w, f.great, f.river, 60, 15);
 				// villages and towns
 				for (boolean city : new boolean[]{false, true}) {
-					Villages.Town t = GreatRivers.findTown(f, 0, 0, 15, city);
+					Villages.Town t = GreatRivers.findTown(f, 0, 0, 15, city, Boolean.FALSE);
 					String nm = city ? "stad" : "dorp";
 					check(nm + " gevonden", t != null, t == null ? "geen" : "op " + t.cx() + ", " + t.cz());
 					if (t == null) continue;
@@ -133,6 +133,39 @@ final class SelfTest {
 					check(nm + ": huizen en straten", !wall.isAir() && !wall.isOf(net.minecraft.block.Blocks.GRASS_BLOCK)
 									&& (street.isOf(net.minecraft.block.Blocks.BRICKS) || street.isOf(net.minecraft.block.Blocks.SMOOTH_STONE)),
 							"gevel " + wall.getBlock().getName().getString() + ", straat " + street.getBlock().getName().getString());
+				}
+				// a river city: quays along the water, towers in the middle
+				{
+					Villages.Town t = GreatRivers.findTown(f, 0, 0, 25, true, Boolean.TRUE);
+					check("stad aan de rivier gevonden", t != null, t == null ? "geen" : "op " + t.cx() + ", " + t.cz());
+					if (t != null) {
+						double[] n = f.great.normal(t.cx(), t.cz());
+						String found = "geen kade";
+						boolean ok = false;
+						for (int sg = -1; sg <= 1 && !ok; sg += 2)
+							for (double sd = 0; sd < 200 && !ok; sd += 0.5) {
+								int qx = (int) Math.floor(t.cx() + n[0] * sd * sg), qz = (int) Math.floor(t.cz() + n[1] * sd * sg);
+								double[] rv = f.riverAt(qx, qz, true);
+								double e = rv[0] - rv[1];
+								if (e >= 0.2 && e < 1.3) {
+									w.getChunk(qx >> 4, qz >> 4);
+									BlockState top = w.getBlockState(new BlockPos(qx, VillageBuilder.G, qz));
+									BlockState wall = w.getBlockState(new BlockPos(qx, VillageBuilder.G - 2, qz));
+									found = top.getBlock().getName().getString() + " op " + wall.getBlock().getName().getString() + " bij " + qx + ", " + qz;
+									ok = top.isOf(net.minecraft.block.Blocks.SMOOTH_STONE) && (wall.isOf(net.minecraft.block.Blocks.BRICKS) || wall.isOf(net.minecraft.block.Blocks.STONE_BRICKS));
+								}
+							}
+						check("stad aan de rivier: kademuur", ok, found);
+						int tall = 0;
+						for (int bx = -4; bx <= 4; bx++)
+							for (int bz = -5; bz <= 5; bz++) {
+								int qx = t.cx() + bx * Villages.PU + 14, qz = t.cz() + bz * Villages.PW + 10;
+								if (Math.hypot(qx - t.cx(), qz - t.cz()) > t.radius() * 0.4) continue;
+								w.getChunk(qx >> 4, qz >> 4);
+								if (!w.getBlockState(new BlockPos(qx, VillageBuilder.Y0 + 22, qz)).isAir()) tall++;
+							}
+						check("stad aan de rivier: hoogbouw", tall >= 2, tall + " torens hoger dan 22");
+					}
 				}
 				// harbours: one of each size if we can find them
 				for (int size = 0; size <= 2; size++) {
@@ -163,7 +196,7 @@ final class SelfTest {
 					check(nm + " haven: kraan op 20 van de rand", fr != null && Math.abs(fr[1] - Harbours.CRANE_BACK) < 1.5, fr == null ? "?" : String.format("%.1f blokken van de rand", fr[1]));
 				}
 				// motorway bridge over the river: high enough for every ship
-				double[] br = f.infra.findBridge(0, 0, 15000);
+				double[] br = f.infra.findBridge(0, 0, 40000);
 				check("brug gevonden", br != null, br == null ? "geen" : "op " + (int) br[0] + ", " + (int) br[1]);
 				if (br != null) {
 					int bx = (int) Math.floor(br[0]), bz = (int) Math.floor(br[1]);

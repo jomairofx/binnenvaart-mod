@@ -162,10 +162,10 @@ final class SelfTest {
 						int tall = 0;
 						for (int bx = -5; bx <= 5; bx++)
 							for (int bz = -6; bz <= 6; bz++) {
-								int qx = t.cx() + bx * Villages.PU + 14, qz = t.cz() + bz * Villages.PW + 10;
+								int qx = t.cx() + bx * Villages.PU + Villages.STREET + 3, qz = t.cz() + bz * Villages.PW + Villages.STREET + 10;   // on the facade
 								if (Math.hypot(qx - t.cx(), qz - t.cz()) > t.radius() * 0.6) continue;
 								w.getChunk(qx >> 4, qz >> 4);
-								if (!w.getBlockState(new BlockPos(qx, VillageBuilder.Y0 + 22, qz)).isAir()) tall++;
+								if (!w.getBlockState(new BlockPos(qx, VillageBuilder.Y0 + 21, qz)).isAir()) tall++;
 							}
 						check("stad aan de rivier: hoogbouw", tall >= 2, tall + " torens hoger dan 22");
 					}

@@ -166,7 +166,7 @@ public final class SelfTest {
 			if (tick == 1640) {
 				int sand = 0;
 				for (int i = 0; i < ShipEntity.HOLD_SLOTS; i++) if (ship.hold(0).getStack(i).isOf(Items.SAND)) sand += ship.hold(0).getStack(i).getCount();
-				check("laadkraan laden", sand >= 256 && sand < 640, sand + " zand in ruim 1 na 32 s (rustig tempo), nog " + crane.countItems() + " in de kraan");
+				check("laadkraan laden", sand >= 128 && sand < 640, sand + " zand in ruim 1 na 32 s (rustig tempo), nog " + crane.countItems() + " in de kraan");
 				if (barge != null) {
 					nl.kempenaar.block.ShipAccess acc = nl.kempenaar.block.ShipAccess.of(barge);
 					int gravel = 0;

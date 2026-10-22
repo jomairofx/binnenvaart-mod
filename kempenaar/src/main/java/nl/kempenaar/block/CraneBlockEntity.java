@@ -64,6 +64,14 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 	public long cycleStart;
 	public float targetYaw, targetR = (float) HOME_R, targetLow = (float) HOME_LOW;
 	public int carryMat; // 0 = leeg, >0 = blok (raw state id + 1), -1 = kist met stukgoed
+	/** 0 = a working stroke (pile -> ship -> pile), 1 = just moving the grab from a to b (to the pile, or home to rest). */
+	public int animKind;
+	/** Where the stroke starts (a) and ends (b); where the grab is while the crane stands still (rest). NaN = at home. */
+	public float aYaw, aR, aLow, bYaw, bR, bLow;
+	public float restYaw = Float.NaN, restR, restLow;
+	public static final int MOVE = 90;
+	@Nullable
+	private Vec3d pilePoint;
 
 	@Nullable
 	private UUID shipId;
@@ -90,23 +98,45 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 	/** Stand van giek, loopkat en grijper op een (gebroken) tijdstip, plus hoe ver de grijper openstaat (0..1). */
 	public Pose pose(double time) {
 		if (paused) time = pausedAt;
-		float h = homeYaw();
-		if (!running) return new Pose(h, (float) HOME_R, (float) HOME_LOW);
+		Pose rest = restPose();
+		if (!running) return rest;
 		double t = time - cycleStart;
-		float dg = MathHelper.wrapDegrees((float) Math.toDegrees(targetYaw - h)) * MathHelper.RADIANS_PER_DEGREE;
-		float r0 = (float) HOME_R, top = (float) HOOK_TOP, low = (float) HOME_LOW;
-		if (t < 25) return new Pose(h, r0, MathHelper.lerp(smooth(t / 25), low, top));
+		float top = (float) HOOK_TOP;
+		if (animKind == 1) {
+			if (t < 20) return new Pose(aYaw, aR, MathHelper.lerp(smooth(t / 20), aLow, top));
+			if (t < 65) {
+				float s = smooth((t - 20) / 45);
+				return new Pose(aYaw + turn(aYaw, bYaw) * s, MathHelper.lerp(s, aR, bR), top);
+			}
+			return new Pose(bYaw, bR, MathHelper.lerp(smooth((t - 65) / 25), top, bLow));
+		}
+		if (t < 25) return new Pose(aYaw, aR, MathHelper.lerp(smooth(t / 25), aLow, top));
 		if (t < 70) {
 			float s = smooth((t - 25) / 45);
-			return new Pose(h + dg * s, MathHelper.lerp(s, r0, targetR), top);
+			return new Pose(aYaw + turn(aYaw, targetYaw) * s, MathHelper.lerp(s, aR, targetR), top);
 		}
-		if (t < AT_SHIP) return new Pose(h + dg, targetR, MathHelper.lerp(smooth((t - 70) / 45), top, targetLow));
-		if (t < 140) return new Pose(h + dg, targetR, MathHelper.lerp(smooth((t - AT_SHIP) / 25), targetLow, top));
+		if (t < AT_SHIP) return new Pose(targetYaw, targetR, MathHelper.lerp(smooth((t - 70) / 45), top, targetLow));
+		if (t < 140) return new Pose(targetYaw, targetR, MathHelper.lerp(smooth((t - AT_SHIP) / 25), targetLow, top));
 		if (t < 185) {
 			float s = smooth((t - 140) / 45);
-			return new Pose(h + dg * (1 - s), MathHelper.lerp(s, targetR, r0), top);
+			return new Pose(targetYaw + turn(targetYaw, bYaw) * s, MathHelper.lerp(s, targetR, bR), top);
 		}
-		return new Pose(h, r0, MathHelper.lerp(smooth((t - 185) / 45), top, low));
+		return new Pose(bYaw, bR, MathHelper.lerp(smooth((t - 185) / 45), top, bLow));
+	}
+
+	/** Shortest turn from one yaw to another (radians). */
+	private static float turn(float from, float to) {
+		return MathHelper.wrapDegrees((float) Math.toDegrees(to - from)) * MathHelper.RADIANS_PER_DEGREE;
+	}
+
+	/** Where the grab hangs while the crane does nothing: low at home, or low over the pile it works from. */
+	public Pose restPose() {
+		if (Float.isNaN(restYaw)) return new Pose(homeYaw(), (float) HOME_R, (float) HOME_LOW);
+		return new Pose(restYaw, restR, restLow);
+	}
+
+	private boolean atHome() {
+		return Float.isNaN(restYaw);
 	}
 
 	/** Opening van de grijper: bij laden open boven het ruim, bij lossen open boven de kade (en tijdens het zakken in het ruim). */
@@ -114,12 +144,14 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		if (paused) time = pausedAt;
 		if (!running) return 0.6f;
 		double t = time - cycleStart;
+		if (animKind == 1) return 0.6f;
 		if (!unloading) {
 			if (t > AT_SHIP - 8 && t < AT_SHIP + 18) return smooth((t - (AT_SHIP - 8)) / 8) * (1 - smooth((t - (AT_SHIP + 10)) / 8));
 			if (t < 10) return 0.6f * (1 - smooth(t / 10));
 			if (t > CYCLE - 12) return 0.6f * smooth((t - (CYCLE - 12)) / 12);
 			return 0f;
 		}
+		if (t < 12) return 0.6f * (1 - smooth(t / 12));
 		if (t > 90 && t < AT_SHIP + 8) return smooth((t - 90) / 10) * (1 - smooth((t - AT_SHIP) / 8));
 		if (t > CYCLE - 14) return smooth((t - (CYCLE - 14)) / 8);
 		return 0f;
@@ -137,9 +169,21 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 			long t = w.getTime() - cycleStart;
 			if (t == 25 || t == 140) sound(w, Vec3d.ofCenter(pos).add(0, TOWER, 0), SoundEvents.BLOCK_PISTON_CONTRACT, 0.5f, 0.5f);
 			if (t == 70 || t == 185) sound(w, Vec3d.ofCenter(pos).add(0, TOWER, 0), SoundEvents.BLOCK_CHAIN_STEP, 0.8f, 0.5f);
+			if (animKind == 1) {
+				if (t >= MOVE || t < 0) {
+					running = false;
+					setRest(bYaw, bR, bLow);
+					markDirty();
+					sync();
+				}
+				return;
+			}
+			if (t == 6 && !unloading) pileDust(w, false);
 			if (t == AT_SHIP) atShip(w);
+			if (t == CYCLE - 8 && unloading) pileDust(w, true);
 			if (t >= CYCLE || t < 0) {
 				running = false;
+				setRest(bYaw, bR, bLow);
 				depositCarried();
 				carryMat = 0;
 				markDirty();
@@ -149,13 +193,30 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		}
 		if (++idle < 10) return;
 		idle = 0;
-		if (!enabled) return;
+		if (!enabled) {
+			// switched off: the grab comes back from the pile and is lowered to the ground at the foot of the crane
+			if (!atHome()) {
+				Pose r = restPose();
+				startMove(w, r.yaw(), r.radius(), r.hookY(), homeYaw(), (float) HOME_R, (float) HOME_LOW);
+				pilePoint = null;
+			}
+			return;
+		}
 		if (!isCarriedEmpty()) {
 			depositCarried();
 			if (!isCarriedEmpty()) return;
 		}
 		Target tg = findTarget(w);
 		if (tg == null) return;
+		// first to the pile of goods (or the storage bins): the grab scoops there, swings to the ship and comes back
+		ItemStack goods = unloading ? lastIn(tg.ship.hold(tg.hold)) : firstGoods();
+		PilePose pp = pileFor(w, goods);
+		Pose rest = restPose();
+		if (farApart(rest, pp)) {
+			startMove(w, rest.yaw(), rest.radius(), rest.hookY(), pp.yaw, pp.r, pp.low);
+			pilePoint = pp.point;
+			return;
+		}
 		if (!unloading) {
 			int taken = 0;
 			for (int i = 0; i < SLOTS && taken < STACKS_PER_RUN; i++) {
@@ -177,6 +238,14 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		} else {
 			carryMat = 0;
 		}
+		animKind = 0;
+		aYaw = rest.yaw();
+		aR = rest.radius();
+		aLow = rest.hookY();
+		bYaw = pp.yaw;
+		bR = pp.r;
+		bLow = pp.low;
+		pilePoint = pp.point;
 		shipId = tg.ship.entity().getUuid();
 		spot++;
 		holdIndex = tg.hold;
@@ -191,6 +260,133 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 	}
 
 	private record Target(ShipAccess ship, int hold, float yaw, float radius, float low, Vec3d point) {}
+
+	private record PilePose(float yaw, float r, float low, @Nullable Vec3d point) {}
+
+	private void setRest(float yaw, float r, float low) {
+		Pose h = new Pose(homeYaw(), (float) HOME_R, (float) HOME_LOW);
+		if (!farApart(h, new PilePose(yaw, r, low, null)) && Math.abs(low - HOME_LOW) < 0.01f) restYaw = Float.NaN;
+		else {
+			restYaw = yaw;
+			restR = r;
+			restLow = low;
+		}
+	}
+
+	private void startMove(ServerWorld w, float ay, float ar, float al, float by, float br, float bl) {
+		animKind = 1;
+		aYaw = ay;
+		aR = ar;
+		aLow = al;
+		bYaw = by;
+		bR = br;
+		bLow = bl;
+		carryMat = 0;
+		running = true;
+		cycleStart = w.getTime();
+		sound(w, Vec3d.ofCenter(pos).add(0, TOWER, 0), SoundEvents.BLOCK_CHAIN_STEP, 0.6f, 0.5f);
+		markDirty();
+		sync();
+	}
+
+	private static boolean farApart(Pose p, PilePose q) {
+		double x1 = Math.cos(p.yaw()) * p.radius(), z1 = Math.sin(p.yaw()) * p.radius();
+		double x2 = Math.cos(q.yaw) * q.r, z2 = Math.sin(q.yaw) * q.r;
+		return Math.hypot(x1 - x2, z1 - z2) > 5 || Math.abs(p.hookY() - q.low) > 4;
+	}
+
+	private ItemStack firstGoods() {
+		for (ItemStack st : items) if (!st.isEmpty()) return st;
+		for (CraneStorageBlockEntity b : bins())
+			for (int i = 0; i < b.size(); i++) if (!b.getStack(i).isEmpty()) return b.getStack(i);
+		return ItemStack.EMPTY;
+	}
+
+	private static ItemStack lastIn(SimpleInventory inv) {
+		for (int i = inv.size() - 1; i >= 0; i--) if (!inv.getStack(i).isEmpty()) return inv.getStack(i);
+		return ItemStack.EMPTY;
+	}
+
+	private static int surface(ServerWorld w, int x, int z) {
+		return w.getTopY(net.minecraft.world.Heightmap.Type.WORLD_SURFACE, x, z) - 1;
+	}
+
+	/**
+	 * Where the grab works on land: the top of the nearest heap of the same goods in the yard (a pile of gravel, sand,
+	 * coal ...), otherwise over the storage bins at the foot of the crane.
+	 */
+	private PilePose pileFor(ServerWorld w, ItemStack goods) {
+		Vec3d c = Vec3d.ofCenter(pos);
+		Block want = bulkBlock(goods);
+		if (want != null && !(want instanceof net.minecraft.block.BlockEntityProvider)) {
+			BlockPos.Mutable m = new BlockPos.Mutable();
+			int R = 32, bx = 0, bz = 0, by = 0;
+			double bd = Double.MAX_VALUE;
+			for (int dx = -R; dx <= R; dx++)
+				for (int dz = -R; dz <= R; dz++) {
+					double d = Math.sqrt(dx * dx + dz * dz);
+					if (d > R || d < 4 || d >= bd) continue;
+					int x = pos.getX() + dx, z = pos.getZ() + dz;
+					if (!w.isChunkLoaded(x >> 4, z >> 4)) continue;
+					int top = surface(w, x, z);
+					if (top < pos.getY() - 4 || top > pos.getY() + 16) continue;
+					if (!w.getBlockState(m.set(x, top, z)).isOf(want)) continue;
+					bd = d;
+					bx = x;
+					bz = z;
+					by = top;
+				}
+			if (bd < Double.MAX_VALUE) {
+				// climb to the top of that heap, then take a spot near the top (a little different each time)
+				int cx = bx, cz = bz, cy = by;
+				for (int dx = -7; dx <= 7; dx++)
+					for (int dz = -7; dz <= 7; dz++) {
+						int x = bx + dx, z = bz + dz;
+						if (!w.isChunkLoaded(x >> 4, z >> 4)) continue;
+						int top = surface(w, x, z);
+						if (top > cy && top <= pos.getY() + 16 && w.getBlockState(m.set(x, top, z)).isOf(want)) {
+							cx = x;
+							cz = z;
+							cy = top;
+						}
+					}
+				int tx = cx + (spot % 3) - 1, tz = cz + ((spot / 3) % 3) - 1;
+				if (w.isChunkLoaded(tx >> 4, tz >> 4)) {
+					int tt = surface(w, tx, tz);
+					if (tt >= cy - 1 && w.getBlockState(m.set(tx, tt, tz)).isOf(want)) {
+						cx = tx;
+						cz = tz;
+						cy = tt;
+					}
+				}
+				double px = cx + 0.5, pz = cz + 0.5, dx = px - c.x, dz = pz - c.z, r = Math.sqrt(dx * dx + dz * dz);
+				if (r <= REACH && r >= 2.5) {
+					float low = (float) MathHelper.clamp(cy + 1 - 0.35 - pos.getY(), -14, HOOK_TOP - 1);
+					return new PilePose((float) Math.atan2(dz, dx), (float) r, low, new Vec3d(px, cy + 1, pz));
+				}
+			}
+		}
+		// over a storage bin
+		for (CraneStorageBlockEntity b : bins()) {
+			if (unloading ? !b.hasEmptySlot() : b.isEmpty()) continue;
+			BlockPos bp = b.getPos();
+			double px = bp.getX() + 0.5, pz = bp.getZ() + 0.5, dx = px - c.x, dz = pz - c.z;
+			double r = Math.max(HOME_R, Math.sqrt(dx * dx + dz * dz));
+			var shape = w.getBlockState(bp).getCollisionShape(w, bp);
+			double topY = bp.getY() + (shape.isEmpty() ? 1 : shape.getMax(Direction.Axis.Y));
+			float low = (float) Math.max(HOME_LOW, topY + 0.1 - pos.getY());
+			return new PilePose((float) Math.atan2(dz, dx), (float) r, low, new Vec3d(px, topY, pz));
+		}
+		return new PilePose(homeYaw(), (float) HOME_R, (float) HOME_LOW, c.add(0, HOME_LOW - 0.5, 0));
+	}
+
+	/** Dust and sound where the grab scoops from (or drops onto) the heap. */
+	private void pileDust(ServerWorld w, boolean drop) {
+		if (pilePoint == null || carryMat <= 0) return;
+		BlockState st = Block.getStateFromRawId(carryMat - 1);
+		w.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, st), pilePoint.x, pilePoint.y + 0.2, pilePoint.z, 30, 0.6, 0.3, 0.6, 0.1);
+		sound(w, pilePoint, drop ? st.getSoundGroup().getPlaceSound() : st.getSoundGroup().getBreakSound(), 1.0f, 0.6f);
+	}
 
 	/** Dichtstbijzijnde laadruim binnen bereik waar nu iets te doen is. */
 	@Nullable
@@ -364,8 +560,20 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 	}
 
 	private static int matOf(ItemStack s) {
-		if (s.getItem() instanceof BlockItem bi) return Block.getRawIdFromState(bi.getBlock().getDefaultState()) + 1;
+		Block b = bulkBlock(s);
+		if (b != null) return Block.getRawIdFromState(b.getDefaultState()) + 1;
 		return -1;
+	}
+
+	/** The block that bulk goods look like in a heap or in the grab (coal -> coal, raw iron -> iron ore ...). */
+	@Nullable
+	private static Block bulkBlock(ItemStack s) {
+		if (s.getItem() instanceof BlockItem bi) return bi.getBlock();
+		if (s.isOf(net.minecraft.item.Items.COAL) || s.isOf(net.minecraft.item.Items.CHARCOAL)) return net.minecraft.block.Blocks.COAL_BLOCK;
+		if (s.isOf(net.minecraft.item.Items.RAW_IRON)) return net.minecraft.block.Blocks.RAW_IRON_BLOCK;
+		if (s.isOf(net.minecraft.item.Items.RAW_COPPER)) return net.minecraft.block.Blocks.RAW_COPPER_BLOCK;
+		if (s.isOf(net.minecraft.item.Items.CLAY_BALL)) return net.minecraft.block.Blocks.CLAY;
+		return null;
 	}
 
 	private static void sound(ServerWorld w, Vec3d p, SoundEvent e, float vol, float pitch) {
@@ -447,6 +655,17 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		nbt.putBoolean("Enabled", enabled);
 		nbt.putBoolean("Paused", paused);
 		nbt.putLong("PausedAt", pausedAt);
+		nbt.putInt("AnimKind", animKind);
+		nbt.putFloat("AYaw", aYaw);
+		nbt.putFloat("AR", aR);
+		nbt.putFloat("ALow", aLow);
+		nbt.putFloat("BYaw", bYaw);
+		nbt.putFloat("BR", bR);
+		nbt.putFloat("BLow", bLow);
+		nbt.putBoolean("AtHome", Float.isNaN(restYaw));
+		nbt.putFloat("RestYaw", Float.isNaN(restYaw) ? 0 : restYaw);
+		nbt.putFloat("RestR", restR);
+		nbt.putFloat("RestLow", restLow);
 	}
 
 	@Override
@@ -460,8 +679,7 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 		nbt.putBoolean("Enabled", enabled);
 		nbt.putBoolean("Paused", paused);
 		nbt.putLong("PausedAt", pausedAt);
-		nbt.putBoolean("Running", running);
-		nbt.putLong("CycleStart", cycleStart);
+		writeAnim(nbt);
 	}
 
 	@Override
@@ -486,6 +704,24 @@ public class CraneBlockEntity extends BlockEntity implements Inventory, NamedScr
 			targetR = nbt.getFloat("TargetR");
 			targetLow = nbt.getFloat("TargetLow");
 			carryMat = nbt.getInt("CarryMat");
+		}
+		if (nbt.contains("AtHome")) {
+			animKind = nbt.getInt("AnimKind");
+			aYaw = nbt.getFloat("AYaw");
+			aR = nbt.getFloat("AR");
+			aLow = nbt.getFloat("ALow");
+			bYaw = nbt.getFloat("BYaw");
+			bR = nbt.getFloat("BR");
+			bLow = nbt.getFloat("BLow");
+			restYaw = nbt.getBoolean("AtHome") ? Float.NaN : nbt.getFloat("RestYaw");
+			restR = nbt.getFloat("RestR");
+			restLow = nbt.getFloat("RestLow");
+		} else if (nbt.contains("Running")) {
+			// old save: a stroke from home back to home
+			animKind = 0;
+			aYaw = bYaw = homeYaw();
+			aR = bR = (float) HOME_R;
+			aLow = bLow = (float) HOME_LOW;
 		}
 	}
 

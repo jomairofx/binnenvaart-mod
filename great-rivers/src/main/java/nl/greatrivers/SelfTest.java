@@ -219,7 +219,21 @@ final class SelfTest {
 							Metros.Metro c = f.metros.metro(i, j);
 							if (c != null && c.river()) rm = c;
 						}
+					if (mt != null && mt.river()) rm = mt;
 					log.add(rm == null ? "  (geen grote stad aan de rivier in de buurt)" : "  grote stad aan de rivier op " + rm.cx() + ", " + rm.cz());
+					if (rm != null) {
+						double[] cb = MetroBuilder.findBridge(f, rm);
+						check("grote stad: brug over de rivier", cb != null, cb == null ? "geen" : "op " + (int) cb[0] + ", " + (int) cb[1] + (cb[2] == 1 ? " (boogbrug)" : " (tuibrug)"));
+						if (cb != null) {
+							int qx = (int) Math.floor(cb[0]), qz = (int) Math.floor(cb[1]);
+							w.getChunk(qx >> 4, qz >> 4);
+							BlockState dk = w.getBlockState(new BlockPos(qx, MetroBuilder.DECK - 1, qz));
+							int blocked = 0;
+							for (int y = RiverField.WATER_TOP + 1; y <= MetroBuilder.DECK - 4; y++) if (!w.getBlockState(new BlockPos(qx, y, qz)).isAir()) blocked++;
+							check("grote stad: brugdek hoog genoeg", dk.isOf(net.minecraft.block.Blocks.LIGHT_GRAY_CONCRETE) && blocked == 0,
+									dk.getBlock().getName().getString() + " op y " + (MetroBuilder.DECK - 1) + ", " + blocked + " blokken eronder in de weg");
+						}
+					}
 				}
 				// harbours: one of each size if we can find them
 				for (int size = 0; size <= 2; size++) {

@@ -252,6 +252,34 @@ final class MetroBuilder {
 		return Math.abs(n[1]) >= Math.abs(n[0]);
 	}
 
+	/** Middle of a city bridge over the river: {x, z, kind}, or null. For /findriver and the tests. */
+	static double[] findBridge(RiverField f, Metros.Metro mt) {
+		if (!mt.river()) return null;
+		boolean ns = riverAlongX(f, mt);
+		int n = (int) (mt.radius() / (ns ? Villages.PU : Villages.PW));
+		double[] best = null;
+		double bd = Double.MAX_VALUE;
+		for (int index = -n; index <= n; index++) {
+			if (ns ? !Metros.Metro.avenueX(index) : !Metros.Metro.avenueZ(index)) continue;
+			int kind = bridgeKind(mt, index);
+			if (kind == 0) continue;
+			for (double s = -mt.radius(); s <= mt.radius(); s += 2) {
+				double cxl = ns ? mt.cx() + index * Villages.PU + Villages.STREET + 14.5 : mt.cx() + s;
+				double czl = ns ? mt.cz() + s : mt.cz() + index * Villages.PW + Villages.STREET + 10.5;
+				if (Math.hypot(cxl - mt.cx(), czl - mt.cz()) > mt.radius()) continue;
+				double dc = f.great.distance(cxl, czl);
+				if (dc < f.great.halfWidth(cxl, czl) * 0.3) {
+					double d = Math.hypot(cxl - mt.cx(), czl - mt.cz());
+					if (d < bd) {
+						bd = d;
+						best = new double[]{cxl, czl, kind};
+					}
+				}
+			}
+		}
+		return best;
+	}
+
 	/** Is there a bridge ramp (higher than a few blocks) over this column? */
 	private static boolean bridgeOver(RiverField f, Metros.Metro mt, int x, int z, int bx, int bz, int u, int wv) {
 		boolean ns = riverAlongX(f, mt);

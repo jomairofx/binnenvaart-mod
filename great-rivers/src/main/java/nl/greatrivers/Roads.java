@@ -2,6 +2,8 @@ package nl.greatrivers;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.state.property.Properties;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.StructureWorldAccess;
@@ -128,13 +130,97 @@ public final class Roads {
 	}
 
 	public boolean near(int x, int z, double r) {
-		return hit(x + 0.5, z + 0.5, OUTER + r) != null;
+		return hit(x + 0.5, z + 0.5, OUTER + 17 + r) != null;
 	}
 
 	/** No ditches or lakes under the road and the cycle path. */
 	public double shape(int x, int z, double t) {
 		if (t >= Lowlands.POLDER) return t;
 		return hit(x + 0.5, z + 0.5, OUTER + 1) != null ? Lowlands.POLDER : t;
+	}
+
+	// ------------------------------------------------------------------ petrol stations
+
+	/** Where on a stretch of road its petrol station stands (distance along), or -1 when it has none. */
+	static double stationAt(Seg s) {
+		double len = Math.hypot(s.x1() - s.x0(), s.z1() - s.z0());
+		if (len < 520) return -1;
+		long h = Harbours.mix(Double.doubleToLongBits(s.x0()) * 31 + Double.doubleToLongBits(s.z1()));
+		if ((h & 1) == 0) return -1;
+		return len * (0.35 + 0.3 * ((h >>> 8) & 1023) / 1023.0);
+	}
+
+	/**
+	 * A petrol station beside the road (on the side without the cycle path): forecourt with pumps under a canopy,
+	 * a small shop, a price sign. c, along = position relative to the road. Returns true if this column is part of it.
+	 */
+	static boolean station(StructureWorldAccess w, BlockPos.Mutable m, Seg s, double c, double along, int x, int z) {
+		double at = stationAt(s);
+		if (at < 0) return false;
+		double da = along - at;
+		int side = -s.bike();
+		if (Math.abs(da) > 13.5 || (c >= 0 ? 1 : -1) != side) return false;
+		double dc = Math.abs(c) - (OUTER + 1);
+		if (dc < 0 || dc >= 16) return false;
+		int ia = (int) Math.floor(da), ic = (int) Math.floor(dc);
+		int top = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z) - 1;
+		int g = Math.max(Math.min(top, 70), RiverField.WATER_TOP);
+		for (int y = g - 3; y < g; y++) {
+			BlockState b = w.getBlockState(m.set(x, y, z));
+			if (b.isAir() || !b.getFluidState().isEmpty()) w.setBlockState(m, Blocks.DIRT.getDefaultState(), 2);
+		}
+		for (int y = g + 1; y <= g + 14; y++) {
+			BlockState b = w.getBlockState(m.set(x, y, z));
+			if (!b.isAir() && (b.isIn(net.minecraft.registry.tag.BlockTags.LEAVES) || b.isIn(net.minecraft.registry.tag.BlockTags.LOGS) || b.isReplaceable()
+					|| b.isIn(net.minecraft.registry.tag.BlockTags.FLOWERS))) w.setBlockState(m, Blocks.AIR.getDefaultState(), 2);
+		}
+		BlockState asph = ASPHALT, white = Blocks.WHITE_CONCRETE.getDefaultState(), red = Blocks.RED_CONCRETE.getDefaultState();
+		w.setBlockState(m.set(x, g, z), asph, 2);
+		boolean shop = ia >= 6 && ia <= 13 && ic >= 3 && ic <= 12;
+		if (shop) {
+			boolean edge = ia == 6 || ia == 13 || ic == 3 || ic == 12;
+			w.setBlockState(m.set(x, g, z), Blocks.SMOOTH_STONE.getDefaultState(), 2);
+			for (int y = g + 1; y <= g + 4; y++) {
+				BlockState st = Blocks.AIR.getDefaultState();
+				if (edge) {
+					st = white;
+					if (ia == 6 && y <= g + 3 && ic >= 5 && ic <= 10) st = Blocks.GLASS.getDefaultState();
+					if (ia == 6 && ic == 7 && y <= g + 2) st = Blocks.AIR.getDefaultState();
+					if (y == g + 4) st = red;
+				} else if (y == g + 1 && (ic == 5 || ic == 10) && ia >= 8 && ia <= 11) st = Blocks.BARREL.getDefaultState().with(Properties.FACING, Direction.UP);
+				else if (y == g + 3 && ic == 7 && ia == 10) st = Blocks.SEA_LANTERN.getDefaultState();
+				w.setBlockState(m.set(x, y, z), st, 2);
+			}
+			w.setBlockState(m.set(x, g + 5, z), edge ? white : Blocks.GRAY_CONCRETE.getDefaultState(), 2);
+			return true;
+		}
+		// forecourt: pumps under a canopy on pillars
+		boolean canopy = ia >= -10 && ia <= 4 && ic >= 3 && ic <= 10;
+		if (canopy) {
+			boolean pillar = (ia == -7 || ia == 1) && (ic == 5 || ic == 8);
+			boolean pump = (ia == -8 || ia == -6 || ia == 0 || ia == 2) && (ic == 5 || ic == 8);
+			if (pillar) for (int y = g + 1; y <= g + 5; y++) w.setBlockState(m.set(x, y, z), white, 2);
+			if (pump) {
+				w.setBlockState(m.set(x, g + 1, z), Blocks.SMOOTH_STONE_SLAB.getDefaultState(), 2);
+				w.setBlockState(m.set(x, g + 2, z), Blocks.WHITE_CONCRETE.getDefaultState(), 2);
+			}
+			boolean rim = ia == -10 || ia == 4 || ic == 3 || ic == 10;
+			w.setBlockState(m.set(x, g + 6, z), rim ? red : white, 2);
+			if (!rim && ((ia + 10) % 4 == 2) && (ic == 6)) w.setBlockState(m.set(x, g + 5, z), Blocks.LIGHT.getDefaultState().with(Properties.LEVEL_15, 15), 2);
+			if (ic == 6 || ic == 7) w.setBlockState(m.set(x, g, z), Blocks.SMOOTH_STONE.getDefaultState(), 2);
+			return true;
+		}
+		// the price sign at the entrance
+		if (ia == -13 && ic == 1) {
+			for (int y = g + 1; y <= g + 6; y++) w.setBlockState(m.set(x, y, z), Blocks.IRON_BARS.getDefaultState(), 2);
+			w.setBlockState(m.set(x, g + 7, z), white, 2);
+			w.setBlockState(m.set(x, g + 8, z), red, 2);
+			w.setBlockState(m.set(x, g + 9, z), white, 2);
+			return true;
+		}
+		if (ic >= 13) w.setBlockState(m.set(x, g, z), Blocks.GRASS_BLOCK.getDefaultState(), 2);
+		if (ic == 15) w.setBlockState(m.set(x, g + 1, z), Blocks.OAK_LEAVES.getDefaultState().with(Properties.PERSISTENT, true), 2);
+		return true;
 	}
 
 	// ------------------------------------------------------------------ blocks

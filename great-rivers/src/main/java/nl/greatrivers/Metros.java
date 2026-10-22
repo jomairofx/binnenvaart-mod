@@ -36,8 +36,8 @@ public final class Metros {
 			// a little irregularity at the borders between districts
 			long h = Harbours.mix(seed + bx * 0x9E3779B97F4A7C15L + bz * 0x632BE59BD9B4E019L);
 			r += ((h & 15) - 7.5) * 0.004;
-			if (r < 0.15) return OLD;
-			if (r < 0.32) return sector == 0 || sector == 1 ? CBD : MIXED;
+			if (r < (river ? 0.24 : 0.15)) return OLD;
+			if (r < (river ? 0.38 : 0.32)) return sector == 0 || sector == 1 ? CBD : MIXED;
 			if (r < 0.62) {
 				if (sector == 4 && r > 0.4 && r < 0.56) return PARK;
 				return (sector & 1) == 0 ? FLATS : ROWS;

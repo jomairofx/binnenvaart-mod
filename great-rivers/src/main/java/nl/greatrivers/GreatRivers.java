@@ -156,6 +156,11 @@ public class GreatRivers implements ModInitializer {
 		return 1;
 	}
 
+	/** Middle of a bridge over the river in a big city (for the tests). */
+	public static double[] cityBridge(RiverField f, Metros.Metro mt) {
+		return MetroBuilder.findBridge(f, mt);
+	}
+
 	/** A point out on the open sea, at least 600 blocks from any land, nearest to x, z. */
 	public static int[] findSea(RiverField field, int x, int z) {
 		for (int r = 0; r <= 40000; r += 250) {

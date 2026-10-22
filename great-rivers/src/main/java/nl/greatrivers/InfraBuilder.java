@@ -114,10 +114,12 @@ final class InfraBuilder {
 		}
 		// provincial roads between the villages
 		if (res < 2) {
-			Object[] rh = f.roads.hit(x + 0.5, z + 0.5, Roads.OUTER + 1);
+			Object[] rh = f.roads.hit(x + 0.5, z + 0.5, Roads.OUTER + 17);
 			if (rh != null) {
 				double[] p = (double[]) rh[0];
-				if (Roads.build(w, m, (Roads.Seg) rh[1], p[0], p[1], x, z)) res = 2;
+				if (Math.abs(p[0]) <= Roads.OUTER + 1) {
+					if (Roads.build(w, m, (Roads.Seg) rh[1], p[0], p[1], x, z)) res = 2;
+				} else if (Roads.station(w, m, (Roads.Seg) rh[1], p[0], p[1], x, z)) res = 2;
 			}
 		}
 		return res;

@@ -99,6 +99,33 @@ public final class ClientSelfTest {
 					double cx = ds[0] + ds[2] * (ds[4] + ds[5] + 17), cz = ds[1] + ds[3] * (ds[4] + ds[5] + 17);
 					add("op_de_dijk", cx, 71, cz, cx - ds[3] * 80, 69, cz + ds[2] * 80);
 				}
+				// bridges, viaducts, motorways, locks
+				double[] br = f.infra.findBridge(0, 0, 15000);
+				if (br != null) {
+					double[] n = f.great.normal(br[0], br[1]);
+					double tx = -n[1], tz = n[0];
+					add("brug_vanaf_het_water", br[0] + tx * 170 + n[0] * 30, 70, br[1] + tz * 170 + n[1] * 30, br[0], 84, br[1]);
+					add("brug_zijaanzicht", br[0] + tx * 260 - n[0] * 120, 100, br[1] + tz * 260 - n[1] * 120, br[0] - n[0] * 60, 80, br[1] - n[1] * 60);
+					int fam = (int) br[2], k = (int) br[3];
+					double u = fam == 0 ? br[1] : br[0];
+					double[] a0 = f.infra.centre(fam, k, u - 330), a1 = f.infra.centre(fam, k, u);
+					nl.greatrivers.Infra.Hit hp = f.infra.prof(fam, k, u - 330);
+					add("brug_oprit", a0[0] + 5, (hp == null ? 70 : hp.y) + 2.5, a0[1] + 5, a1[0], 95, a1[1]);
+				}
+				double[] vd = f.infra.findViaduct(0, 0, 3);
+				if (vd != null) {
+					double[] e0 = f.infra.centre(1, (int) f.infra.nearestLine(1, vd[0], vd[1])[0], vd[0] - 110);
+					add("viaduct", e0[0], 67, e0[1] + 4, vd[0], 68, vd[1]);
+					add("viaduct_boven", vd[0] - 90, 120, vd[1] - 90, vd[0], 64, vd[1]);
+				}
+				nl.greatrivers.Locks.Site lk = f.infra.locks.nearest(0, 0, 8);
+				if (lk != null) {
+					double ow = lk.hw() + 30;
+					add("sluis_overzicht", lk.wx(-260, ow + 60), 125, lk.wz(-260, ow + 60), lk.wx(0, lk.ch0()), 63, lk.wz(0, lk.ch0()));
+					add("sluis_kolk", lk.wx(-150, lk.hw() - 3), 67.6, lk.wz(-150, lk.hw() - 3), lk.wx(60, lk.ch0() + 6), 63, lk.wz(60, lk.ch0() + 6));
+					add("stuw", lk.wx(-90, lk.mid0() - 40), 75, lk.wz(-90, lk.mid0() - 40), lk.wx(0, lk.mid0() - 40), 75, lk.wz(0, lk.mid0() - 40));
+					if (lk.hasRoad()) add("sluis_weg", lk.rx0() + (lk.rx1() - lk.rx0()) * 0.3, 70, lk.rz0() + (lk.rz1() - lk.rz0()) * 0.3, lk.rx1(), 64, lk.rz1());
+				}
 			}
 			mc.options.hudHidden = true;
 		}

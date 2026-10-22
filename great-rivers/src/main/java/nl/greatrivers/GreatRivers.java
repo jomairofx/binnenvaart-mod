@@ -138,7 +138,26 @@ public class GreatRivers implements ModInitializer {
 					.append(Text.literal(", " + dist + " blocks away")), false);
 		}
 		}
+		double[] br = field.infra.findBridge(x, z, 12000);
+		if (br != null) report(src, "Nearest river bridge (motorway)", (int) br[0], Infra.DECK + 1, (int) br[1], x, z);
+		double[] vd = field.infra.findViaduct(x, z, 3);
+		if (vd != null) report(src, "Nearest viaduct", (int) vd[0], 80, (int) vd[1], x, z);
+		Locks.Site lk = field.infra.locks.nearest(x, z, 6);
+		if (lk != null) {
+			double la = 0, lw = lk.hw() + Locks.LAND - 4;
+			report(src, "Nearest lock and weir" + (lk.hasRoad() ? " (road to a " + lk.town() + ")" : ""),
+					(int) Math.floor(lk.wx(la, lw)), Locks.WALL_TOP + 1, (int) Math.floor(lk.wz(la, lw)), x, z);
+		}
 		return 1;
+	}
+
+	private static void report(ServerCommandSource src, String what, int tx, int ty, int tz, int x, int z) {
+		int dist = (int) Math.round(Math.hypot(tx - x, tz - z));
+		String tp = "/tp @s " + tx + " " + ty + " " + tz;
+		Text coords = Text.literal("[" + tx + ", " + tz + "]").formatted(Formatting.AQUA, Formatting.UNDERLINE)
+				.styled(st -> st.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, tp))
+						.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to teleport"))));
+		src.sendFeedback(() -> Text.literal(what + ": ").append(coords).append(Text.literal(", " + dist + " blocks away")), false);
 	}
 
 	/** Middle of the quay behind the basin. */

@@ -127,6 +127,7 @@ public final class RiverField {
 	public final Harbours harbours;
 	public final Lowlands low;
 	public final Villages villages;
+	public final Infra infra;
 
 	/** Vanilla continentalness: below -0.19 is sea, below -0.455 deep sea, below -1.05 mushroom islands. */
 	private final DensityFunction continents;
@@ -160,6 +161,7 @@ public final class RiverField {
 		harbours = new Harbours(this, seed);
 		low = new Lowlands(r);
 		villages = new Villages(this, seed);
+		infra = new Infra(this, seed);
 	}
 
 	// ---------- small per-thread cache: every column is asked for many times while a chunk is generated ----------
@@ -286,7 +288,8 @@ public final class RiverField {
 			if (low.lake(x, z)) t = Math.min(t, WATER_TOP - 3.7);                                       // a small lake
 			else if (low.ditch(x, z)) t = Math.min(t, WATER_TOP - 1.7);                                 // ditch: two deep
 		}
-		return t;
+		// motorways, bridge ramps, viaducts, locks and the roads to them
+		return infra.shape(x, z, t);
 	}
 
 	/** River bed where a river runs out into the sea. */

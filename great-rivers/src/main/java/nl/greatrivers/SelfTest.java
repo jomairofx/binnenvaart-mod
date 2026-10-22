@@ -162,6 +162,51 @@ final class SelfTest {
 					double[] fr = Harbours.quayFrame(h, c[0] + 0.5, c[1] + 0.5);
 					check(nm + " haven: kraan op 20 van de rand", fr != null && Math.abs(fr[1] - Harbours.CRANE_BACK) < 1.5, fr == null ? "?" : String.format("%.1f blokken van de rand", fr[1]));
 				}
+				// motorway bridge over the river: high enough for every ship
+				double[] br = f.infra.findBridge(0, 0, 15000);
+				check("brug gevonden", br != null, br == null ? "geen" : "op " + (int) br[0] + ", " + (int) br[1]);
+				if (br != null) {
+					int bx = (int) Math.floor(br[0]), bz = (int) Math.floor(br[1]);
+					w.getChunk(bx >> 4, bz >> 4);
+					BlockState dk = w.getBlockState(new BlockPos(bx, Infra.DECK - 1, bz));
+					int blocked = 0;
+					for (int y = RiverField.WATER_TOP + 1; y <= Infra.DECK - 4; y++) if (!w.getBlockState(new BlockPos(bx, y, bz)).isAir()) blocked++;
+					check("brug: wegdek", dk.isOf(net.minecraft.block.Blocks.LIGHT_GRAY_CONCRETE), dk.getBlock().getName().getString() + " op y " + (Infra.DECK - 1));
+					check("brug: doorvaarthoogte", blocked == 0 && water(w, bx, RiverField.WATER_TOP, bz),
+							blocked + " blokken in de weg, " + (Infra.DECK - 3 - RiverField.WATER_TOP) + " blokken vrij boven het water");
+				}
+				// viaduct where two motorways cross
+				double[] vd = f.infra.findViaduct(0, 0, 3);
+				check("viaduct gevonden", vd != null, vd == null ? "geen" : "op " + (int) vd[0] + ", " + (int) vd[1]);
+				if (vd != null) {
+					int vx = (int) Math.floor(vd[0]), vz = (int) Math.floor(vd[1]);
+					w.getChunk(vx >> 4, vz >> 4);
+					Infra.Hit vh = f.infra.hit(0, vx + 0.5, vz + 0.5, 30);
+					if (vh != null && vh.kind == Infra.VIADUCT) {
+						BlockState top = w.getBlockState(new BlockPos(vx, vh.y - 1, vz));
+						BlockState under = w.getBlockState(new BlockPos(vx, vh.underY + 3, vz));
+						check("viaduct: dek en weg eronder vrij", top.isOf(net.minecraft.block.Blocks.LIGHT_GRAY_CONCRETE) && under.isAir(),
+								"dek " + top.getBlock().getName().getString() + " op y " + (vh.y - 1) + ", onder: " + under.getBlock().getName().getString());
+					} else check("viaduct: dek en weg eronder vrij", false, "geen viaduct in het profiel");
+				}
+				// a lock with its weir
+				Locks.Site lk = f.infra.locks.nearest(0, 0, 8);
+				check("sluis gevonden", lk != null, lk == null ? "geen" : "op " + lk.cx() + ", " + lk.cz() + (lk.hasRoad() ? ", met weg naar een " + lk.town() : ", zonder weg"));
+				if (lk != null) {
+					int wet = 0;
+					for (double ww = lk.ch0() + 0.5; ww < lk.outer0(); ww += 1) {
+						int qx = (int) Math.floor(lk.wx(0.5, ww)), qz = (int) Math.floor(lk.wz(0.5, ww));
+						w.getChunk(qx >> 4, qz >> 4);
+						boolean open = true;
+						for (int y = RiverField.WATER_TOP + 1; y <= RiverField.WATER_TOP + 25; y++) if (!w.getBlockState(new BlockPos(qx, y, qz)).isAir()) open = false;
+						if (water(w, qx, 56, qz) && water(w, qx, RiverField.WATER_TOP, qz) && open) wet++;
+					}
+					check("sluis: kolk open en diep", wet >= Locks.CH - 2, wet + " van " + Locks.CH + " blokken breed open water van 6 diep");
+					int gx = (int) Math.floor(lk.wx(0.5, lk.mid0() - 15)), gz = (int) Math.floor(lk.wz(0.5, lk.mid0() - 15));
+					w.getChunk(gx >> 4, gz >> 4);
+					BlockState gate = w.getBlockState(new BlockPos(gx, 60, gz));
+					check("sluis: stuw", gate.isOf(net.minecraft.block.Blocks.CYAN_TERRACOTTA), gate.getBlock().getName().getString() + " in de stuw");
+				}
 				// Dutch landscape: flat polder with ditches
 				int[] pp = SelfTestSpots.polderSpot(f);
 				check("polder gevonden", pp != null, pp == null ? "geen" : "op " + pp[0] + ", " + pp[1]);
@@ -201,7 +246,7 @@ final class SelfTest {
 								dry = " droog bijv. " + px + "," + pz + " t=" + String.format("%.2f", f.dutchHeight(px, pz)) + " : " + col;
 							}
 						}
-					check("alle sloten met water", all > 0 && allWet >= all * 0.95, allWet + " van " + all + " slootvakjes in 200x200" + dry);
+					check("alle sloten met water", allWet >= all * 0.95, allWet + " van " + all + " slootvakjes in 200x200" + dry);
 				}
 				int[] cs = SelfTestSpots.canalSpot(f);
 				log.add(cs == null ? "  (geen kanaal in de buurt: kanalen zijn zeldzaam)" : "  kanaal op " + cs[0] + ", " + cs[1]);

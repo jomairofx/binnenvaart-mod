@@ -152,6 +152,7 @@ public final class Harbours {
 				int qx = (int) (x + tx * s + gx * v), qz = (int) (z + tz * s + gz * v);
 				if (field.continentalness(qx, qz) < Lowlands.COAST + 0.06) return NONE;
 				if (field.low.canalDistance(qx, qz) < Lowlands.CANAL_HALF + 30) return NONE;
+				if (field.infra.motorwayDistance(qx, qz) < Infra.EDGE + 60) return NONE;
 			}
 		return new Site(x, z, tx, tz, gx, gz, hw, best.name(), size, goods, A, B, Q, side);
 	}

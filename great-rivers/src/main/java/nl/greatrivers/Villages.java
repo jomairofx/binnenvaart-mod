@@ -53,6 +53,7 @@ public final class Villages {
 				RiverField.Kind k = field.great;
 				if (k.distance(x, z) - k.halfWidth(x, z) < Lowlands.foreland(k) + 45) return NONE;
 				if (field.harbours.siteAt(x, z) != null) return NONE;
+				if (field.infra.motorwayDistance(x, z) < Infra.EDGE + 30) return NONE;
 			}
 		}
 		return new Town(px, pz, r, city, h);

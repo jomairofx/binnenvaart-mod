@@ -57,7 +57,7 @@ final class Countryside {
 		if (mx < x0 || mx >= x0 + 16 || mz < z0 || mz >= z0 + 16) return;
 		mx = x0 + 8;
 		mz = z0 + 8;   // keep the whole mill inside the area this chunk may build in
-		if (field.polderWeight(mx, mz) < 0.95 || field.harbours.siteAt(mx, mz) != null || field.villages.at(mx, mz) != null) return;
+		if (field.polderWeight(mx, mz) < 0.95 || field.harbours.siteAt(mx, mz) != null || field.villages.at(mx, mz) != null || field.infra.near(mx, mz, 40)) return;
 		for (int dx = -4; dx <= 4; dx += 4)
 			for (int dz = -4; dz <= 4; dz += 4) {
 				int t = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, mx + dx, mz + dz) - 1;
@@ -131,7 +131,7 @@ final class Countryside {
 		boolean alongX = ((h >>> 40) & 1) == 0;
 		int lx = alongX ? 15 : 9, lz = alongX ? 9 : 15;
 		if (field.polderWeight(bx + lx / 2, bz + lz / 2) < 0.95 || field.harbours.siteAt(bx, bz) != null || field.villages.at(bx, bz) != null) return;
-		if (field.low.canalDistance(bx, bz) < 50) return;
+		if (field.low.canalDistance(bx, bz) < 50 || field.infra.near(bx + lx / 2, bz + lz / 2, 30)) return;
 		for (int dx = 0; dx < lx; dx += 4)
 			for (int dz = 0; dz < lz; dz += 4) {
 				int t = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, bx + dx, bz + dz) - 1;

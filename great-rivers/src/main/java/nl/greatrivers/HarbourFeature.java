@@ -78,6 +78,9 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 					}
 					if (k != Harbours.NO) continue;
 				}
+				int inf = InfraBuilder.column(w, m, field, x, z);
+				if (inf > 0) any = true;
+				if (inf == 2) continue;
 				if (Countryside.riverBank(w, m, field, x, z)) any = true;
 				double p = field.polderWeight(x, z);
 				if (p > 0.8 && field.dikeRoad(x, z)) {

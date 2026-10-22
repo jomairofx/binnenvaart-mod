@@ -11,6 +11,7 @@ public final class SelfTestSpots {
 				if (f.polder(x, z) < 0.99) continue;
 				if (f.river.distance(x, z) - f.river.halfWidth(x, z) < 250 || f.great.distance(x, z) - f.great.halfWidth(x, z) < 350) continue;
 				if (f.low.canalDistance(x, z) < 80 || f.harbours.siteAt(x, z) != null) continue;
+				if (f.infra.near(x, z, 260)) continue;
 				return new int[]{x, z};
 			}
 		return null;
@@ -44,6 +45,7 @@ public final class SelfTestSpots {
 				int cx = (int) Math.round(x + gx * (hw + fo + 17)), cz = (int) Math.round(z + gz * (hw + fo + 17));
 				if (f.polder(cx, cz) < 0.99 || f.polder(x, z) < 0.99) continue;
 				if (f.low.canalDistance(cx, cz) < 80 || f.harbours.siteAt(cx, cz) != null) continue;
+				if (f.infra.near(cx, cz, 300)) continue;
 				return new double[]{x, z, gx, gz, hw, fo};
 			}
 		return null;

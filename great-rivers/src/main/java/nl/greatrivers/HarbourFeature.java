@@ -48,6 +48,8 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 			{Blocks.GRAY_CONCRETE, Blocks.GRAY_TERRACOTTA}, {Blocks.BROWN_CONCRETE, Blocks.BROWN_TERRACOTTA},
 			{Blocks.CYAN_CONCRETE, Blocks.CYAN_TERRACOTTA}, {Blocks.YELLOW_CONCRETE, Blocks.YELLOW_TERRACOTTA}};
 
+	private static volatile boolean warned;
+
 	public HarbourFeature() {
 		super(DefaultFeatureConfig.CODEC);
 	}
@@ -64,6 +66,7 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 		for (int dx = 0; dx < 16; dx++)
 			for (int dz = 0; dz < 16; dz++) {
 				int x = x0 + dx, z = z0 + dz;
+				try {
 				Villages.Town town = field.villages.at(x, z);
 				if (town != null && VillageBuilder.column(w, m, field, town, x, z)) {
 					any = true;
@@ -94,6 +97,13 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 				if (t < RiverField.WATER_TOP && field.land(x, z)) {
 					for (int y = Math.max((int) Math.floor(t), RiverField.WATER_TOP - 12); y <= RiverField.WATER_TOP; y++)
 						if (w.getBlockState(m.set(x, y, z)).isAir()) set(w, m, x, y, z, Blocks.WATER.getDefaultState());
+				}
+				} catch (RuntimeException ex) {
+					// never let one column stop the world from generating
+					if (!warned) {
+						warned = true;
+						GreatRivers.LOGGER.error("Great Rivers: error while dressing column " + x + ", " + z, ex);
+					}
 				}
 			}
 		Countryside.windmill(w, m, field, x0, z0);

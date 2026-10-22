@@ -85,9 +85,9 @@ final class VillageBuilder {
 		double zone = Math.hypot(t.cx() + bx * Villages.PU + Villages.PU / 2.0 - t.cx(), t.cz() + bz * Villages.PW + Villages.PW / 2.0 - t.cz()) / t.radius();
 		long bh = hash(t.seed(), bx * 31L + bz, 99);
 		if (t.city()) {
-			double tall = t.river() ? 0.42 : 0.3, flats = t.river() ? 0.72 : 0.62;
+			double tall = t.river() ? 0.62 : 0.3, flats = t.river() ? 0.8 : 0.62;
 			if (zone < tall && (bh & 7) != 0) {
-				tower(w, m, x, z, bu, bw, bh, zone / tall);
+				tower(w, m, x, z, bu, bw, bh, t.river() ? Math.max(0, zone - 0.3) / 0.32 : zone / tall);
 				return true;
 			}
 			if (zone < flats && (bh & 3) != 0) {

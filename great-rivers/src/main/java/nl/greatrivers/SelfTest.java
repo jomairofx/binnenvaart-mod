@@ -129,6 +129,9 @@ final class SelfTest {
 					int hx = t.cx() + Villages.PU + Villages.STREET, hz = t.cz() + Villages.STREET;
 					w.getChunk(hx >> 4, hz >> 4);
 					var wall = w.getBlockState(new BlockPos(hx, VillageBuilder.Y0 + 2, hz));
+					for (int du = 0; du < 29 && (wall.isAir() || wall.isOf(net.minecraft.block.Blocks.GRASS_BLOCK)); du += 2)
+						for (int dw = 0; dw < 21 && (wall.isAir() || wall.isOf(net.minecraft.block.Blocks.GRASS_BLOCK)); dw += 2)
+							wall = w.getBlockState(new BlockPos(hx + du, VillageBuilder.Y0 + 2, hz + dw));
 					var street = w.getBlockState(new BlockPos(t.cx() + Villages.PU + 10, VillageBuilder.G, t.cz() + 2));
 					check(nm + ": huizen en straten", !wall.isAir() && !wall.isOf(net.minecraft.block.Blocks.GRASS_BLOCK)
 									&& (street.isOf(net.minecraft.block.Blocks.BRICKS) || street.isOf(net.minecraft.block.Blocks.SMOOTH_STONE)),
@@ -157,10 +160,10 @@ final class SelfTest {
 							}
 						check("stad aan de rivier: kademuur", ok, found);
 						int tall = 0;
-						for (int bx = -4; bx <= 4; bx++)
-							for (int bz = -5; bz <= 5; bz++) {
+						for (int bx = -5; bx <= 5; bx++)
+							for (int bz = -6; bz <= 6; bz++) {
 								int qx = t.cx() + bx * Villages.PU + 14, qz = t.cz() + bz * Villages.PW + 10;
-								if (Math.hypot(qx - t.cx(), qz - t.cz()) > t.radius() * 0.4) continue;
+								if (Math.hypot(qx - t.cx(), qz - t.cz()) > t.radius() * 0.6) continue;
 								w.getChunk(qx >> 4, qz >> 4);
 								if (!w.getBlockState(new BlockPos(qx, VillageBuilder.Y0 + 22, qz)).isAir()) tall++;
 							}

@@ -39,7 +39,7 @@ final class Landscape {
 		Integer k = KINDS.get(id);
 		if (k != null) return k;
 		long h = Harbours.mix(id ^ 0x4C414E44L);
-		int roll = (int) (h % 100);
+		int roll = (int) Math.floorMod(h, 100L);
 		int kind = roll < 52 ? MEADOW : roll < 80 ? CROPS : roll < 93 ? ORCHARD : GLASS;
 		if (kind != MEADOW) {
 			for (int i = 0; i <= 4 && kind != MEADOW; i++) {
@@ -97,7 +97,7 @@ final class Landscape {
 	/** An arable field: long rows of one crop, a tractor track every 12 rows. */
 	private static void crops(StructureWorldAccess w, BlockPos.Mutable m, long[] p, int x, int top, int z, int la, int lb, long h) {
 		clear(w, m, x, top, z, 12);
-		Block crop = CROP[(int) (Harbours.mix(p[0]) % CROP.length)];
+		Block crop = CROP[(int) Math.floorMod(Harbours.mix(p[0]), (long) CROP.length)];
 		boolean rowsAlong = (Harbours.mix(p[0] + 7) & 1) == 0;
 		int across = rowsAlong ? la : lb;
 		if (across % 12 == 0) {
@@ -106,7 +106,7 @@ final class Landscape {
 		}
 		set(w, m, x, top, z, Blocks.FARMLAND.getDefaultState().with(Properties.MOISTURE, 7));
 		int maxAge = crop == Blocks.BEETROOTS ? 3 : 7;
-		int age = Math.max(0, maxAge - (int) (Harbours.mix(p[0] + 3) % 3) - (int) (h & 1));
+		int age = Math.max(0, Math.min(maxAge, maxAge - (int) Math.floorMod(Harbours.mix(p[0] + 3), 3L) - (int) (h & 1)));
 		BlockState c = crop.getDefaultState();
 		c = crop == Blocks.BEETROOTS ? c.with(Properties.AGE_3, Math.min(3, age)) : c.with(Properties.AGE_7, age);
 		set(w, m, x, top + 1, z, c);

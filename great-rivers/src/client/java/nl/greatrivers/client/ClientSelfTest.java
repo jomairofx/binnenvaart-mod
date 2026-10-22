@@ -104,18 +104,21 @@ public final class ClientSelfTest {
 				if (br != null) {
 					double[] n = f.great.normal(br[0], br[1]);
 					double tx = -n[1], tz = n[0];
-					add("brug_vanaf_het_water", br[0] + tx * 170 + n[0] * 30, 70, br[1] + tz * 170 + n[1] * 30, br[0], 84, br[1]);
-					add("brug_zijaanzicht", br[0] + tx * 260 - n[0] * 120, 100, br[1] + tz * 260 - n[1] * 120, br[0] - n[0] * 60, 80, br[1] - n[1] * 60);
+					add("brug_vanaf_het_water", br[0] + tx * 95 + n[0] * 20, 68, br[1] + tz * 95 + n[1] * 20, br[0], 86, br[1]);
+					add("brug_zijaanzicht", br[0] + tx * 130 - n[0] * 70, 98, br[1] + tz * 130 - n[1] * 70, br[0] - n[0] * 20, 84, br[1] - n[1] * 20);
 					int fam = (int) br[2], k = (int) br[3];
 					double u = fam == 0 ? br[1] : br[0];
-					double[] a0 = f.infra.centre(fam, k, u - 330), a1 = f.infra.centre(fam, k, u);
-					nl.greatrivers.Infra.Hit hp = f.infra.prof(fam, k, u - 330);
+					double[] a0 = f.infra.centre(fam, k, u - 140), a1 = f.infra.centre(fam, k, u);
+					nl.greatrivers.Infra.Hit hp = f.infra.prof(fam, k, u - 140);
 					add("brug_oprit", a0[0] + 5, (hp == null ? 70 : hp.y) + 2.5, a0[1] + 5, a1[0], 95, a1[1]);
 				}
 				double[] vd = f.infra.findViaduct(0, 0, 3);
 				if (vd != null) {
-					double[] e0 = f.infra.centre(1, (int) f.infra.nearestLine(1, vd[0], vd[1])[0], vd[0] - 110);
-					add("viaduct", e0[0], 67, e0[1] + 4, vd[0], 68, vd[1]);
+					int ek = (int) f.infra.nearestLine(1, vd[0], vd[1])[0];
+					double[] e0 = f.infra.centre(1, ek, vd[0] - 70);
+					nl.greatrivers.Infra.Hit eh = f.infra.prof(1, ek, vd[0] - 70);
+					double ey = (eh == null ? 63 : eh.y) + 2.6;
+					add("viaduct", e0[0], ey, e0[1] + 5, vd[0], ey + 3, vd[1]);
 					add("viaduct_boven", vd[0] - 90, 120, vd[1] - 90, vd[0], 64, vd[1]);
 				}
 				nl.greatrivers.Locks.Site lk = f.infra.locks.nearest(0, 0, 8);

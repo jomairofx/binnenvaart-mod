@@ -106,6 +106,7 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 
 	private static boolean natural(BlockState st) {
 		return st.isIn(BlockTags.LEAVES) || st.isIn(BlockTags.LOGS) || st.isReplaceable() || st.isOf(Blocks.GRASS_BLOCK)
+				|| st.isIn(BlockTags.FLOWERS) || st.isIn(BlockTags.SAPLINGS) || st.isOf(Blocks.SUGAR_CANE) || st.isOf(Blocks.SWEET_BERRY_BUSH)
 				|| st.isOf(Blocks.DIRT) || st.isOf(Blocks.STONE) || st.isOf(Blocks.COARSE_DIRT) || st.isOf(Blocks.SNOW_BLOCK)
 				|| st.isOf(Blocks.SAND) || st.isOf(Blocks.GRAVEL) || st.isOf(Blocks.CLAY) || st.isOf(Blocks.MUD) || st.isOf(Blocks.MOSS_BLOCK)
 				|| st.isOf(Blocks.BROWN_MUSHROOM_BLOCK) || st.isOf(Blocks.RED_MUSHROOM_BLOCK) || st.isOf(Blocks.MUSHROOM_STEM)

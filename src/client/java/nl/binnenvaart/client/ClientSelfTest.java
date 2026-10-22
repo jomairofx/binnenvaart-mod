@@ -168,7 +168,7 @@ public final class ClientSelfTest {
 			});
 		}
 		if (t == t0 + 480) {
-			var st = ship.structure.get(21, 2, 8);
+			var st = ship.structure.get(21, 2, 9);
 			boolean open = st.contains(net.minecraft.state.property.Properties.OPEN) && st.get(net.minecraft.state.property.Properties.OPEN);
 			check("deur", open, "voordeur woning: " + st);
 			shot(mc, "15_deur_open");

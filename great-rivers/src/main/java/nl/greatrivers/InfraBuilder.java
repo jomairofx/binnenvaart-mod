@@ -43,7 +43,10 @@ final class InfraBuilder {
 		return st.isIn(BlockTags.LEAVES) || st.isIn(BlockTags.LOGS) || st.isReplaceable() || st.isOf(Blocks.SNOW)
 				|| st.isOf(Blocks.GRASS_BLOCK) || st.isOf(Blocks.DIRT) || st.isOf(Blocks.COARSE_DIRT) || st.isOf(Blocks.PODZOL)
 				|| st.isOf(Blocks.MOSS_BLOCK) || st.isOf(Blocks.BEE_NEST) || st.isOf(Blocks.PUMPKIN) || st.isOf(Blocks.MELON)
-				|| st.isOf(Blocks.SAND) || st.isOf(Blocks.GRAVEL) || st.isOf(Blocks.STONE) || st.isOf(Blocks.CLAY) || st.isOf(Blocks.MUD);
+				|| st.isOf(Blocks.SAND) || st.isOf(Blocks.GRAVEL) || st.isOf(Blocks.STONE) || st.isOf(Blocks.CLAY) || st.isOf(Blocks.MUD)
+				|| st.isIn(BlockTags.FLOWERS) || st.isIn(BlockTags.SAPLINGS) || st.isOf(Blocks.SUGAR_CANE) || st.isOf(Blocks.BAMBOO)
+				|| st.isOf(Blocks.SWEET_BERRY_BUSH) || st.isOf(Blocks.CACTUS) || st.isOf(Blocks.BROWN_MUSHROOM) || st.isOf(Blocks.RED_MUSHROOM)
+				|| st.isOf(Blocks.LILY_PAD);
 	}
 
 	/** Takes away trees, grass and loose earth above y (up to y + h). */
@@ -117,11 +120,11 @@ final class InfraBuilder {
 	/** Road surface across the motorway: a = distance from the middle, u = along. */
 	private static BlockState surface(double a, double u) {
 		if (a < 1.0) return COPING;                                              // central reservation
-		if (a < 1.8) return LINE;
-		if (a < 5.3) return ASPHALT;
-		if (a < 6.1) return Math.floorMod((long) Math.floor(u), 12L) < 4 ? LINE : ASPHALT;   // lane line
-		if (a < 9.6) return ASPHALT;
-		if (a < 10.4) return LINE;                                               // edge line
+		if (a < 2.2) return LINE;
+		if (a < 5.2) return ASPHALT;
+		if (a < 6.4) return Math.floorMod((long) Math.floor(u), 12L) < 4 ? LINE : ASPHALT;   // lane line
+		if (a < 9.4) return ASPHALT;
+		if (a < 10.6) return LINE;                                               // edge line
 		return ASPHALT;                                                          // hard shoulder
 	}
 
@@ -343,7 +346,10 @@ final class InfraBuilder {
 			if (top >= RiverField.WATER_TOP - 1) {
 				clearAbove(w, m, x, top, z, 14);
 				if (c < Locks.ROAD_HALF) {
-					BlockState st = c >= 2.5 ? LINE : c < 0.5 && Math.floorMod((long) Math.floor(rd[1]), 9L) < 3 ? LINE : ASPHALT;
+					// lines as wide as one block seen along the road, so they stay unbroken on a slanting road
+					double dx = s.rx1() - s.rx0(), dz = s.rz1() - s.rz0(), l = Math.hypot(dx, dz);
+					double lw = (Math.abs(dx) + Math.abs(dz)) / l;
+					BlockState st = c >= Locks.ROAD_HALF - lw ? LINE : c < lw / 2 && Math.floorMod((long) Math.floor(rd[1]), 9L) < 3 ? LINE : ASPHALT;
 					set(w, m, x, top, z, st);
 				}
 				return 2;

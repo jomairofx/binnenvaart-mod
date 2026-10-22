@@ -129,10 +129,10 @@ public final class SelfTest {
 			if (tick == 1180) {
 				check("stuurhut omhoog", ship.liftOffset() > 2.9, String.format("stuurhut staat %.2f blok omhoog", ship.liftOffset()));
 				ship.setLights(false);
-				var lamp = ship.structure.get(10, 5, 5);
+				var lamp = ship.structure.get(10, 6, 5);
 				check("licht uit", !ship.lightsOn() && !lamp.isOf(net.minecraft.block.Blocks.SEA_LANTERN), "plafondlamp nu " + lamp);
 				ship.setLights(true);
-				check("licht aan", ship.lightsOn() && ship.structure.get(10, 5, 5).isOf(net.minecraft.block.Blocks.SEA_LANTERN), "plafondlamp weer " + ship.structure.get(10, 5, 5));
+				check("licht aan", ship.lightsOn() && ship.structure.get(10, 6, 5).isOf(net.minecraft.block.Blocks.SEA_LANTERN), "plafondlamp weer " + ship.structure.get(10, 6, 5));
 				ship.testSetLift(0);
 			}
 			if (tick == 1200) {

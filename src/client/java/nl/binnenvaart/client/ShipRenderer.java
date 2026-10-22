@@ -350,13 +350,13 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		float w = tr.getWidth(name) * scale;
 		// stuurboord (z+)
 		matrices.push();
-		matrices.translate(129.0f, 1.9f, 16.01f);
+		matrices.translate(119.0f, 1.9f, 13.01f);
 		matrices.scale(scale, -scale, scale);
 		draw(tr, name, matrices, consumers, light);
 		matrices.pop();
 		// bakboord (z-)
 		matrices.push();
-		matrices.translate(129.0f + w, 1.9f, -0.01f);
+		matrices.translate(119.0f + w, 1.9f, -0.01f);
 		matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f));
 		matrices.scale(scale, -scale, scale);
 		draw(tr, name, matrices, consumers, light);

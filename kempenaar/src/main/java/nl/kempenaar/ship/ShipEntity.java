@@ -75,8 +75,8 @@ import java.util.List;
 public class ShipEntity extends Entity {
 	// ---- constanten ----
 	public static final int LENGTH = 70;
-	public static final double EMPTY_RISE = 1.3;
-	public static final double LOADED_OFFSET = -0.4;   // volgeladen: ruim een halve meter vrijboord          // zoveel blokken ligt een leeg schip hoger
+	public static final double EMPTY_RISE = 2.0;   // empty: 2 m draught
+	public static final double LOADED_OFFSET = -0.111;   // fully loaded: 4 m draught          // zoveel blokken ligt een leeg schip hoger
 	public static final double[] STEP_SPEED = {-0.14, -0.07, 0.0, 0.11, 0.22, 0.35}; // blokken per tick
 	public static final String[] STEP_NAMES = {"Full astern", "Slow astern", "Stop", "Slow ahead", "Half ahead", "Full ahead"};
 	public static final double V_FULL = 0.35;

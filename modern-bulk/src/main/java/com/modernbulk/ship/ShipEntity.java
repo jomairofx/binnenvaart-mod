@@ -758,7 +758,7 @@ public class ShipEntity extends Entity {
 	@Override
 	public Vec3d updatePassengerForDismount(LivingEntity passenger) {
 		boolean bow = isAtBowHelm(passenger);
-		return bow ? toWorld(164.5, 2.0, 9.5) : toWorld(15.5, 7.0 + liftOffset(), 7.5);
+		return bow ? toWorld(164.5, 2.0, 9.5) : toWorld(15.5, 8.0 + liftOffset(), 7.5);
 	}
 
 	@Override
@@ -793,7 +793,7 @@ public class ShipEntity extends Entity {
 			player.sendMessage(Text.literal(lightsOn() ? "Lights on" : "Lights off").formatted(Formatting.GRAY), true);
 		}
 		if (c.horn() && hornCooldown == 0) {
-			Vec3d h = toWorld(17.0, 12.0 + liftOffset(), 9.5);
+			Vec3d h = toWorld(17.0, 13.0 + liftOffset(), 9.5);
 			getWorld().playSound(null, h.x, h.y, h.z, SoundEvents.EVENT_RAID_HORN, SoundCategory.NEUTRAL, 8.0f, 0.75f);
 			hornCooldown = 60;
 		}
@@ -1604,7 +1604,7 @@ public class ShipEntity extends Entity {
 		}
 		int smokeEvery = Math.max(2, 8 - Math.abs(thr) * 2);
 		if (thr != 0 && age % smokeEvery == 0) {
-			Vec3d c = toWorld(10.5, 9.9, 15.5);
+			Vec3d c = toWorld(10.5, 10.9, 15.5);
 			world.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, true, c.x, c.y, c.z, 0, 0.06, 0);
 			if (Math.abs(thr) >= 2) world.addParticle(ParticleTypes.LARGE_SMOKE, c.x, c.y, c.z, 0, 0.08, 0);
 		}

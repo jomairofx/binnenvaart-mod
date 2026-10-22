@@ -458,6 +458,16 @@ def build(cfg):
     for xx in BOARD_X:
         S(xx, 2, 0, "air"); S(xx, 2, W - 1, "air"); S(xx, 3, 0, "air"); S(xx, 3, W - 1, "air")
 
+    # the accommodation one block higher (more room inside)
+    if cfg.get("house_extra", 1):
+        from raise_house import raise_house
+        raise_house(B)
+        WY += 1
+        EXHAUST = (EXHAUST[0], EXHAUST[1] + 1, EXHAUST[2])
+        LIGHTS = [(x, y + 1 if y >= 5 else y, z) for (x, y, z) in LIGHTS]
+        LIFT["region"][1] += 1
+        LIFT["region"][4] += 1
+
     # big working chests: one in the accommodation, one in the bow thruster room (under the fore hatch)
     import sys as _sys, os as _os
     _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))

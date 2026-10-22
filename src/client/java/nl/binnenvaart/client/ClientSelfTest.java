@@ -32,9 +32,9 @@ public final class ClientSelfTest {
 	private record Shot(String name, double[] eye, double[] target, boolean hud) {}
 
 	private static final Shot[] SHOTS = {
-			new Shot("01_overzicht", new double[]{25, 32, 62}, new double[]{71, 0, 8}, false),
-			new Shot("02_zijkant", new double[]{71, 3, 82}, new double[]{71, 1, 8}, false),
-			new Shot("03_boeg", new double[]{168, 7, 32}, new double[]{136, 1, 8}, false),
+			new Shot("01_overzicht", new double[]{25, 32, 60}, new double[]{66, 0, 6.5}, false),
+			new Shot("02_zijkant", new double[]{66, 3, 80}, new double[]{66, 1, 6.5}, false),
+			new Shot("03_boeg", new double[]{158, 7, 30}, new double[]{126, 1, 6.5}, false),
 			new Shot("04_achterkant", new double[]{-24, 9, -12}, new double[]{6, 4, 8}, false),
 			new Shot("05_tankdek", new double[]{62, 6, 8}, new double[]{20, 3, 8}, false),
 			new Shot("05b_tankdek_boven", new double[]{75, 30, 8.1}, new double[]{75, 0, 8}, false),
@@ -42,7 +42,7 @@ public final class ClientSelfTest {
 			new Shot("06b_keuken", new double[]{13.5, 3.62, 8.5}, new double[]{19.5, 2.5, 12.0}, false),
 			new Shot("07_machinekamer", new double[]{11.0, -2.4, 8.5}, new double[]{18.5, -3.0, 4.0}, false),
 			new Shot("08_onderwater", new double[]{71, -6, 32}, new double[]{71, -2, 8}, false),
-			new Shot("09_stuurhuis_binnen", new double[]{15.0, 8.62, 8.5}, new double[]{80, 4, 8}, false),
+			new Shot("09_stuurhuis_binnen", new double[]{15.0, 9.62, 6.5}, new double[]{80, 4, 6.5}, false),
 			new Shot("09b_achterdek_auto", new double[]{-6.0, 8.0, 4.0}, new double[]{4.0, 2.5, 11.5}, false),
 	};
 
@@ -159,12 +159,12 @@ public final class ClientSelfTest {
 			mc.options.forwardKey.setPressed(false);
 			Vec3d l = ship.toLocal(mc.player.getPos());
 			check("ladder", ladderMax >= 1.95, String.format("vanuit het water geklommen tot lokale y=%.2f (dek = 2.0)", ladderMax));
-			tp(srv, ship, new double[]{22.6, 2.0 + 1.62, 8.5}, new double[]{21.5, 3.0, 8.5});
+			tp(srv, ship, new double[]{22.6, 2.0 + 1.62, 9.5}, new double[]{21.5, 3.0, 9.5});
 		}
 		if (t == t0 + 460) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
-				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(21.5, 2.5, 8.5), false);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(21.5, 2.5, 9.5), false);
 			});
 		}
 		if (t == t0 + 480) {
@@ -188,14 +188,14 @@ public final class ClientSelfTest {
 		int helm = t0 + 500;
 		if (t == helm) {
 			cmd(srv, "gamemode creative @p");
-			tp(srv, ship, new double[]{15.5, 8.62, 8.5}, new double[]{60, 6, 8});
+			tp(srv, ship, new double[]{15.5, 9.62, 6.5}, new double[]{60, 6, 6.5});
 		}
 		if (t == helm + 30) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
 				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) {
 					s.testMode = false;
-					s.handleInteract(sp, new Vec3d(16.5, 7.5, 8.5), false);
+					s.handleInteract(sp, new Vec3d(16.5, 8.5, 6.5), false);
 				}
 			});
 		}

@@ -19,14 +19,21 @@ final class Countryside {
 		return Harbours.mix(h);
 	}
 
-	private static final BlockState ROAD = Blocks.GRAY_CONCRETE_POWDER.getDefaultState();
+	private static final BlockState ROAD = Blocks.GRAY_CONCRETE.getDefaultState();
 
 	/** Asphalt road along the top of the dike. */
-	static void dikeRoad(StructureWorldAccess w, BlockPos.Mutable m, int x, int z) {
-		int top = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z) - 1;
-		if (top < 66 || top > 72) return;
+	static void dikeRoad(StructureWorldAccess w, BlockPos.Mutable m, RiverField field, int x, int z) {
+		// the height from the terrain itself (a tree trunk on the dike would fool the height map and leave a gap)
+		int top = (int) Math.floor(field.dutchHeight(x, z));
+		if (top < 63 || top > 72) return;
 		BlockState st = w.getBlockState(m.set(x, top, z));
-		if (!st.isOf(Blocks.GRASS_BLOCK) && !st.isOf(Blocks.DIRT) && !st.isOf(Blocks.SNOW_BLOCK) && !st.isOf(Blocks.STONE)) return;
+		if (!st.getFluidState().isEmpty()) return;
+		// fill any hole under the road
+		for (int y = top - 1; y >= top - 4; y--) {
+			BlockState b = w.getBlockState(m.set(x, y, z));
+			if (b.isAir() || !b.getFluidState().isEmpty() || b.isReplaceable()) set(w, m, x, y, z, Blocks.DIRT.getDefaultState());
+			else break;
+		}
 		// no trees on the road: take away any tree that grew here, trunk and crown
 		boolean tree = false;
 		for (int y = top + 1; y <= top + 10 && !tree; y++) tree = w.getBlockState(m.set(x, y, z)).isIn(net.minecraft.registry.tag.BlockTags.LOGS);
@@ -39,9 +46,10 @@ final class Countryside {
 					}
 		}
 		set(w, m, x, top, z, ROAD);
-		for (int y = top + 1; y <= top + 2; y++) {
+		for (int y = top + 1; y <= top + 3; y++) {
 			BlockState a = w.getBlockState(m.set(x, y, z));
-			if (!a.isAir() && (a.isReplaceable() || a.isOf(Blocks.SNOW))) set(w, m, x, y, z, AIR);
+			if (!a.isAir() && (a.isReplaceable() || a.isOf(Blocks.SNOW) || a.isIn(net.minecraft.registry.tag.BlockTags.FLOWERS)
+					|| a.isIn(net.minecraft.registry.tag.BlockTags.LEAVES) || a.isOf(Blocks.SUGAR_CANE))) set(w, m, x, y, z, AIR);
 		}
 	}
 
@@ -287,7 +295,8 @@ final class Countryside {
 		// exactly one column per lamp: the one nearest to the ideal spot
 		double px = x + 0.5 + (kIdx * 40 - s) * tx + (20.5 - kk) * gx, pz = z + 0.5 + (kIdx * 40 - s) * tz + (20.5 - kk) * gz;
 		if ((int) Math.floor(px) != x || (int) Math.floor(pz) != z) return false;
-		int top = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z) - 1;
+		if (field.flatWeight(x, z) > 0.01) return false;
+		int top = (int) Math.floor(field.dutchHeight(x, z));
 		if (top < 66 || top > 72) return false;
 		// the arm points towards the river, over the road
 		net.minecraft.util.math.Direction toRoad = Math.abs(gx) > Math.abs(gz)

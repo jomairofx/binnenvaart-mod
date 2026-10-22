@@ -170,6 +170,57 @@ final class SelfTest {
 						check("stad aan de rivier: hoogbouw", tall >= 2, tall + " torens hoger dan 22");
 					}
 				}
+				// a big city: districts, boulevards, and (on the river) high bridges
+				{
+					Metros.Metro mt = f.metros.nearest(0, 0, 4);
+					check("grote stad gevonden", mt != null, mt == null ? "geen" : "op " + mt.cx() + ", " + mt.cz() + ", " + (int) (mt.radius() * 2) + " breed" + (mt.river() ? ", aan de rivier" : ""));
+					if (mt != null) {
+						int[] count = new int[Metros.DISTRICT.length];
+						for (int bx = -40; bx <= 40; bx++)
+							for (int bz = -50; bz <= 50; bz++) {
+								if (Math.hypot(bx * Villages.PU, bz * Villages.PW) > mt.radius()) continue;
+								count[mt.district(bx, bz)]++;
+							}
+						StringBuilder sb = new StringBuilder();
+						int kinds = 0;
+						for (int i = 0; i < count.length; i++) {
+							if (count[i] > 0) kinds++;
+							sb.append(Metros.DISTRICT[i]).append(' ').append(count[i]).append(", ");
+						}
+						check("grote stad: wijken", kinds >= 7, sb.toString());
+						// a tower in the business district
+						int tall = 0;
+						for (int bx = -12; bx <= 12; bx++)
+							for (int bz = -16; bz <= 16; bz++) {
+								if (mt.district(bx, bz) != Metros.CBD) continue;
+								int qx = mt.cx() + bx * Villages.PU + Villages.STREET + 3, qz = mt.cz() + bz * Villages.PW + Villages.STREET + 10;
+								w.getChunk(qx >> 4, qz >> 4);
+								if (!w.getBlockState(new BlockPos(qx, VillageBuilder.Y0 + 30, qz)).isAir()) tall++;
+								if (tall >= 3) break;
+							}
+						check("grote stad: hoogbouw", tall >= 3, tall + " torens hoger dan 30");
+						// the old centre has canals with water
+						int canal = 0;
+						for (int bx = -4; bx <= 4 && canal == 0; bx++)
+							for (int bz = -5; bz <= 5 && canal == 0; bz++) {
+								int qx = mt.cx() + bx * Villages.PU + Villages.STREET + 12, qz = mt.cz() + bz * Villages.PW + Villages.STREET + 10;
+								if (!MetroBuilder.canalWater(mt, qx, qz)) continue;
+								double[] rv = f.riverAt(qx, qz, true);
+								if (rv[0] - rv[1] < 20) continue;
+								w.getChunk(qx >> 4, qz >> 4);
+								if (water(w, qx, RiverField.WATER_TOP, qz) && water(w, qx, RiverField.WATER_TOP - 2, qz)) canal = 1;
+								else canal = -1;
+							}
+						check("grote stad: grachten", canal >= 0, canal == 1 ? "gracht met water" : canal == 0 ? "(geen gracht op het land gevonden)" : "gracht droog");
+					}
+					Metros.Metro rm = null;
+					for (int i = -4; i <= 4 && rm == null; i++)
+						for (int j = -4; j <= 4 && rm == null; j++) {
+							Metros.Metro c = f.metros.metro(i, j);
+							if (c != null && c.river()) rm = c;
+						}
+					log.add(rm == null ? "  (geen grote stad aan de rivier in de buurt)" : "  grote stad aan de rivier op " + rm.cx() + ", " + rm.cz());
+				}
 				// harbours: one of each size if we can find them
 				for (int size = 0; size <= 2; size++) {
 					Harbours.Site h = GreatRivers.findHarbour(f, 0, 0, 25, size);

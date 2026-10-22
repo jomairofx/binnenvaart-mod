@@ -52,15 +52,25 @@ public final class Roads {
 			Seg s = link(a, b);
 			if (s != null) out.add(s);
 		}
+		// and into the nearest big city
+		Metros.Metro mt = f.metros.nearest(a.cx(), a.cz(), 1);
+		if (mt != null) {
+			Seg s = link(a, mt.asTown(), mt.radius() + 4, mt);
+			if (s != null) out.add(s);
+		}
 		return out;
 	}
 
 	private Seg link(Villages.Town a, Villages.Town b) {
+		return link(a, b, b.radius() + 3, null);
+	}
+
+	private Seg link(Villages.Town a, Villages.Town b, double rb, Metros.Metro target) {
 		double d = Math.hypot(b.cx() - a.cx(), b.cz() - a.cz());
-		if (d > 2300 || d < a.radius() + b.radius() + 60) return null;
+		if (d - rb > 2600 || d < a.radius() + rb + 60) return null;
 		double ux = (b.cx() - a.cx()) / d, uz = (b.cz() - a.cz()) / d;
 		double x0 = a.cx() + ux * (a.radius() + 3), z0 = a.cz() + uz * (a.radius() + 3);
-		double x1 = b.cx() - ux * (b.radius() + 3), z1 = b.cz() - uz * (b.radius() + 3);
+		double x1 = b.cx() - ux * rb, z1 = b.cz() - uz * rb;
 		double len = Math.hypot(x1 - x0, z1 - z0);
 		RiverField.Kind k = f.great;
 		for (double s = 0; s <= len; s += 10) {
@@ -73,6 +83,8 @@ public final class Roads {
 			Villages.Town o = f.villages.at(ix, iz);
 			if (o != null && !same(o, a) && !same(o, b)) return null;
 			if (f.infra.locks.near(ix, iz, 10)) return null;
+			Metros.Metro mo = f.metros.at(ix, iz);
+			if (mo != null && mo != target) return null;
 		}
 		int bike = (Harbours.mix(a.seed() ^ b.seed()) & 1) == 0 ? 1 : -1;
 		return new Seg(x0, z0, x1, z1, bike);
@@ -82,19 +94,36 @@ public final class Roads {
 		return p.cx() == q.cx() && p.cz() == q.cz();
 	}
 
-	/** Nearest road stretch within r of this point: {c, along, index} with the stretch, or null. */
+	private final ConcurrentHashMap<Long, List<Seg>> byCell = new ConcurrentHashMap<>();
+
+	/** All road stretches that pass through (or near) this cell, from the towns up to four cells away. */
+	private List<Seg> cell(int cx, int cz) {
+		long key = ((long) cx << 32) ^ (cz & 0xffffffffL);
+		return byCell.computeIfAbsent(key, k -> {
+			List<Seg> out = new ArrayList<>();
+			double x0 = cx * (double) Villages.CELL - 20, z0 = cz * (double) Villages.CELL - 20;
+			double x1 = x0 + Villages.CELL + 40, z1 = z0 + Villages.CELL + 40;
+			for (int i = -4; i <= 4; i++)
+				for (int j = -4; j <= 4; j++)
+					for (Seg s : from(cx + i, cz + j)) {
+						if (Math.max(s.x0(), s.x1()) < x0 || Math.min(s.x0(), s.x1()) > x1 || Math.max(s.z0(), s.z1()) < z0 || Math.min(s.z0(), s.z1()) > z1) continue;
+						out.add(s);
+					}
+			return out;
+		});
+	}
+
+	/** Nearest road stretch within r of this point: {c, along} with the stretch, or null. */
 	public Object[] hit(double x, double z, double r) {
 		int cx = Math.floorDiv((int) Math.floor(x), Villages.CELL), cz = Math.floorDiv((int) Math.floor(z), Villages.CELL);
 		Object[] best = null;
 		double bd = r;
-		for (int i = -2; i <= 1; i++)
-			for (int j = -2; j <= 1; j++)
-				for (Seg s : from(cx + i, cz + j)) {
-					double[] p = s.at(x, z);
-					if (p == null || Math.abs(p[0]) > bd) continue;
-					bd = Math.abs(p[0]);
-					best = new Object[]{p, s};
-				}
+		for (Seg s : cell(cx, cz)) {
+			double[] p = s.at(x, z);
+			if (p == null || Math.abs(p[0]) > bd) continue;
+			bd = Math.abs(p[0]);
+			best = new Object[]{p, s};
+		}
 		return best;
 	}
 

@@ -67,6 +67,11 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 			for (int dz = 0; dz < 16; dz++) {
 				int x = x0 + dx, z = z0 + dz;
 				try {
+				Metros.Metro metro = field.metros.at(x, z);
+				if (metro != null && MetroBuilder.column(w, m, field, metro, x, z)) {
+					any = true;
+					continue;
+				}
 				Villages.Town town = field.villages.at(x, z);
 				if (town != null && VillageBuilder.column(w, m, field, town, x, z)) {
 					any = true;
@@ -89,7 +94,7 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 				double p = field.polderWeight(x, z);
 				if (p > 0.8 && field.dikeRoad(x, z)) {
 					any = true;
-					Countryside.dikeRoad(w, m, x, z);
+					Countryside.dikeRoad(w, m, field, x, z);
 				}
 				if (p > 0.8 && Countryside.dikeLamp(w, m, field, x, z)) any = true;
 				// ditches and lakes can be too narrow for the aquifers to fill them: put the water in

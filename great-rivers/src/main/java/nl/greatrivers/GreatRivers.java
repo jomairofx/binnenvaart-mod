@@ -138,6 +138,9 @@ public class GreatRivers implements ModInitializer {
 					.append(Text.literal(", " + dist + " blocks away")), false);
 		}
 		}
+		Metros.Metro big = field.metros.nearest(x, z, 3);
+		if (big != null) report(src, "Nearest big city (" + (int) Math.round(big.radius() * 2) + " blocks across" + (big.river() ? ", on the river" : "") + ")",
+				big.cx(), 95, big.cz(), x, z);
 		int[] sea = findSea(field, x, z);
 		if (sea != null) report(src, "Nearest open sea (big water)", sea[0], 64, sea[1], x, z);
 		double[] br = field.infra.findBridge(x, z, 40000);

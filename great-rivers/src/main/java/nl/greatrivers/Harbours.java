@@ -153,6 +153,7 @@ public final class Harbours {
 				if (field.continentalness(qx, qz) < Lowlands.COAST + 0.06) return NONE;
 				if (field.low.canalDistance(qx, qz) < Lowlands.CANAL_HALF + 30) return NONE;
 				if (field.infra.motorwayDistance(qx, qz) < Infra.EDGE + 60) return NONE;
+				if (field.metros.near(qx, qz, 40)) return NONE;
 			}
 		return new Site(x, z, tx, tz, gx, gz, hw, best.name(), size, goods, A, B, Q, side);
 	}
@@ -164,6 +165,36 @@ public final class Harbours {
 		double a = Math.abs(s.a(x, z)), v = s.v(x, z);
 		if (a > s.alongExtent() + BLEND + 2 || v < s.bank - 30 || v > s.bank + s.inland() + BLEND + 2) return null;
 		return s;
+	}
+
+	/** The harbour whose area, grown by g blocks all round, covers this column, or null. */
+	public Site siteNear(int x, int z, double g) {
+		Site s = site(Math.floorDiv(x, CELL), Math.floorDiv(z, CELL));
+		if (s == null) return null;
+		double a = Math.abs(s.a(x, z)), v = s.v(x, z);
+		if (a > s.alongExtent() + BLEND + g || v < s.bank - 30 || v > s.bank + s.inland() + BLEND + g) return null;
+		return s;
+	}
+
+	/** How far this point lies outside the level harbour area (0 inside). */
+	public static double outside(Site s, double x, double z) {
+		double a = Math.abs(s.a(x, z)), v = s.v(x, z) - s.bank;
+		return Math.hypot(Math.max(0, a - s.alongExtent()), Math.max(0, v - s.inland()));
+	}
+
+	/** The dike around a harbour: like the river dike, it keeps the polder dry behind the harbour. NaN = none here. */
+	public static double dike(Site s, double x, double z) {
+		double v = s.v(x, z) - s.bank;
+		if (v < 35) return Double.NaN;          // the forelands and the river side have no dike of their own
+		double k = outside(s, x, z) - BLEND;
+		if (k < 0) return Double.NaN;
+		return Lowlands.dike(k, 0);
+	}
+
+	public static boolean dikeCrest(Site s, double x, double z) {
+		double v = s.v(x, z) - s.bank;
+		if (v < 35) return false;
+		return Lowlands.crest(outside(s, x, z) - BLEND, 0);
 	}
 
 	public static final int NO = 0, WATER = 1, FLAT = 2;

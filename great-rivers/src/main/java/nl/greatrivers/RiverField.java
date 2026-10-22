@@ -129,6 +129,7 @@ public final class RiverField {
 	public final Villages villages;
 	public final Infra infra;
 	public final Roads roads;
+	public final Metros metros;
 
 	/** Vanilla continentalness: below -0.19 is sea, below -0.455 deep sea, below -1.05 mushroom islands. */
 	private final DensityFunction continents;
@@ -162,6 +163,7 @@ public final class RiverField {
 		harbours = new Harbours(this, seed);
 		low = new Lowlands(r);
 		villages = new Villages(this, seed);
+		metros = new Metros(this, seed);
 		roads = new Roads(this);
 		infra = new Infra(this, seed);
 	}
@@ -236,6 +238,9 @@ public final class RiverField {
 
 	/** Is this column on the road on top of a dike? */
 	public boolean dikeRoad(int x, int z) {
+		if (flatWeight(x, z) > 0.01) return false;      // a harbour lies here
+		Harbours.Site hsd = harbours.siteNear(x, z, 60);
+		if (hsd != null && Harbours.dikeCrest(hsd, x + 0.5, z + 0.5)) return true;
 		for (Kind k : new Kind[]{great, river}) {
 			double e = k.distance(x, z) - k.halfWidth(x, z);
 			double f = Lowlands.foreland(k);
@@ -274,6 +279,12 @@ public final class RiverField {
 			double h = Lowlands.dike(e, f);
 			if (!Double.isNaN(h)) t = Math.max(t, h);
 		}
+		// a harbour cuts through the river dike: a dike goes round the back of the harbour instead
+		Harbours.Site hsd = harbours.siteNear(x, z, 60);
+		if (hsd != null) {
+			double h = Harbours.dike(hsd, x + 0.5, z + 0.5);
+			if (!Double.isNaN(h)) t = Math.max(t, h);
+		}
 		for (int k = 0; k < 2; k++) {
 			double e = ds[k] - hs[k], f = Lowlands.foreland(ks[k]);
 			if (e < 0) t = Math.min(t, ks[k].bed(ds[k], hs[k]));
@@ -285,7 +296,7 @@ public final class RiverField {
 			double u = dc / Lowlands.CANAL_HALF, u2 = u * u;
 			t = Math.min(t, WATER_TOP + 0.3 - Lowlands.CANAL_DEPTH * (1 - u2 * u2 * u2));
 		} else if (dc < Lowlands.CANAL_HALF + 2) t = Math.min(t, WATER_TOP + 1.3);                 // the canal bank
-		else if (!nearRiver && dc > Lowlands.CANAL_HALF + 12 && lowl > 0.75 && cont > Lowlands.COAST + 0.06 && villages.site(x, z) == null) {
+		else if (!nearRiver && dc > Lowlands.CANAL_HALF + 12 && lowl > 0.75 && cont > Lowlands.COAST + 0.06 && villages.site(x, z) == null && metros.site(x, z) == null) {
 			if (low.lake(x, z)) t = Math.min(t, WATER_TOP - 3.7);                                       // a small lake
 			else if (low.ditch(x, z)) t = Math.min(t, WATER_TOP - 1.7);                                 // ditch: two deep
 		}
@@ -297,6 +308,15 @@ public final class RiverField {
 			double g = d <= flatR ? 1 : 1 - Lowlands.smooth((d - flatR) / Villages.RING);
 			boolean water = tw.river() && dg - hwg < 0;
 			if (!water && g > 0) t = t * (1 - g) + (Villages.GROUND + 0.3) * g;
+		}
+		// the big cities: level ground at street height, the river stays, canals in the old centre
+		Metros.Metro mt = metros.site(x, z);
+		if (mt != null && cont > Lowlands.COAST + 0.06) {
+			double d = Math.hypot(x - mt.cx(), z - mt.cz()), flatR = mt.radius() + 30;
+			double g = d <= flatR ? 1 : 1 - Lowlands.smooth((d - flatR) / Metros.RING);
+			boolean water = dg - hwg < 0;
+			if (!water && g > 0) t = t * (1 - g) + (Villages.GROUND + 0.3) * g;
+			if (!water && d <= mt.radius() + 30 && MetroBuilder.canalWater(mt, x, z)) t = Math.min(t, RiverField.WATER_TOP - 3.7);
 		}
 		// motorways, bridge ramps, viaducts, locks and the roads to them
 		return infra.shape(x, z, t);

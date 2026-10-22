@@ -109,6 +109,36 @@ public final class ClientSelfTest {
 							rc.cz() + n[1] * (f.great.halfWidth(rc.cx(), rc.cz()) + 6) + tz * 60, rc.cx() + n[0] * (f.great.halfWidth(rc.cx(), rc.cz()) + 6), 66, rc.cz() + n[1] * (f.great.halfWidth(rc.cx(), rc.cz()) + 6));
 					add("rivierstad_boven", rc.cx() - 150, 170, rc.cz() - 150, rc.cx(), 70, rc.cz());
 				}
+				// the big cities
+				nl.greatrivers.Metros.Metro mt = f.metros.nearest(0, 0, 4);
+				if (mt != null) {
+					add("grote_stad_boven", mt.cx() - 130, 210, mt.cz() - 130, mt.cx(), 64, mt.cz());
+					add("grote_stad_centrum", mt.cx() + 120, 110, mt.cz() + 140, mt.cx(), 70, mt.cz());
+					int ax = mt.cx() + 3 * nl.greatrivers.Villages.PU + nl.greatrivers.Villages.STREET + 14;
+					add("grote_stad_boulevard", ax + 0.5, 67, mt.cz() + 300, ax + 0.5, 66, mt.cz() + 200);
+					for (int bx = -14; bx <= 14; bx++) {
+						int bz = (int) Math.round(mt.radius() * 0.85 / nl.greatrivers.Villages.PW) * (bx < 0 ? -1 : 1);
+						if (mt.district(bx, bz) == nl.greatrivers.Metros.INDUSTRY) {
+							double qx = mt.cx() + bx * nl.greatrivers.Villages.PU, qz = mt.cz() + bz * nl.greatrivers.Villages.PW;
+							add("grote_stad_bedrijventerrein", qx - 50, 95, qz - 50, qx + 15, 66, qz + 15);
+							break;
+						}
+					}
+					add("grote_stad_gracht", mt.cx() + 2 * nl.greatrivers.Villages.PU + 3, 68, mt.cz() + nl.greatrivers.Villages.PW + 5 + 10.5,
+							mt.cx() + 2 * nl.greatrivers.Villages.PU + 60, 66, mt.cz() + nl.greatrivers.Villages.PW + 5 + 10.5);
+				}
+				nl.greatrivers.Metros.Metro rm = null;
+				for (int i = -4; i <= 4 && rm == null; i++)
+					for (int j = -4; j <= 4 && rm == null; j++) {
+						nl.greatrivers.Metros.Metro c = f.metros.metro(i, j);
+						if (c != null && c.river()) rm = c;
+					}
+				if (rm != null) {
+					double[] n = f.great.normal(rm.cx(), rm.cz());
+					double tx = -n[1], tz = n[0];
+					add("grote_stad_rivier", rm.cx() + tx * 140, 72, rm.cz() + tz * 140, rm.cx(), 80, rm.cz());
+					add("grote_stad_rivier_boven", rm.cx() + tx * 100 + n[0] * 100, 170, rm.cz() + tz * 100 + n[1] * 100, rm.cx(), 70, rm.cz());
+				}
 				// bridges, viaducts, motorways, locks
 				double[] br = f.infra.findBridge(0, 0, 40000);
 				if (br != null) {

@@ -136,6 +136,7 @@ public final class Locks {
 				if (f.coastal(qx, qz) < Lowlands.COAST + 0.1) return NONE;
 				if (f.harbours.siteAt(qx, qz) != null) return NONE;
 				if (f.villages.at(qx, qz) != null) return NONE;
+				if (f.metros.near(qx, qz, 80)) return NONE;
 			}
 		// a provincial road from the lock to the nearest village or town on its side of the river
 		double sx = x + gx * side * (hw + LAND + 1), sz = z + gz * side * (hw + LAND + 1);

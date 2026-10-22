@@ -260,6 +260,7 @@ public final class Infra {
 	public boolean near(int x, int z, double r) {
 		if (motorwayDistance(x, z) < EDGE + r) return true;
 		if (f.roads.near(x, z, r)) return true;
+		if (f.metros.near(x, z, r)) return true;
 		return locks.near(x, z, r);
 	}
 

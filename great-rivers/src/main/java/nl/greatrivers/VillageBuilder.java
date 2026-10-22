@@ -42,7 +42,7 @@ final class VillageBuilder {
 		w.setBlockState(m.set(x, y, z), st, 2);
 	}
 
-	private static long hash(long a, long b, long c) {
+	static long hash(long a, long b, long c) {
 		return Harbours.mix(a * 0x9E3779B97F4A7C15L + b * 0x632BE59BD9B4E019L + c * 0x2545F4914F6CDD1DL);
 	}
 
@@ -120,7 +120,7 @@ final class VillageBuilder {
 	}
 
 	/** Is any part of this block of a river city on the quays or in the water? */
-	private static boolean blockNearWater(RiverField f, Villages.Town t, int bx, int bz) {
+	static boolean blockNearWater(RiverField f, Villages.Town t, int bx, int bz) {
 		int x0 = t.cx() + bx * Villages.PU, z0 = t.cz() + bz * Villages.PW;
 		for (int i = 0; i <= 2; i++)
 			for (int j = 0; j <= 2; j++) {
@@ -134,7 +134,7 @@ final class VillageBuilder {
 	// ------------------------------------------------------------------ the edge of the town
 
 	/** Just outside the outer streets: a hedge with trees, so the town ends in green, not in stone. */
-	private static boolean edge(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z) {
+	static boolean edge(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z) {
 		int k = 0;
 		for (int d = 1; d <= 3 && k == 0; d++)
 			if (Villages.street(t, x + d, z) || Villages.street(t, x - d, z) || Villages.street(t, x, z + d) || Villages.street(t, x, z - d)) k = d;
@@ -150,7 +150,7 @@ final class VillageBuilder {
 
 	// ------------------------------------------------------------------ river city: quays, boulevard, ferry
 
-	private static void quay(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, int x, int z, double e) {
+	static void quay(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, int x, int z, double e) {
 		long h = hash(x, z, 21);
 		if (e < 1.5) {
 			// the quay wall: brick-faced, standing on the river bed, smooth stone coping
@@ -212,7 +212,7 @@ final class VillageBuilder {
 
 	// ------------------------------------------------------------------ parks
 
-	private static void park(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw) {
+	static void park(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw) {
 		long h = hash(x, z, 31);
 		boolean path = bu == 14 || bw == 10;
 		if (path) {
@@ -236,7 +236,7 @@ final class VillageBuilder {
 			{Blocks.GRAY_TERRACOTTA, Blocks.SMOOTH_QUARTZ}};
 
 	/** An office or apartment tower filling the block, 25 to 75 high: taller towards the middle of the city. */
-	private static void tower(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh, double zone) {
+	static void tower(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh, double zone) {
 		int x0 = 3, x1 = 25, z0 = 3, z1 = 17;
 		boolean in = bu >= x0 && bu <= x1 && bw >= z0 && bw <= z1;
 		if (!in) {
@@ -248,7 +248,7 @@ final class VillageBuilder {
 		Block[] pal = TOWER[(int) ((bh >>> 8) % TOWER.length)];
 		BlockState win = pal[0].getDefaultState(), frame = pal[1].getDefaultState();
 		int H = (int) Math.round((24 + ((bh >>> 16) % 7) * 8) * (1.35 - 0.6 * zone));
-		H = Math.max(22, Math.min(80, H)) / 4 * 4;
+		H = Math.max(22, Math.min(112, H)) / 4 * 4;
 		boolean edge = bu == x0 || bu == x1 || bw == z0 || bw == z1;
 		boolean corner = (bu == x0 || bu == x1) && (bw == z0 || bw == z1);
 		int along = (bw == z0 || bw == z1) ? bu : bw;
@@ -279,14 +279,14 @@ final class VillageBuilder {
 			for (int y = roof + 4; y <= roof + 12; y++) set(w, m, x, y, z, Blocks.IRON_BARS.getDefaultState());
 			set(w, m, x, roof + 13, z, Blocks.REDSTONE_LAMP.getDefaultState());
 		}
-		for (int y = roof + 2; y <= Y0 + 90; y++) {
+		for (int y = roof + 2; y <= Y0 + 120; y++) {
 			BlockState st = w.getBlockState(m.set(x, y, z));
 			if (st.isIn(BlockTags.LEAVES) || st.isIn(BlockTags.LOGS)) set(w, m, x, y, z, AIR);
 		}
 	}
 
 	/** Two "galerijflats": long blocks of flats of 4 to 8 floors with open galleries, gardens between them. */
-	private static void flats(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh) {
+	static void flats(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh) {
 		boolean front = bw <= 9;
 		int pw = front ? bw : 20 - bw;                          // 0 at the street
 		int floors = 4 + (int) ((bh >>> 12) % 5);
@@ -333,7 +333,7 @@ final class VillageBuilder {
 
 	// ------------------------------------------------------------------ streets
 
-	private static void street(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z, int u, int wv) {
+	static void street(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z, int u, int wv) {
 		boolean alongX = wv < Villages.STREET && u >= Villages.STREET;    // street running east-west
 		boolean alongZ = u < Villages.STREET && wv >= Villages.STREET;
 		int across = alongX ? wv : alongZ ? u : -1;
@@ -360,11 +360,11 @@ final class VillageBuilder {
 		return front ? Direction.NORTH : Direction.SOUTH;
 	}
 
-	private static BlockState stairs(Block b, Direction f) {
+	static BlockState stairs(Block b, Direction f) {
 		return b.getDefaultState().with(Properties.HORIZONTAL_FACING, f);
 	}
 
-	private static void house(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z, int hx, int pw, boolean front, long hh, boolean residents) {
+	static void house(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z, int hx, int pw, boolean front, long hh, boolean residents) {
 		Block wall = BRICK[(int) (hh & 3)];
 		Block[] roof = ROOF[(int) ((hh >>> 3) & 3)];
 		Direction out = out(front), in = out.getOpposite();
@@ -471,7 +471,7 @@ final class VillageBuilder {
 		return t.seed() >>> 7;
 	}
 
-	private static void door(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, Direction facing, Block door) {
+	static void door(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, Direction facing, Block door) {
 		BlockState d = door.getDefaultState().with(DoorBlock.FACING, facing.getOpposite());
 		set(w, m, x, Y0 + 1, z, d.with(DoorBlock.HALF, DoubleBlockHalf.LOWER));
 		set(w, m, x, Y0 + 2, z, d.with(DoorBlock.HALF, DoubleBlockHalf.UPPER));
@@ -479,7 +479,7 @@ final class VillageBuilder {
 
 	// ------------------------------------------------------------------ the church and its square
 
-	private static void church(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z, int bu, int bw) {
+	static void church(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z, int bu, int bw) {
 		// square paving everywhere in the middle block, the church on it
 		set(w, m, x, G, z, ((bu + bw) & 3) == 0 ? Blocks.STONE_BRICKS.getDefaultState() : Blocks.BRICKS.getDefaultState());
 		boolean nave = bu >= 9 && bu <= 25 && bw >= 5 && bw <= 15;

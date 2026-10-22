@@ -61,6 +61,11 @@ public abstract class MultiNoiseBiomeSourceMixin {
 			cir.setReturnValue(greatrivers$river);
 			return;
 		}
+		// the big cities: plains (no forest to clear between the buildings)
+		if (field.metros.site(bx, bz) != null) {
+			cir.setReturnValue(greatrivers$plains);
+			return;
+		}
 		// no woods in the forelands and on the dikes: open grass along the water
 		var k = field.great;
 		boolean nearWater = k.distance(bx, bz) - k.halfWidth(bx, bz) < nl.greatrivers.Lowlands.foreland(k) + 40;

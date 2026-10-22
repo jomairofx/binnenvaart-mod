@@ -247,7 +247,9 @@ public final class RiverField {
 	private double dutch(int x, int z, double dg, double hwg, double dr, double hwr) {
 		double cont = coastal(x, z);
 		double lowl = low.lowland(x, z);
-		double t = Lowlands.POLDER + low.rise(x, z, lowl);
+		// hills fade out towards the river, so the dikes and forelands stay as they are
+		double eRiver = dg - hwg - Lowlands.foreland(great);
+		double t = Lowlands.POLDER + low.rise(x, z, lowl) * Lowlands.smooth((eRiver - 40) / 220);
 		if (cont > Lowlands.COAST + 0.06 && villages.flat(x, z)) return Lowlands.POLDER;   // villages and towns stand on level ground
 		boolean sea = cont < Lowlands.COAST;
 		if (cont < Lowlands.COAST + 0.045) {
@@ -280,7 +282,7 @@ public final class RiverField {
 			double u = dc / Lowlands.CANAL_HALF, u2 = u * u;
 			t = Math.min(t, WATER_TOP + 0.3 - Lowlands.CANAL_DEPTH * (1 - u2 * u2 * u2));
 		} else if (dc < Lowlands.CANAL_HALF + 2) t = Math.min(t, WATER_TOP + 1.3);                 // the canal bank
-		else if (!nearRiver && dc > Lowlands.CANAL_HALF + 12 && lowl > 0.5 && cont > Lowlands.COAST + 0.06) {
+		else if (!nearRiver && dc > Lowlands.CANAL_HALF + 12 && lowl > 0.75 && cont > Lowlands.COAST + 0.06) {
 			if (low.lake(x, z)) t = Math.min(t, WATER_TOP - 3.7);                                       // a small lake
 			else if (low.ditch(x, z)) t = Math.min(t, WATER_TOP - 1.7);                                 // ditch: two deep
 		}
@@ -326,12 +328,12 @@ public final class RiverField {
 		double w = 0;
 		Harbours.Site s = harbours.siteAt(x, z);
 		if (s != null) {
-			int k = Harbours.kind(s, x, z);
+			int k = Harbours.kind(s, x + 0.5, z + 0.5);
 			if (k == Harbours.WATER) {
 				v = Math.min(v, Harbours.BASIN_FLOOR + 0.5);
 				if (!Double.isNaN(c.dutch[i])) c.dutch[i] = Math.min(c.dutch[i], Harbours.BASIN_FLOOR + 0.5);
 			}
-			else w = Harbours.flatWeight(s, x, z);
+			else w = Harbours.flatWeight(s, x + 0.5, z + 0.5);
 		}
 		c.owner[i] = this;
 		c.keys[i] = key;

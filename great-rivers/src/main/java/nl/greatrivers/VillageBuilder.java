@@ -99,7 +99,7 @@ final class VillageBuilder {
 			set(w, m, x, G + 4, z, Blocks.LANTERN.getDefaultState());
 		}
 		// lime trees along the main streets of a town
-		if (t.city() && across == Villages.STREET - 1 && Math.floorMod(along + 6, 12) == 0) {
+		if (false) {   // no trees on the streets
 			Countryside.tree(w, m, x, G + 1, z, hash(x, z, 5));
 		}
 	}

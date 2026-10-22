@@ -23,7 +23,7 @@ public abstract class MultiNoiseBiomeSourceMixin {
 	private boolean greatrivers$looked;
 	@Unique
 	private RegistryEntry<Biome> greatrivers$plains, greatrivers$forest, greatrivers$birch, greatrivers$beach,
-			greatrivers$ocean, greatrivers$deepOcean, greatrivers$coldOcean, greatrivers$deepColdOcean;
+			greatrivers$ocean, greatrivers$deepOcean, greatrivers$coldOcean, greatrivers$deepColdOcean, greatrivers$pine;
 
 	/** Only grassland and woods on the land, and no ice anywhere: you can sail everywhere, like in the Netherlands. */
 	@Inject(method = "getBiome", at = @At("RETURN"), cancellable = true)
@@ -36,7 +36,8 @@ public abstract class MultiNoiseBiomeSourceMixin {
 				if (e.matchesKey(BiomeKeys.RIVER)) greatrivers$river = e;
 				if (e.matchesKey(BiomeKeys.PLAINS)) greatrivers$plains = e;
 				if (e.matchesKey(BiomeKeys.FOREST)) greatrivers$forest = e;
-				if (e.matchesKey(BiomeKeys.BIRCH_FOREST)) greatrivers$birch = e;
+				if (e.matchesKey(BiomeKeys.OLD_GROWTH_BIRCH_FOREST)) greatrivers$birch = e;
+				if (e.matchesKey(BiomeKeys.OLD_GROWTH_PINE_TAIGA)) greatrivers$pine = e;
 				if (e.matchesKey(BiomeKeys.BEACH)) greatrivers$beach = e;
 				if (e.matchesKey(BiomeKeys.OCEAN)) greatrivers$ocean = e;
 				if (e.matchesKey(BiomeKeys.DEEP_OCEAN)) greatrivers$deepOcean = e;
@@ -64,7 +65,8 @@ public abstract class MultiNoiseBiomeSourceMixin {
 		var k = field.great;
 		boolean nearWater = k.distance(bx, bz) - k.halfWidth(bx, bz) < nl.greatrivers.Lowlands.foreland(k) + 40;
 		int wood = nearWater ? 0 : field.low.wood(bx, bz, field.low.lowland(bx, bz));
-		RegistryEntry<Biome> land = wood == 2 && greatrivers$birch != null ? greatrivers$birch
+		RegistryEntry<Biome> land = wood == 3 && greatrivers$pine != null ? greatrivers$pine
+				: wood == 2 && greatrivers$birch != null ? greatrivers$birch
 				: wood >= 1 && greatrivers$forest != null ? greatrivers$forest : greatrivers$plains;
 		cir.setReturnValue(land);
 	}

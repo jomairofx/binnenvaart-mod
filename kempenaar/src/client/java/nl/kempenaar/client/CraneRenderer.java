@@ -44,7 +44,7 @@ public class CraneRenderer implements BlockEntityRenderer<CraneBlockEntity> {
 
 	@Override
 	public int getRenderDistance() {
-		return 224;
+		return 512;
 	}
 
 	private static Sprite sprite(BlockState s) {
@@ -145,17 +145,22 @@ public class CraneRenderer implements BlockEntityRenderer<CraneBlockEntity> {
 
 	/** Simple shapes for cranes far away: mast, jib, counter jib and cab (a few boxes instead of the lattice). */
 	private void buildFar() {
+		// slender like the real one: four thin corner posts for the mast, a thin jib, no solid blocks
 		Geo g = new Geo();
 		g.box(concrete, -0.2f, 0, -0.2f, 1.2f, 0.9f, 1.2f, 1f);
-		g.box(yellow, 0.05f, 0.9f, 0.05f, 0.95f, H, 0.95f, 1f);
+		for (float[] c : new float[][]{{0.05f, 0.05f}, {0.83f, 0.05f}, {0.05f, 0.83f}, {0.83f, 0.83f}})
+			g.box(yellow, c[0], 0.9f, c[1], c[0] + 0.12f, H, c[1] + 0.12f, 1f);
+		for (float y = 3f; y < H; y += 3f) g.box(yellow, 0.05f, y, 0.05f, 0.95f, y + 0.08f, 0.95f, 0.9f);
 		towerFar = g;
 		Geo s = new Geo();
-		s.box(gray, -1.0f, H, -1.0f, 1.0f, H + 0.62f, 1.0f, 0.9f);
+		s.box(gray, -1.0f, H, -1.0f, 1.0f, H + 0.5f, 1.0f, 0.9f);
 		s.box(white, 0.3f, H + 0.62f, 1.05f, 1.9f, H + 2.0f, 2.15f, 1f);
-		s.box(yellow, 0.8f, H + 0.62f, -0.6f, JIB, H + 1.6f, 0.6f, 1f);
-		s.box(yellow, -CJIB, H + 0.62f, -0.8f, -0.8f, H + 0.9f, 0.8f, 1f);
-		s.box(concrete, -CJIB + 0.3f, H - 1.8f, -0.95f, -CJIB + 3f, H + 0.62f, 0.95f, 1f);
-		s.box(yellow, -0.3f, H + 0.62f, -0.3f, 0.3f, H + 8f, 0.3f, 1f);
+		s.box(yellow, 0.8f, H + 0.62f, -0.6f, JIB, H + 0.72f, -0.48f, 1f);
+		s.box(yellow, 0.8f, H + 0.62f, 0.48f, JIB, H + 0.72f, 0.6f, 1f);
+		s.box(yellow, 0.8f, H + 1.4f, -0.06f, JIB - 1.2f, H + 1.52f, 0.06f, 1f);
+		s.box(yellow, -CJIB, H + 0.62f, -0.7f, -0.8f, H + 0.82f, 0.7f, 1f);
+		s.box(concrete, -CJIB + 0.5f, H - 1.8f, -0.95f, -CJIB + 2.5f, H + 0.62f, 0.95f, 1f);
+		s.box(yellow, -0.12f, H + 0.62f, -0.12f, 0.12f, H + 8f, 0.12f, 1f);
 		slewFar = s;
 	}
 
@@ -186,7 +191,7 @@ public class CraneRenderer implements BlockEntityRenderer<CraneBlockEntity> {
 		double dist2 = cam.squaredDistanceTo(be.getPos().getX() + 0.5, be.getPos().getY() + H * 0.5, be.getPos().getZ() + 0.5);
 		boolean shadow = IrisCompat.isShadowPass();
 		if (shadow && dist2 > 64 * 64) return;            // far cranes throw no shadow: saves a lot with shaders
-		if (dist2 > 90 * 90 || (shadow && dist2 > 32 * 32)) {
+		if (dist2 > 160 * 160 || (shadow && dist2 > 32 * 32)) {
 			// far away: the simple crane, no moving parts drawn in detail
 			towerFar.emit(vc, m.peek(), lLow);
 			m.push();

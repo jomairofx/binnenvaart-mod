@@ -289,10 +289,9 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 			Block[] c = CONTAINER[(int) ((hash(row, slot, k) >>> 5) % CONTAINER.length)];
 			for (int dy = 0; dy < 3; dy++) {
 				int y = Q + 1 + k * 3 + dy;
-				boolean end = along == 0 || along == len - 1;
-				boolean rib = (across == 0 || across == 2) && dy < 2 && along % 2 == 1;
-				Block b = end || rib ? c[1] : c[0];
-				if (dy == 2) b = c[0];
+				// a clean box: one colour, with darker corner posts so every container stands out on its own
+				boolean end = along == 0 || along == len - 1, side = across == 0 || across == 2;
+				Block b = end && side ? c[1] : c[0];
 				set(w, m, x, y, z, b.getDefaultState());
 			}
 		}

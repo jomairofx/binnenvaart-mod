@@ -15,7 +15,7 @@ public final class Lowlands {
 	public static final double DIKE_TOP = 69.3;    // top of the dikes: y 69
 	public static final int CANAL_X = 11000, CANAL_Z = 14000;
 	public static final double CANAL_HALF = 17, CANAL_DEPTH = 9;
-	public static final int DITCH_A = 46, DITCH_B = 230;
+	public static final int DITCH_A = 140, DITCH_B = 700;
 
 	private final SimplexNoiseSampler p1, p2, wood1, wood2;
 	private final double ox, oz;
@@ -36,12 +36,17 @@ public final class Lowlands {
 		ditchAlongX = r.nextBoolean();
 	}
 
-	/** Woods: 0 = open grassland, 1 = oak forest, 2 = birch forest. Mostly open meadows, now and then a wood. */
-	public int wood(double x, double z, double polder) {
+	/**
+	 * Woods: 0 = open grassland, 1 = oak forest, 2 = tall birch forest, 3 = tall pine forest (on the sandy hills, like
+	 * the Veluwe). Open meadows in the low polders, more and bigger woods on the higher sandy ground.
+	 */
+	public int wood(double x, double z, double lowland) {
 		double n = 0.75 * wood1.sample((x + ox) / 900, (z + oz) / 900) + 0.25 * wood1.sample((x + ox) / 260, (z + oz) / 260);
-		double limit = 0.5 + 0.2 * polder;     // mostly open meadows, now and then a wood
+		double limit = 0.22 + 0.45 * lowland;
 		if (n < limit) return 0;
-		return wood2.sample((x + ox) / 700, (z + oz) / 700) > 0.35 ? 2 : 1;
+		double t = wood2.sample((x + ox) / 700, (z + oz) / 700);
+		if (lowland < 0.4 && t < -0.1) return 3;
+		return t > 0.35 ? 2 : 1;
 	}
 
 	/** Sea below this continentalness, land above it. Inland "oceans" of vanilla become land. */
@@ -55,8 +60,10 @@ public final class Lowlands {
 
 	/** Gentle rises on the sandy ground: at most three blocks, like the Dutch "zandgronden". */
 	public double rise(double x, double z, double lowland) {
-		double n = 0.6 * wood2.sample((x + ox) / 380 + 7.7, (z + oz) / 380 - 3.1) + 0.4 * p2.sample((x + ox) / 120 - 5.3, (z + oz) / 120 + 9.9);
-		return Math.max(0, n) * 3.4 * (1 - lowland);
+		// rolling hills on the higher sandy ground (up to about 16 blocks), flat in the polders
+		double n = 0.65 * wood2.sample((x + ox) / 700 + 7.7, (z + oz) / 700 - 3.1) + 0.35 * p2.sample((x + ox) / 180 - 5.3, (z + oz) / 180 + 9.9);
+		double h = Math.max(0, n + 0.1);
+		return Math.pow(h, 1.4) * 22 * (1 - lowland);
 	}
 
 	/** Along the rivers: below -0.25 no trees, up to 0.3 a few, above 0.3 a row of pollard willows. */

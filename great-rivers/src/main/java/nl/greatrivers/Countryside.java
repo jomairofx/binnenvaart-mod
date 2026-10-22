@@ -29,7 +29,7 @@ final class Countryside {
 		if (!st.isOf(Blocks.GRASS_BLOCK) && !st.isOf(Blocks.DIRT) && !st.isOf(Blocks.SNOW_BLOCK) && !st.isOf(Blocks.STONE)) return;
 		// no trees on the road: take away any tree that grew here, trunk and crown
 		boolean tree = false;
-		for (int y = top + 1; y <= top + 3 && !tree; y++) tree = w.getBlockState(m.set(x, y, z)).isIn(net.minecraft.registry.tag.BlockTags.LOGS);
+		for (int y = top + 1; y <= top + 10 && !tree; y++) tree = w.getBlockState(m.set(x, y, z)).isIn(net.minecraft.registry.tag.BlockTags.LOGS);
 		if (tree) {
 			for (int dx = -3; dx <= 3; dx++)
 				for (int dz = -3; dz <= 3; dz++)
@@ -273,29 +273,35 @@ final class Countryside {
 		double[] dh = field.riverAt(x, z, true);
 		double f = Lowlands.foreland(k);
 		double kk = dh[0] - dh[1] - f;                 // across the dike: road on 15.5..19.5
-		if (kk < 20 || kk >= 21) return false;
+		if (kk < 19 || kk >= 22) return false;
 		double g = 3, gx = k.distance(x + g, z) - k.distance(x - g, z), gz = k.distance(x, z + g) - k.distance(x, z - g);
 		double l = Math.hypot(gx, gz);
 		if (l < 1e-9) return false;
 		gx /= l;
 		gz /= l;
+		double tx = -gz, tz = gx;
 		int cx = Math.round(x / 160f) * 160, cz = Math.round(z / 160f) * 160;
-		double s = (x - cx) * (-gz) + (z - cz) * gx;
-		if (Math.floorMod((long) Math.floor(s), 40L) != 0) return false;
+		double s = (x + 0.5 - cx) * tx + (z + 0.5 - cz) * tz;
+		double kIdx = Math.round(s / 40.0);
+		if (Math.abs(s - kIdx * 40) > 2) return false;
+		// exactly one column per lamp: the one nearest to the ideal spot
+		double px = x + 0.5 + (kIdx * 40 - s) * tx + (20.5 - kk) * gx, pz = z + 0.5 + (kIdx * 40 - s) * tz + (20.5 - kk) * gz;
+		if ((int) Math.floor(px) != x || (int) Math.floor(pz) != z) return false;
 		int top = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z) - 1;
 		if (top < 66 || top > 72) return false;
 		// the arm points towards the river, over the road
 		net.minecraft.util.math.Direction toRoad = Math.abs(gx) > Math.abs(gz)
 				? (gx > 0 ? net.minecraft.util.math.Direction.WEST : net.minecraft.util.math.Direction.EAST)
 				: (gz > 0 ? net.minecraft.util.math.Direction.NORTH : net.minecraft.util.math.Direction.SOUTH);
-		int poleTop = top + 7;
-		for (int y = top + 1; y <= poleTop; y++) set(w, m, x, y, z, Blocks.IRON_BARS.getDefaultState());
-		net.minecraft.state.property.Property<net.minecraft.util.math.Direction.Axis> axis = Properties.AXIS;
-		net.minecraft.util.math.Direction.Axis ax = toRoad.getAxis();
-		for (int i = 1; i <= 2; i++)
-			set(w, m, x + toRoad.getOffsetX() * i, poleTop, z + toRoad.getOffsetZ() * i, Blocks.CHAIN.getDefaultState().with(axis, ax));
-		int hx = x + toRoad.getOffsetX() * 3, hz = z + toRoad.getOffsetZ() * 3;
-		set(w, m, hx, poleTop, hz, Blocks.SMOOTH_STONE_SLAB.getDefaultState());
+		// slim grey mast, short arm, flat LED head; an invisible light under the head lights the road
+		int poleTop = top + 6;
+		set(w, m, x, top + 1, z, Blocks.POLISHED_ANDESITE_SLAB.getDefaultState());   // foot
+		for (int y = top + 2; y <= poleTop; y++) set(w, m, x, y, z, Blocks.IRON_BARS.getDefaultState());
+		int ax = x + toRoad.getOffsetX(), az = z + toRoad.getOffsetZ();
+		set(w, m, ax, poleTop, az, Blocks.CHAIN.getDefaultState().with(Properties.AXIS, toRoad.getAxis()));
+		int hx = x + toRoad.getOffsetX() * 2, hz = z + toRoad.getOffsetZ() * 2;
+		set(w, m, hx, poleTop, hz, Blocks.IRON_TRAPDOOR.getDefaultState()
+				.with(Properties.BLOCK_HALF, net.minecraft.block.enums.BlockHalf.TOP).with(Properties.HORIZONTAL_FACING, toRoad));
 		set(w, m, hx, poleTop - 1, hz, Blocks.LIGHT.getDefaultState().with(Properties.LEVEL_15, 15));
 		return true;
 	}

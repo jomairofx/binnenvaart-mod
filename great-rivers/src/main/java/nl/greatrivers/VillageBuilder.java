@@ -363,14 +363,31 @@ final class VillageBuilder {
 		for (int y = Y0 + 1; y <= Y0 + H; y++) {
 			int rel = y - Y0;
 			BlockState st;
+			int floor = rel / 4, fr = rel % 4;
+			// most floors are lit, so the tower glows at night like a real office tower
+			boolean lit = Math.floorMod(Harbours.mix(bh + floor * 7919L), 10L) < 6;
 			if (edge) {
-				if (corner || rel % 4 == 0) st = frame;
-				else if (rel <= 3) st = Blocks.LIGHT_GRAY_STAINED_GLASS.getDefaultState();     // glass lobby
-				else st = along % 3 == 0 ? frame : win;
+				if (corner || fr == 0) st = frame;                                             // floor bands and corners
+				else if (rel <= 3) st = Blocks.GLASS.getDefaultState();                          // glass lobby
+				else st = along % 3 == 0 ? frame : Blocks.GLASS.getDefaultState();             // glass curtain wall, mullions
+				if (fr == 3 && along % 3 != 0 && !corner && rel > 3) st = win;                  // the spandrel under the next floor
 				if (rel <= 2 && bw == z0 && (bu == 13 || bu == 14 || bu == 15)) st = AIR;      // entrance
 			} else {
-				st = rel % 4 == 0 ? Blocks.SMOOTH_STONE.getDefaultState() : AIR;
-				if (rel == 3 && bu % 5 == 0 && bw % 5 == 0) st = Blocks.SEA_LANTERN.getDefaultState();
+				boolean core = bu >= 12 && bu <= 16 && bw >= 8 && bw <= 12;
+				boolean coreWall = core && (bu == 12 || bu == 16 || bw == 8 || bw == 12);
+				if (fr == 0) st = core && !coreWall ? AIR : Blocks.SMOOTH_STONE.getDefaultState();
+				else if (coreWall) st = (bu == 12 && bw == 10 && fr <= 2) ? AIR : Blocks.LIGHT_GRAY_CONCRETE.getDefaultState();   // lift and stairs
+				else if (core) st = (bu == 14 && bw == 10) ? Blocks.LADDER.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.WEST) : AIR;
+				else if (fr == 3) st = lit && Math.floorMod(bu, 4) == 1 && Math.floorMod(bw, 4) == 1 ? Blocks.SEA_LANTERN.getDefaultState() : AIR;
+				else if (fr == 1 && rel > 4) {
+					// offices: rows of desks with chairs, plants in the corners
+					boolean inner = bu >= x0 + 2 && bu <= x1 - 2 && bw >= z0 + 2 && bw <= z1 - 2;
+					if (inner && Math.floorMod(bw, 4) == 1 && Math.floorMod(bu, 3) != 0) st = Blocks.SPRUCE_SLAB.getDefaultState().with(Properties.SLAB_TYPE, SlabType.TOP);
+					else if (inner && Math.floorMod(bw, 4) == 2 && Math.floorMod(bu, 3) == 1) st = stairs(Blocks.DARK_OAK_STAIRS, Direction.NORTH);
+					else if ((bu == x0 + 1 || bu == x1 - 1) && (bw == z0 + 1 || bw == z1 - 1)) st = Blocks.POTTED_FERN.getDefaultState();
+					else st = AIR;
+				} else st = AIR;
+				if (rel == 3 && bu % 5 == 0 && bw % 5 == 0 && !core) st = Blocks.SEA_LANTERN.getDefaultState();
 			}
 			set(w, m, x, y, z, st);
 		}
@@ -406,7 +423,7 @@ final class VillageBuilder {
 		}
 		BlockState wall = (((bh >>> 4) & 1) == 0 ? Blocks.WHITE_CONCRETE : Blocks.LIGHT_GRAY_CONCRETE).getDefaultState();
 		BlockState brick = (((bh >>> 5) & 1) == 0 ? Blocks.BRICKS : Blocks.WHITE_CONCRETE).getDefaultState();
-		BlockState win = Blocks.LIGHT_BLUE_TERRACOTTA.getDefaultState();
+		BlockState win = paneEW(Blocks.GLASS_PANE);
 		set(w, m, x, G, z, Blocks.SMOOTH_STONE.getDefaultState());
 		if (gallery) {
 			// open galleries along the street side, one per floor, with a concrete balustrade
@@ -431,6 +448,10 @@ final class VillageBuilder {
 				if (rel <= 2 && pw == 2 && bu == 14) st = AIR;                    // main entrance
 			} else {
 				st = rel % 3 == 0 ? Blocks.SMOOTH_STONE.getDefaultState() : AIR;
+				if (bu % 4 == 0 && rel % 3 != 0) st = Blocks.BIRCH_PLANKS.getDefaultState();    // walls between the flats
+				boolean lit = Math.floorMod(Harbours.mix(bh + bu / 4 * 31L + rel / 3 * 7L + (front ? 1 : 2)), 10L) < 5;
+				if (rel % 3 == 2 && bu % 4 == 2 && pw == 5 && lit) st = Blocks.SEA_LANTERN.getDefaultState();
+				if (rel % 3 == 1 && bu % 4 == 3 && pw == 6) st = Blocks.SPRUCE_STAIRS.getDefaultState();   // a chair by the window
 			}
 			set(w, m, x, y, z, st);
 		}

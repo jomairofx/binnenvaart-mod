@@ -243,6 +243,12 @@ public final class RiverField {
 		if (flatWeight(x, z) > 0.01) return false;      // a harbour lies here
 		Harbours.Site hsd = harbours.siteNear(x, z, 60);
 		if (hsd != null && Harbours.dikeCrest(hsd, x + 0.5, z + 0.5)) return true;
+		// the road on top of the sea dike, so the river dike roads run on along the coast
+		double cont = coastal(x, z);
+		if (cont >= Lowlands.COAST && cont < Lowlands.COAST + 0.045) {
+			double u = (cont - Lowlands.COAST) / 0.045;
+			if (Math.abs(u - 0.5) < 0.035) return true;
+		}
 		for (Kind k : new Kind[]{great, river}) {
 			double e = k.distance(x, z) - k.halfWidth(x, z);
 			double f = Lowlands.foreland(k);

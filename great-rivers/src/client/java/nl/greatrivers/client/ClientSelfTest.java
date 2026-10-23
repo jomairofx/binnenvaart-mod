@@ -186,6 +186,16 @@ public final class ClientSelfTest {
 						break;
 					}
 				}
+				// a water tower and a football pitch in the nearest village
+				nl.greatrivers.Villages.Town vt = GreatRivers.findTown(f, 0, 0, 15, false, Boolean.FALSE);
+				if (vt != null) {
+					int[] wt = nl.greatrivers.VillageBuilderAccess.special(vt, 1);
+					double wx = vt.cx() + wt[0] * nl.greatrivers.Villages.PU + 19, wz = vt.cz() + wt[1] * nl.greatrivers.Villages.PW + 15;
+					add("watertoren", wx + 40, 85, wz + 40, wx, 80, wz);
+					int[] sp = nl.greatrivers.VillageBuilderAccess.special(vt, 2);
+					double sx = vt.cx() + sp[0] * nl.greatrivers.Villages.PU + 19, sz = vt.cz() + sp[1] * nl.greatrivers.Villages.PW + 15;
+					add("voetbalveld", sx - 30, 85, sz - 30, sx, 64, sz);
+				}
 				// a motorway junction
 				double[] jn = f.infra.junctions.nearest(0, 0);
 				if (jn != null) {

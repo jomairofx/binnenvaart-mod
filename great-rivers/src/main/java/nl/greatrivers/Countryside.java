@@ -25,7 +25,7 @@ final class Countryside {
 	static void dikeRoad(StructureWorldAccess w, BlockPos.Mutable m, RiverField field, int x, int z) {
 		// the height from the terrain itself (a tree trunk on the dike would fool the height map and leave a gap)
 		int top = (int) Math.floor(field.dutchHeight(x, z));
-		if (top < 63 || top > 72) return;
+		if (top < 63 || top > 88) return;      // also where the dike runs into higher ground: the road goes on
 		BlockState st = w.getBlockState(m.set(x, top, z));
 		if (!st.getFluidState().isEmpty()) return;
 		// fill any hole under the road
@@ -298,7 +298,7 @@ final class Countryside {
 		if ((int) Math.floor(px) != x || (int) Math.floor(pz) != z) return false;
 		if (field.flatWeight(x, z) > 0.01) return false;
 		int top = (int) Math.floor(field.dutchHeight(x, z));
-		if (top < 66 || top > 72) return false;
+		if (top < 64 || top > 88) return false;
 		// the arm points towards the river, over the road
 		net.minecraft.util.math.Direction toRoad = Math.abs(gx) > Math.abs(gz)
 				? (gx > 0 ? net.minecraft.util.math.Direction.WEST : net.minecraft.util.math.Direction.EAST)

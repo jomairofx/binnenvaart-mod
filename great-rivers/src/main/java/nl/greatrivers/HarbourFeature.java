@@ -91,6 +91,7 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 				if (inf == 2) continue;
 				if (Countryside.riverBank(w, m, field, x, z)) any = true;
 				if (Landscape.column(w, m, field, x, z)) any = true;
+				if (Pylons.column(w, m, field, x, z)) any = true;
 				double p = field.polderWeight(x, z);
 				if (p > 0.8 && field.dikeRoad(x, z)) {
 					any = true;

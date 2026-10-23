@@ -230,6 +230,13 @@ final class SelfTest {
 							BlockState dk = w.getBlockState(new BlockPos(qx, MetroBuilder.DECK - 1, qz));
 							int blocked = 0;
 							for (int y = RiverField.WATER_TOP + 1; y <= MetroBuilder.DECK - 4; y++) if (!w.getBlockState(new BlockPos(qx, y, qz)).isAir()) blocked++;
+							double[] py = MetroBuilder.findPylon(f, rm);
+							if (py != null) {
+								int px = (int) Math.floor(py[0]), pz = (int) Math.floor(py[1]);
+								w.getChunk(px >> 4, pz >> 4);
+								BlockState mast = w.getBlockState(new BlockPos(px, MetroBuilder.DECK + 40, pz));
+								check("grote stad: pyloon van de tuibrug", mast.isOf(net.minecraft.block.Blocks.WHITE_CONCRETE), mast.getBlock().getName().getString() + " op " + px + ", " + (MetroBuilder.DECK + 40) + ", " + pz);
+							}
 							check("grote stad: brugdek hoog genoeg", dk.isOf(net.minecraft.block.Blocks.LIGHT_GRAY_CONCRETE) && blocked == 0,
 									dk.getBlock().getName().getString() + " op y " + (MetroBuilder.DECK - 1) + ", " + blocked + " blokken eronder in de weg");
 						}

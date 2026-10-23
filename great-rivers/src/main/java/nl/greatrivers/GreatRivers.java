@@ -156,6 +156,10 @@ public class GreatRivers implements ModInitializer {
 		return 1;
 	}
 
+	public static double[] cityPylon(RiverField f, Metros.Metro mt) {
+		return MetroBuilder.findPylon(f, mt);
+	}
+
 	/** Middle of a bridge over the river in a big city (for the tests). */
 	public static double[] cityBridge(RiverField f, Metros.Metro mt) {
 		return MetroBuilder.findBridge(f, mt);

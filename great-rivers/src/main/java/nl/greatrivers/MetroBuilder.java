@@ -287,6 +287,25 @@ final class MetroBuilder {
 		return best;
 	}
 
+	/** The pylon of a cable-stayed city bridge: {x, z} of the middle of its mast, or null. For the tests. */
+	static double[] findPylon(RiverField f, Metros.Metro mt) {
+		if (!mt.river()) return null;
+		boolean ns = riverAlongX(f, mt);
+		int n = (int) (mt.radius() / (ns ? Villages.PU : Villages.PW));
+		for (int index = -n; index <= n; index++) {
+			if (ns ? !Metros.Metro.avenueX(index) : !Metros.Metro.avenueZ(index)) continue;
+			if (bridgeKind(mt, index) != 2) continue;
+			for (double s = -mt.radius(); s <= mt.radius(); s += 0.5) {
+				double cxl = ns ? mt.cx() + index * Villages.PU + Villages.STREET + 14.5 : mt.cx() + s;
+				double czl = ns ? mt.cz() + s : mt.cz() + index * Villages.PW + Villages.STREET + 10.5;
+				double dc = f.great.distance(cxl, czl), hw = f.great.halfWidth(cxl, czl);
+				double signedD = dc * Math.signum(f.great.value(cxl, czl) + 1e-12);
+				if (Math.abs(signedD - (hw - 4)) < 0.6 && signedD > 0) return new double[]{cxl, czl};
+			}
+		}
+		return null;
+	}
+
 	/** Is there a bridge ramp (higher than a few blocks) over this column? */
 	private static boolean bridgeOver(RiverField f, Metros.Metro mt, int x, int z, int bx, int bz, int u, int wv) {
 		boolean ns = riverAlongX(f, mt);

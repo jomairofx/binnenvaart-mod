@@ -141,6 +141,11 @@ public final class ClientSelfTest {
 						add("grote_stad_brug", cb[0] + -nb[1] * 110, 70, cb[1] + nb[0] * 110, cb[0], 92, cb[1]);
 						add("grote_stad_brug_dek", cb[0] + nb[0] * 150, 92, cb[1] + nb[1] * 150, cb[0], 95, cb[1]);
 					}
+					double[] py = nl.greatrivers.GreatRivers.cityPylon(f, rm);
+					if (py != null) {
+						double[] np = f.great.normal(py[0], py[1]);
+						add("grote_stad_pyloon", py[0] - np[1] * 120 - np[0] * 40, 80, py[1] + np[0] * 120 - np[1] * 40, py[0], 120, py[1]);
+					}
 					double[] n = f.great.normal(rm.cx(), rm.cz());
 					double tx = -n[1], tz = n[0];
 					add("grote_stad_rivier", rm.cx() + tx * 140, 72, rm.cz() + tz * 140, rm.cx(), 80, rm.cz());

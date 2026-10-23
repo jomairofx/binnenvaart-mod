@@ -248,9 +248,51 @@ final class MetroBuilder {
 	// ------------------------------------------------------------------ bridges over the river
 
 	/** Does the boulevard of block column/row index cross the river on a bridge, and which kind? 0 none, 1 arch, 2 cable-stayed. */
-	private static int bridgeKind(Metros.Metro mt, int index) {
-		int i = Math.floorMod((int) (Harbours.mix(mt.seed() + index * 131L) % 3), 3);
-		return i == 2 ? 0 : i + 1;
+	private static final java.util.concurrent.ConcurrentHashMap<Long, Integer> KINDS = new java.util.concurrent.ConcurrentHashMap<>();
+
+	/**
+	 * Does the boulevard with this index cross the river on a bridge, and which kind? 0 none, 1 arch, 2 cable-stayed.
+	 * Only where the ramps on both sides come back down to the street well inside the city.
+	 */
+	private static int bridgeKind(RiverField f, Metros.Metro mt, int index) {
+		if (KINDS.size() > 50000) KINDS.clear();
+		long key = mt.seed() ^ (index * 0x9E3779B97F4A7C15L) ^ 0xB81D6EL;
+		return KINDS.computeIfAbsent(key, k -> {
+			int i = Math.floorMod((int) (Harbours.mix(mt.seed() + index * 131L) % 3), 3);
+			if (i == 2) return 0;
+			boolean ns = riverAlongX(f, mt);
+			double end = VillageBuilder.QUAY + 6 + RAMP;
+			double sWet0 = Double.NaN, sWet1 = Double.NaN;
+			for (double sv = -mt.radius(); sv <= mt.radius(); sv += 4) {
+				double[] p = avenuePoint(mt, ns, index, sv);
+				if (f.great.distance(p[0], p[1]) - f.great.halfWidth(p[0], p[1]) < 0) {
+					if (Double.isNaN(sWet0)) sWet0 = sv;
+					sWet1 = sv;
+				}
+			}
+			if (Double.isNaN(sWet0)) return 0;
+			// walk out from the water on both sides until the ramp is down; that point must lie inside the city
+			for (int dir = -1; dir <= 1; dir += 2) {
+				double sv = dir < 0 ? sWet0 : sWet1;
+				boolean down = false;
+				for (double t = 0; t < 900; t += 4) {
+					double[] p = avenuePoint(mt, ns, index, sv + dir * t);
+					if (Math.hypot(p[0] - mt.cx(), p[1] - mt.cz()) > mt.radius() - 20) return 0;
+					if (f.great.distance(p[0], p[1]) - f.great.halfWidth(p[0], p[1]) > end + 2) {
+						down = true;
+						break;
+					}
+				}
+				if (!down) return 0;
+			}
+			return i + 1;
+		});
+	}
+
+	/** Point on the middle line of a boulevard, sv along it from the city centre line. */
+	private static double[] avenuePoint(Metros.Metro mt, boolean ns, int index, double sv) {
+		if (ns) return new double[]{mt.cx() + index * Villages.PU + Villages.STREET + 14.5, mt.cz() + sv};
+		return new double[]{mt.cx() + sv, mt.cz() + index * Villages.PW + Villages.STREET + 10.5};
 	}
 
 	/** Does the river run more along x than along z here (so the north-south boulevards cross it)? */
@@ -268,7 +310,7 @@ final class MetroBuilder {
 		double bd = Double.MAX_VALUE;
 		for (int index = -n; index <= n; index++) {
 			if (ns ? !Metros.Metro.avenueX(index) : !Metros.Metro.avenueZ(index)) continue;
-			int kind = bridgeKind(mt, index);
+			int kind = bridgeKind(f, mt, index);
 			if (kind == 0) continue;
 			for (double s = -mt.radius(); s <= mt.radius(); s += 2) {
 				double cxl = ns ? mt.cx() + index * Villages.PU + Villages.STREET + 14.5 : mt.cx() + s;
@@ -294,7 +336,7 @@ final class MetroBuilder {
 		int n = (int) (mt.radius() / (ns ? Villages.PU : Villages.PW));
 		for (int index = -n; index <= n; index++) {
 			if (ns ? !Metros.Metro.avenueX(index) : !Metros.Metro.avenueZ(index)) continue;
-			if (bridgeKind(mt, index) != 2) continue;
+			if (bridgeKind(f, mt, index) != 2) continue;
 			for (double s = -mt.radius(); s <= mt.radius(); s += 0.5) {
 				double cxl = ns ? mt.cx() + index * Villages.PU + Villages.STREET + 14.5 : mt.cx() + s;
 				double czl = ns ? mt.cz() + s : mt.cz() + index * Villages.PW + Villages.STREET + 10.5;
@@ -311,7 +353,7 @@ final class MetroBuilder {
 		boolean ns = riverAlongX(f, mt);
 		if (ns ? !Metros.Metro.avenueX(bx) : !Metros.Metro.avenueZ(bz)) return false;
 		int index = ns ? bx : bz;
-		if (bridgeKind(mt, index) == 0) return false;
+		if (bridgeKind(f, mt, index) == 0) return false;
 		double cxl = ns ? mt.cx() + bx * Villages.PU + Villages.STREET + 14.5 : x + 0.5;
 		double czl = ns ? z + 0.5 : mt.cz() + bz * Villages.PW + Villages.STREET + 10.5;
 		double ec = f.great.distance(cxl, czl) - f.great.halfWidth(cxl, czl);
@@ -338,7 +380,7 @@ final class MetroBuilder {
 		}
 		int W = ns ? 28 : 20;
 		if (p < 2 || p > W - 2) return false;
-		int kind = bridgeKind(mt, index);
+		int kind = bridgeKind(f, mt, index);
 		if (kind == 0) return false;
 		if (Math.hypot(cxl - mt.cx(), czl - mt.cz()) > mt.radius() + 20) return false;
 		double dc = f.great.distance(cxl, czl), hw = f.great.halfWidth(cxl, czl), ec = dc - hw;

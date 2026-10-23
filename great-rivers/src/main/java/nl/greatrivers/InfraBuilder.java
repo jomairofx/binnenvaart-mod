@@ -109,6 +109,8 @@ final class InfraBuilder {
 			}
 		}
 		if (Junctions.build(w, m, f, x, z)) res = 2;
+		int rr = Rails.build(w, m, f, x, z);
+		if (rr > res) res = rr;
 		for (Locks.Site s : f.infra.locks.around(x, z)) {
 			int r = lock(w, m, f, s, x, z);
 			if (r > res) res = r;

@@ -114,6 +114,7 @@ public final class Metros {
 				int x = (int) (px + Math.cos(ang) * rr), z = (int) (pz + Math.sin(ang) * rr);
 				if (f.continentalness(x, z) < Lowlands.COAST + 0.1) return false;
 				if (f.infra.motorwayDistance(x, z) < Infra.EDGE + 60) return false;
+				if (f.rails.distance(x, z) < Rails.HALF + 60) return false;
 				if (!river && rr == 0 && k.distance(x, z) - k.halfWidth(x, z) < 200) return false;
 			}
 		}

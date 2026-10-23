@@ -154,6 +154,7 @@ public final class Harbours {
 				if (field.low.canalDistance(qx, qz) < Lowlands.CANAL_HALF + 30) return NONE;
 				if (field.infra.motorwayDistance(qx, qz) < Infra.EDGE + 60) return NONE;
 				if (field.metros.near(qx, qz, 40)) return NONE;
+				if (field.rails.distance(qx, qz) < 70) return NONE;
 			}
 		return new Site(x, z, tx, tz, gx, gz, hw, best.name(), size, goods, A, B, Q, side);
 	}

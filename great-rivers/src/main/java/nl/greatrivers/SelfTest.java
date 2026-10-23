@@ -301,6 +301,36 @@ final class SelfTest {
 						} else check("afrit: viaduct over de snelweg", false, "geen afrit op dat punt");
 					}
 				}
+				// railways: double track with overhead wire, a truss bridge over the river
+				{
+					int found = 0;
+					String info = "geen spoor";
+					for (int fam = 0; fam < 2 && found == 0; fam++) {
+						double[] nl = f.rails.nearest(fam, 0, 0);
+						for (double u = 0; u < 20000 && found == 0; u += 97) {
+							Rails.Hit h = f.rails.prof(fam, (long) nl[0], u);
+							if (h == null || h.kind != Rails.ROAD) continue;
+							double[] c = f.rails.centre(fam, (long) nl[0], u);
+							int tx = (int) Math.floor(c[0] + (fam == 0 ? 2 : 0)), tz = (int) Math.floor(c[1] + (fam == 1 ? 2 : 0));
+							if (f.villages.at(tx, tz) != null) continue;
+							w.getChunk(tx >> 4, tz >> 4);
+							BlockState r = w.getBlockState(new BlockPos(tx, h.y + 1, tz));
+							info = r.getBlock().getName().getString() + " op " + tx + ", " + (h.y + 1) + ", " + tz;
+							found = r.isOf(net.minecraft.block.Blocks.RAIL) ? 1 : -1;
+						}
+					}
+					check("spoorlijn met rails", found == 1, info);
+					double[] rb = f.rails.findBridge(0, 0, 40000);
+					check("spoorbrug gevonden", rb != null, rb == null ? "geen" : "op " + (int) rb[0] + ", " + (int) rb[1]);
+					if (rb != null) {
+						int bx = (int) Math.floor(rb[0]), bz = (int) Math.floor(rb[1]);
+						w.getChunk(bx >> 4, bz >> 4);
+						BlockState dk = w.getBlockState(new BlockPos(bx, Infra.DECK - 1, bz));
+						int blocked = 0;
+						for (int y = RiverField.WATER_TOP + 1; y <= Infra.DECK - 4; y++) if (!w.getBlockState(new BlockPos(bx, y, bz)).isAir()) blocked++;
+						check("spoorbrug hoog genoeg", dk.isOf(net.minecraft.block.Blocks.LIGHT_GRAY_CONCRETE) && blocked == 0, dk.getBlock().getName().getString() + ", " + blocked + " blokken in de weg");
+					}
+				}
 				// viaduct where two motorways cross
 				double[] vd = f.infra.findViaduct(0, 0, 3);
 				check("viaduct gevonden", vd != null, vd == null ? "geen" : "op " + (int) vd[0] + ", " + (int) vd[1]);

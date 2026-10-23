@@ -94,6 +94,7 @@ public final class Junctions {
 		RiverField.Kind kr = f.great;
 		if (kr.distance(x, z) - kr.halfWidth(x, z) < Lowlands.foreland(kr) + 50) return false;
 		if (f.villages.at(x, z) != null || f.harbours.siteAt(x, z) != null || f.metros.near(x, z, 10)) return false;
+		if (f.rails.near(x, z, 6)) return false;
 		return !infra.locks.near(x, z, 10);
 	}
 

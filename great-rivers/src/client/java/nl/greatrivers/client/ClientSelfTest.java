@@ -169,6 +169,23 @@ public final class ClientSelfTest {
 					}
 					if (done) break;
 				}
+				// railways
+				double[] rb = f.rails.findBridge(0, 0, 40000);
+				if (rb != null) {
+					double[] nb = f.great.normal(rb[0], rb[1]);
+					add("spoorbrug", rb[0] - nb[1] * 90 + nb[0] * 30, 72, rb[1] + nb[0] * 90 + nb[1] * 30, rb[0], 90, rb[1]);
+				}
+				for (int fam = 0; fam < 1; fam++) {
+					double[] nl = f.rails.nearest(fam, 0, 0);
+					for (double u = 0; u < 20000; u += 97) {
+						nl.greatrivers.Rails.Hit h = f.rails.prof(fam, (long) nl[0], u);
+						if (h == null || h.kind != nl.greatrivers.Rails.ROAD) continue;
+						double[] c = f.rails.centre(fam, (long) nl[0], u);
+						if (f.villages.at((int) c[0], (int) c[1]) != null) continue;
+						add("spoorlijn", c[0] + 9, h.y + 5, c[1] - 40, c[0], h.y + 2, c[1] + 30);
+						break;
+					}
+				}
 				// a motorway junction
 				double[] jn = f.infra.junctions.nearest(0, 0);
 				if (jn != null) {

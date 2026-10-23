@@ -267,6 +267,7 @@ public final class Infra {
 		if (motorwayDistance(x, z) < Junctions.REACH + r) return true;
 		if (f.roads.near(x, z, r)) return true;
 		if (f.metros.near(x, z, r)) return true;
+		if (f.rails.near(x, z, r)) return true;
 		return locks.near(x, z, r);
 	}
 
@@ -296,6 +297,7 @@ public final class Infra {
 				if (t > hi) t = hi;
 			}
 		}
+		t = f.rails.shape(x, z, t);
 		t = junctions.shape(x, z, t);
 		t = f.roads.shape(x, z, t);
 		return locks.shape(x, z, t);

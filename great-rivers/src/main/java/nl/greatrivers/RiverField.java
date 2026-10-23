@@ -130,6 +130,7 @@ public final class RiverField {
 	public final Infra infra;
 	public final Roads roads;
 	public final Metros metros;
+	public final Rails rails;
 
 	/** Vanilla continentalness: below -0.19 is sea, below -0.455 deep sea, below -1.05 mushroom islands. */
 	private final DensityFunction continents;
@@ -166,6 +167,7 @@ public final class RiverField {
 		metros = new Metros(this, seed);
 		roads = new Roads(this);
 		infra = new Infra(this, seed);
+		rails = new Rails(this, infra, seed);
 	}
 
 	// ---------- small per-thread cache: every column is asked for many times while a chunk is generated ----------

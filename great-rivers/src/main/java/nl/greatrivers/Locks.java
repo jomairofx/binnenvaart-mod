@@ -129,6 +129,7 @@ public final class Locks {
 		for (double s = -800; s <= 800; s += 40) {
 			double qx = x + tx * s, qz = z + tz * s;
 			if (infra.motorwayDistance(qx, qz) < 90) return NONE;
+			if (f.rails.distance(qx, qz) < 90) return NONE;
 		}
 		for (double s = -700; s <= 700; s += 50)
 			for (double v : new double[]{-(hw + 150), -(hw + 60), 0, hw + 60, hw + 150}) {

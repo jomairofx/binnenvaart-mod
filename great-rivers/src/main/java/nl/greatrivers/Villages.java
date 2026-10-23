@@ -88,6 +88,7 @@ public final class Villages {
 				if (field.harbours.siteAt(x, z) != null) return NONE;
 				if (field.infra.motorwayDistance(x, z) < Infra.EDGE + 30) return NONE;
 				if (field.metros.near(x, z, 150)) return NONE;
+				if (field.rails.distance(x, z) < Rails.HALF + 40) return NONE;
 			}
 		}
 		return new Town(px, pz, r, city, h, river);

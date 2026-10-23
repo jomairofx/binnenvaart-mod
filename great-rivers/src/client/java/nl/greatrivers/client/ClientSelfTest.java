@@ -157,7 +157,7 @@ public final class ClientSelfTest {
 							double ux = (sg.x1() - sg.x0()) / len, uz = (sg.z1() - sg.z0()) / len;
 							double px = sg.x0() + ux * at, pz = sg.z0() + uz * at;
 							double nx = uz * -sg.bike(), nz = -ux * -sg.bike();
-							add("tankstation", px - ux * 30 + nx * 4, 69, pz - uz * 30 + nz * 4, px + nx * 14, 64, pz + nz * 14);
+							add("tankstation", px - ux * 28 + nx * 30, 78, pz - uz * 28 + nz * 30, px + nx * 12, 64, pz + nz * 12);
 							done = true;
 							break;
 						}

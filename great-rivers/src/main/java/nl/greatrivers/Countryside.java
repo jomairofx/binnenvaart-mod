@@ -147,7 +147,8 @@ final class Countryside {
 				if (field.low.ditch(bx + dx, bz + dz)) return;
 			}
 		BlockState brick = Blocks.BRICKS.getDefaultState(), white = Blocks.WHITE_CONCRETE.getDefaultState();
-		BlockState glass = Blocks.WHITE_STAINED_GLASS_PANE.getDefaultState();
+		BlockState glassI = alongX ? VillageBuilder.paneEW(Blocks.WHITE_STAINED_GLASS_PANE) : VillageBuilder.paneNS(Blocks.WHITE_STAINED_GLASS_PANE);
+		BlockState glassJ = alongX ? VillageBuilder.paneNS(Blocks.WHITE_STAINED_GLASS_PANE) : VillageBuilder.paneEW(Blocks.WHITE_STAINED_GLASS_PANE);
 		int base = 63, wallTop = base + 3;
 		int len = alongX ? lx : lz, wid = alongX ? lz : lx;
 		for (int i = 0; i < len; i++)
@@ -160,7 +161,7 @@ final class Countryside {
 					if (edge) {
 						st = brick;
 						boolean window = y == base + 1 && ((i % 3 == 1 && (j == 0 || j == wid - 1)) || (j % 3 == 1 && (i == 0 || i == len - 1)));
-						if (window) st = glass;
+						if (window) st = (j == 0 || j == wid - 1) ? glassI : glassJ;
 						if (y == wallTop) st = Blocks.WHITE_CONCRETE.getDefaultState();
 					}
 					set(w, m, x, y, z, st);

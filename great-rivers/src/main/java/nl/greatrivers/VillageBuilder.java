@@ -38,6 +38,16 @@ final class VillageBuilder {
 
 	private VillageBuilder() {}
 
+	/** A glass pane joined to its neighbours along x (a window in a wall running east-west). */
+	static BlockState paneEW(Block b) {
+		return b.getDefaultState().with(Properties.EAST, true).with(Properties.WEST, true);
+	}
+
+	/** A glass pane joined along z (a window in a wall running north-south). */
+	static BlockState paneNS(Block b) {
+		return b.getDefaultState().with(Properties.NORTH, true).with(Properties.SOUTH, true);
+	}
+
 	static void set(StructureWorldAccess w, BlockPos.Mutable m, int x, int y, int z, BlockState st) {
 		w.setBlockState(m.set(x, y, z), st, 2);
 	}
@@ -371,7 +381,7 @@ final class VillageBuilder {
 		Direction out = out(front), in = out.getOpposite();
 		boolean edge = hx == 0 || hx == 6 || pw == 0 || pw == 9;
 		BlockState brick = wall.getDefaultState();
-		BlockState glass = Blocks.WHITE_STAINED_GLASS_PANE.getDefaultState();
+		BlockState glass = paneEW(Blocks.WHITE_STAINED_GLASS_PANE);
 		int eave = Y0 + 8;
 		// foundation and floors
 		set(w, m, x, G, z, Blocks.STONE_BRICKS.getDefaultState());
@@ -474,8 +484,8 @@ final class VillageBuilder {
 	static void shopFront(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int hx, int pw, boolean front, long hh) {
 		if (pw != 0 || hx == 0 || hx == 6) return;
 		if (hx >= 2) {
-			set(w, m, x, Y0 + 1, z, Blocks.GLASS_PANE.getDefaultState());
-			set(w, m, x, Y0 + 2, z, Blocks.GLASS_PANE.getDefaultState());
+			set(w, m, x, Y0 + 1, z, paneEW(Blocks.GLASS_PANE));
+			set(w, m, x, Y0 + 2, z, paneEW(Blocks.GLASS_PANE));
 		}
 		Direction out = out(front);
 		int fx = x + out.getOffsetX(), fz = z + out.getOffsetZ();
@@ -518,8 +528,8 @@ final class VillageBuilder {
 				if (edge) {
 					st = brick;
 					boolean window = (nw == 0 || nw == 10) && nu % 3 == 2 && y >= Y0 + 3 && y <= Y0 + 7;
-					if (window) st = (y == Y0 + 7 ? Blocks.LIGHT_BLUE_STAINED_GLASS_PANE : Blocks.WHITE_STAINED_GLASS_PANE).getDefaultState();
-					if (nu == 16 && nw == 5 && y >= Y0 + 4 && y <= Y0 + 7) st = Blocks.YELLOW_STAINED_GLASS_PANE.getDefaultState();
+					if (window) st = paneEW(y == Y0 + 7 ? Blocks.LIGHT_BLUE_STAINED_GLASS_PANE : Blocks.WHITE_STAINED_GLASS_PANE);
+					if (nu == 16 && nw == 5 && y >= Y0 + 4 && y <= Y0 + 7) st = paneNS(Blocks.YELLOW_STAINED_GLASS_PANE);
 					if (nu == 0 && nw == 5 && y <= Y0 + 3) st = AIR;   // from the tower into the nave
 				}
 				set(w, m, x, y, z, st);

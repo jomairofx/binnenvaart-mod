@@ -30,7 +30,8 @@ final class MetroBuilder {
 	private static final BlockState GRASS = Blocks.GRASS_BLOCK.getDefaultState();
 	private static final BlockState CONCRETE = Blocks.LIGHT_GRAY_CONCRETE.getDefaultState();
 	private static final BlockState BRICK = Blocks.BRICKS.getDefaultState();
-	private static final BlockState GLASS = Blocks.LIGHT_BLUE_STAINED_GLASS_PANE.getDefaultState();
+	private static final BlockState GLASS = VillageBuilder.paneNS(Blocks.LIGHT_BLUE_STAINED_GLASS_PANE);
+	private static final BlockState GLASS_EW = VillageBuilder.paneEW(Blocks.LIGHT_BLUE_STAINED_GLASS_PANE);
 
 	static void set(StructureWorldAccess w, BlockPos.Mutable m, int x, int y, int z, BlockState st) {
 		w.setBlockState(m.set(x, y, z), st, 2);
@@ -455,7 +456,7 @@ final class MetroBuilder {
 			Block wood = new Block[]{Blocks.GREEN_TERRACOTTA, Blocks.BLUE_TERRACOTTA, Blocks.WHITE_TERRACOTTA, Blocks.BROWN_TERRACOTTA}[(int) ((hb >>> 3) & 3)];
 			set(w, m, x, RiverField.WATER_TOP, z, Blocks.BLACK_CONCRETE.getDefaultState());
 			set(w, m, x, RiverField.WATER_TOP + 1, z, rim ? wood.getDefaultState() : Blocks.SPRUCE_PLANKS.getDefaultState());
-			set(w, m, x, RiverField.WATER_TOP + 2, z, rim ? ((bu % 3 == 0 && !(bw == 7)) ? GLASS : wood.getDefaultState()) : AIR);
+			set(w, m, x, RiverField.WATER_TOP + 2, z, rim ? ((bu % 3 == 0 && !(bw == 7)) ? GLASS_EW : wood.getDefaultState()) : AIR);
 			set(w, m, x, RiverField.WATER_TOP + 3, z, Blocks.DARK_OAK_SLAB.getDefaultState());
 			if (bu % 9 == 4 && bw == 7) set(w, m, x, RiverField.WATER_TOP + 4, z, Blocks.FLOWER_POT.getDefaultState());
 		}
@@ -492,7 +493,7 @@ final class MetroBuilder {
 				st = wall;
 				if (pw == 0 || pw == 9) {
 					boolean winCol = hx == 1 || hx == 3;
-					if (winCol && rel % 4 >= 1 && rel % 4 <= 2) st = Blocks.WHITE_STAINED_GLASS_PANE.getDefaultState();
+					if (winCol && rel % 4 >= 1 && rel % 4 <= 2) st = VillageBuilder.paneEW(Blocks.WHITE_STAINED_GLASS_PANE);
 					if (winCol && rel % 4 == 3) st = trim;
 					if (pw == 0 && hx == 2 && rel <= 2) st = AIR;                         // front door
 				}
@@ -511,7 +512,7 @@ final class MetroBuilder {
 			if (pw == 0 || pw == 9) {
 				int width = type == 0 ? 2 - r / 2 : type == 1 ? (r < 3 ? 2 : r < 5 ? 1 : 0) : (r < 2 ? 2 : r < 5 ? 1 : 0);
 				if (k >= 2 - width) st = r == 0 ? trim : wall;
-				if (hx == 2 && r == 2 && pw == 0) st = Blocks.WHITE_STAINED_GLASS_PANE.getDefaultState();
+				if (hx == 2 && r == 2 && pw == 0) st = VillageBuilder.paneEW(Blocks.WHITE_STAINED_GLASS_PANE);
 			} else {
 				// the roof behind the gable, ridge from front to back
 				if (r == k) st = hx == 2 ? Blocks.DEEPSLATE_TILES.getDefaultState()
@@ -593,7 +594,7 @@ final class MetroBuilder {
 		for (int y = Y0 + 1; y < top; y++) {
 			int rel = y - Y0;
 			BlockState st = edge ? wall : (rel == 4 ? Blocks.BIRCH_PLANKS.getDefaultState() : AIR);
-			if (edge && (lp == 0 || lp == 4) && hx >= 2 && hx <= 4 && (rel == 2 || rel == 3 || rel == 6)) st = Blocks.GLASS_PANE.getDefaultState();
+			if (edge && (lp == 0 || lp == 4) && hx >= 2 && hx <= 4 && (rel == 2 || rel == 3 || rel == 6)) st = VillageBuilder.paneEW(Blocks.GLASS_PANE);
 			if (edge && lp == 0 && hx == 1 && rel <= 2) st = AIR;
 			set(w, m, x, y, z, st);
 		}
@@ -642,8 +643,8 @@ final class MetroBuilder {
 		for (int y = Y0 + 1; y < eave; y++) {
 			int rel = y - Y0;
 			BlockState st = edge ? wall : (rel == 4 ? Blocks.DARK_OAK_PLANKS.getDefaultState() : AIR);
-			if (edge && (hu == 2 || hu == 3 || hu == 6 || hu == 7) && (rel == 2 || rel == 3 || rel == 5 || rel == 6)) st = Blocks.GLASS_PANE.getDefaultState();
-			if (edge && (hw == 2 || hw == 5) && (rel == 2 || rel == 3 || rel == 6)) st = Blocks.GLASS_PANE.getDefaultState();
+			if (edge && (hu == 2 || hu == 3 || hu == 6 || hu == 7) && (rel == 2 || rel == 3 || rel == 5 || rel == 6)) st = VillageBuilder.paneEW(Blocks.GLASS_PANE);
+			if (edge && (hw == 2 || hw == 5) && (rel == 2 || rel == 3 || rel == 6)) st = VillageBuilder.paneNS(Blocks.GLASS_PANE);
 			if (edge && hw == 0 && hu == 4 && rel <= 2) st = AIR;
 			set(w, m, x, y, z, st);
 		}
@@ -732,7 +733,7 @@ final class MetroBuilder {
 			int rel = y - Y0;
 			BlockState st = edge ? BRICK : (rel == 4 ? Blocks.OAK_PLANKS.getDefaultState() : AIR);
 			int along = (bw == 13 || bw == 19 || bw == 4) ? bu : bw;
-			if (edge && along % 3 != 0 && (rel == 2 || rel == 3 || rel == 6 || rel == 7)) st = Blocks.GLASS_PANE.getDefaultState();
+			if (edge && along % 3 != 0 && (rel == 2 || rel == 3 || rel == 6 || rel == 7)) st = (bw == 13 || bw == 19 || bw == 4) ? VillageBuilder.paneEW(Blocks.GLASS_PANE) : VillageBuilder.paneNS(Blocks.GLASS_PANE);
 			if (edge && wing1 && bw == 13 && bu == 14 && rel <= 2) st = AIR;
 			if (!edge && rel == 3 && bu % 4 == 0 && bw % 3 == 0) st = Blocks.SEA_LANTERN.getDefaultState();
 			set(w, m, x, y, z, st);
@@ -823,7 +824,7 @@ final class MetroBuilder {
 			BlockState st = AIR;
 			if (edge) {
 				st = BRICK;
-				if ((hw == 0 || hw == 14) && hu % 3 == 1 && rel >= 3 && rel <= 7) st = Blocks.GRAY_STAINED_GLASS_PANE.getDefaultState();
+				if ((hw == 0 || hw == 14) && hu % 3 == 1 && rel >= 3 && rel <= 7) st = VillageBuilder.paneEW(Blocks.GRAY_STAINED_GLASS_PANE);
 				if (hw == 0 && hu >= 7 && hu <= 10 && rel <= 5) st = Blocks.GRAY_CONCRETE.getDefaultState();   // big door
 			} else if (rel == 1 && hu % 5 == 2 && hw % 3 == 1) st = Blocks.IRON_BLOCK.getDefaultState();     // machines
 			else if (rel == 2 && hu % 5 == 2 && hw % 3 == 1) st = Blocks.BLAST_FURNACE.getDefaultState();

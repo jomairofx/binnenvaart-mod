@@ -146,6 +146,24 @@ public final class ClientSelfTest {
 					add("grote_stad_rivier", rm.cx() + tx * 140, 72, rm.cz() + tz * 140, rm.cx(), 80, rm.cz());
 					add("grote_stad_rivier_boven", rm.cx() + tx * 100 + n[0] * 100, 170, rm.cz() + tz * 100 + n[1] * 100, rm.cx(), 70, rm.cz());
 				}
+				// a petrol station along a provincial road
+				for (int i = -3; i <= 3; i++) {
+					boolean done = false;
+					for (int j = -3; j <= 3 && !done; j++) {
+						for (nl.greatrivers.Roads.Seg sg : f.roads.from(i, j)) {
+							double at = nl.greatrivers.Roads.stationAtPublic(sg);
+							if (at < 0) continue;
+							double len = Math.hypot(sg.x1() - sg.x0(), sg.z1() - sg.z0());
+							double ux = (sg.x1() - sg.x0()) / len, uz = (sg.z1() - sg.z0()) / len;
+							double px = sg.x0() + ux * at, pz = sg.z0() + uz * at;
+							double nx = uz * -sg.bike(), nz = -ux * -sg.bike();
+							add("tankstation", px - ux * 30 + nx * 4, 69, pz - uz * 30 + nz * 4, px + nx * 14, 64, pz + nz * 14);
+							done = true;
+							break;
+						}
+					}
+					if (done) break;
+				}
 				// bridges, viaducts, motorways, locks
 				double[] br = f.infra.findBridge(0, 0, 40000);
 				if (br != null) {

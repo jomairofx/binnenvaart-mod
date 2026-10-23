@@ -141,6 +141,10 @@ public final class Roads {
 
 	// ------------------------------------------------------------------ petrol stations
 
+	public static double stationAtPublic(Seg s) {
+		return stationAt(s);
+	}
+
 	/** Where on a stretch of road its petrol station stands (distance along), or -1 when it has none. */
 	static double stationAt(Seg s) {
 		double len = Math.hypot(s.x1() - s.x0(), s.z1() - s.z0());

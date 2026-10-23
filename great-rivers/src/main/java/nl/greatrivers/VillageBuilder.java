@@ -116,6 +116,7 @@ final class VillageBuilder {
 		int pw = front ? bw : 20 - bw;                     // 0 at the street facade, 9 at the back
 		long hh = hash(t.seed(), bx * 31L + bz, house * 2L + (front ? 0 : 1));
 		house(w, m, t, x, z, hx, pw, front, hh, !t.city());
+		if (Math.abs(bx) <= 1 && Math.abs(bz) <= 1) shopFront(w, m, x, z, hx, pw, front, hh);
 		return true;
 	}
 
@@ -465,6 +466,21 @@ final class VillageBuilder {
 				w.spawnEntityAndPassengers(v);
 			}
 		}
+	}
+
+	private static final Block[] AWNING = {Blocks.RED_WOOL, Blocks.GREEN_WOOL, Blocks.BLUE_WOOL, Blocks.WHITE_WOOL, Blocks.ORANGE_WOOL};
+
+	/** In the middle of the town the houses have shops downstairs: a big shop window and an awning over the pavement. */
+	static void shopFront(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int hx, int pw, boolean front, long hh) {
+		if (pw != 0 || hx == 0 || hx == 6) return;
+		if (hx >= 2) {
+			set(w, m, x, Y0 + 1, z, Blocks.GLASS_PANE.getDefaultState());
+			set(w, m, x, Y0 + 2, z, Blocks.GLASS_PANE.getDefaultState());
+		}
+		Direction out = out(front);
+		int fx = x + out.getOffsetX(), fz = z + out.getOffsetZ();
+		set(w, m, fx, Y0 + 3, fz, AWNING[(int) Math.floorMod(hh >>> 9, (long) AWNING.length)].getDefaultState());
+		if (hx == 3) set(w, m, x, Y0 + 3, z, Blocks.SEA_LANTERN.getDefaultState());
 	}
 
 	private static long bw(Villages.Town t) {

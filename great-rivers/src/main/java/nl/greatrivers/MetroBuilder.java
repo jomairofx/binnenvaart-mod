@@ -205,9 +205,15 @@ final class MetroBuilder {
 		int mid = W / 2;
 		long a = Math.floorMod((long) along, 1L << 20);
 		if (crossing) {
-			// where two boulevards cross: asphalt with zebra crossings
+			// where two boulevards cross: asphalt with zebra crossings, traffic lights at the corners
 			set(w, m, x, G, z, (q <= 1 && (a & 1) == 0) ? LINE : ASPHALT);
 			return;
+		}
+		if (!covered && (q == 0) && (Math.floorMod(along, ns ? Villages.PW : Villages.PU) == (ns ? Villages.STREET + 1 : Villages.STREET + 1))) {
+			// traffic lights where a street meets the boulevard
+			for (int y = G + 1; y <= G + 3; y++) set(w, m, x, y, z, Blocks.IRON_BARS.getDefaultState());
+			set(w, m, x, G + 4, z, Blocks.BLACK_CONCRETE.getDefaultState());
+			set(w, m, x, G + 5, z, ((a / 7) & 1) == 0 ? Blocks.LIME_STAINED_GLASS.getDefaultState() : Blocks.RED_STAINED_GLASS.getDefaultState());
 		}
 		int walk = ns ? 1 : 0, cyc = ns ? 3 : 2, lane0 = ns ? 5 : 3, lane1 = ns ? 10 : 7, line = ns ? 8 : 5, verge = ns ? 11 : 8;
 		BlockState st;
@@ -380,10 +386,10 @@ final class MetroBuilder {
 					if (mast && off < 0.6) set(w, m, x, ptop + 1, z, Blocks.REDSTONE_LAMP.getDefaultState());
 				} else if (Math.abs(p - mid) == 0 && signedD > -span * 0.2 && off < 170) {
 					// cables: from the mast down to the middle of the deck, on both sides of the pylon
-					for (int k = 1; k <= 14; k++) {
-						double anchor = 11.0 * k;
+					for (int k = 1; k <= 8; k++) {
+						double anchor = 19.0 * k;
 						if (off > anchor) continue;
-						double yk = ptop - 3.6 * k;
+						double yk = ptop - 5.5 * k;
 						double yc = yk - (yk - (y + 1)) * (off / anchor);
 						double yc1 = yk - (yk - (y + 1)) * (Math.min(anchor, off + 1) / anchor);
 						for (int yy = (int) Math.floor(Math.min(yc, yc1)); yy <= (int) Math.floor(Math.max(yc, yc1)); yy++)

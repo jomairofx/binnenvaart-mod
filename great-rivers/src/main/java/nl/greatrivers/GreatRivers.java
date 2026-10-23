@@ -27,6 +27,8 @@ public class GreatRivers implements ModInitializer {
 
 	public static final HarbourFeature HARBOUR = Registry.register(Registries.FEATURE, Identifier.of(MOD_ID, "harbour"), new HarbourFeature());
 
+	public static final String[] NO_ICE = {"iceberg_packed", "iceberg_blue", "blue_ice", "ice_spike", "ice_patch", "freeze_top_layer"};
+
 	@Override
 	public void onInitialize() {
 		// no ravines and cave mouths cut through the flat land (the caves deep underground stay)
@@ -38,6 +40,9 @@ public class GreatRivers implements ModInitializer {
 					// no lava pools on the land (or anywhere else)
 					ctx.getGenerationSettings().removeFeature(net.minecraft.world.gen.feature.MiscPlacedFeatures.LAKE_LAVA_SURFACE);
 					ctx.getGenerationSettings().removeFeature(net.minecraft.world.gen.feature.MiscPlacedFeatures.LAKE_LAVA_UNDERGROUND);
+					// no icebergs, blue ice, ice spikes or frozen water anywhere: this is the Netherlands, not the arctic
+					for (String id : NO_ICE)
+						ctx.getGenerationSettings().removeFeature(RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.ofVanilla(id)));
 				});
 		BiomeModifications.addFeature(BiomeSelectors.foundInOverworld(), GenerationStep.Feature.TOP_LAYER_MODIFICATION,
 				RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.of(MOD_ID, "harbour")));

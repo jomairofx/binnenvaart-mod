@@ -105,14 +105,15 @@ final class SelfTest {
 			check("riviernet actief", f != null, f == null ? "geen" : "ja");
 			{
 				int lava = 0;
-				for (var b : new net.minecraft.registry.RegistryKey[]{net.minecraft.world.biome.BiomeKeys.PLAINS, net.minecraft.world.biome.BiomeKeys.FOREST, net.minecraft.world.biome.BiomeKeys.BIRCH_FOREST}) {
+				for (var b : new net.minecraft.registry.RegistryKey[]{net.minecraft.world.biome.BiomeKeys.PLAINS, net.minecraft.world.biome.BiomeKeys.FOREST, net.minecraft.world.biome.BiomeKeys.BIRCH_FOREST, net.minecraft.world.biome.BiomeKeys.FROZEN_OCEAN, net.minecraft.world.biome.BiomeKeys.DEEP_FROZEN_OCEAN, net.minecraft.world.biome.BiomeKeys.ICE_SPIKES}) {
 					var biome = server.getRegistryManager().get(net.minecraft.registry.RegistryKeys.BIOME).get(b);
 					for (var step : biome.getGenerationSettings().getFeatures())
 						for (var pf : step)
-							if (pf.matchesKey(net.minecraft.world.gen.feature.MiscPlacedFeatures.LAKE_LAVA_SURFACE)
+							if (java.util.Arrays.stream(GreatRivers.NO_ICE).anyMatch(id -> pf.matchesId(net.minecraft.util.Identifier.ofVanilla(id)))) lava++;
+							else if (pf.matchesKey(net.minecraft.world.gen.feature.MiscPlacedFeatures.LAKE_LAVA_SURFACE)
 									|| pf.matchesKey(net.minecraft.world.gen.feature.MiscPlacedFeatures.LAKE_LAVA_UNDERGROUND)) lava++;
 				}
-				check("geen lavaplassen", lava == 0, lava + " lava-features over");
+				check("geen lavaplassen en geen ijsbergen", lava == 0, lava + " lava- of ijs-features over");
 			}
 			if (f != null) {
 				testRiver(w, f.great, f.river, 60, 15);

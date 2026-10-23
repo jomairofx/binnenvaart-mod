@@ -29,6 +29,7 @@ public final class Infra {
 	private final long seed;
 	private final int[] off = new int[2];
 	public final Locks locks;
+	public final Junctions junctions;
 
 	Infra(RiverField f, long seed) {
 		this.f = f;
@@ -36,6 +37,7 @@ public final class Infra {
 		off[0] = (int) Math.floorMod(Harbours.mix(seed + 0x51ED27L), (long) MW);
 		off[1] = (int) Math.floorMod(Harbours.mix(seed + 0x7A3B19L), (long) MW);
 		locks = new Locks(f, this, seed);
+		junctions = new Junctions(f, this);
 	}
 
 	private double ph(int fam, int k, int n) {
@@ -48,8 +50,12 @@ public final class Infra {
 		return off[fam] + (double) k * MW + 260 * Math.sin(u / 2900 + ph(fam, k, 1)) + 110 * Math.sin(u / 1150 + ph(fam, k, 2));
 	}
 
-	private double slope(int fam, int k, double u) {
+	double slope(int fam, int k, double u) {
 		return 260 / 2900.0 * Math.cos(u / 2900 + ph(fam, k, 1)) + 110 / 1150.0 * Math.cos(u / 1150 + ph(fam, k, 2));
+	}
+
+	double offset(int fam) {
+		return off[fam];
 	}
 
 	/** Nearest motorway of a family: {k, signed distance across, u}. */
@@ -258,7 +264,7 @@ public final class Infra {
 
 	/** Is anything of the roads (motorways, lock roads, locks) within r of this point? For windmills, farms ... */
 	public boolean near(int x, int z, double r) {
-		if (motorwayDistance(x, z) < EDGE + r) return true;
+		if (motorwayDistance(x, z) < Junctions.REACH + r) return true;
 		if (f.roads.near(x, z, r)) return true;
 		if (f.metros.near(x, z, r)) return true;
 		return locks.near(x, z, r);
@@ -290,6 +296,7 @@ public final class Infra {
 				if (t > hi) t = hi;
 			}
 		}
+		t = junctions.shape(x, z, t);
 		t = f.roads.shape(x, z, t);
 		return locks.shape(x, z, t);
 	}

@@ -105,12 +105,15 @@ public final class Roads {
 			List<Seg> out = new ArrayList<>();
 			double x0 = cx * (double) Villages.CELL - 20, z0 = cz * (double) Villages.CELL - 20;
 			double x1 = x0 + Villages.CELL + 40, z1 = z0 + Villages.CELL + 40;
+			List<Seg> all = new ArrayList<>();
 			for (int i = -4; i <= 4; i++)
-				for (int j = -4; j <= 4; j++)
-					for (Seg s : from(cx + i, cz + j)) {
-						if (Math.max(s.x0(), s.x1()) < x0 || Math.min(s.x0(), s.x1()) > x1 || Math.max(s.z0(), s.z1()) < z0 || Math.min(s.z0(), s.z1()) > z1) continue;
-						out.add(s);
-					}
+				for (int j = -4; j <= 4; j++) all.addAll(from(cx + i, cz + j));
+			// and the roads from the motorway junctions
+			all.addAll(f.infra.junctions.roadsNear(x0, z0, x1, z1));
+			for (Seg s : all) {
+				if (Math.max(s.x0(), s.x1()) < x0 || Math.min(s.x0(), s.x1()) > x1 || Math.max(s.z0(), s.z1()) < z0 || Math.min(s.z0(), s.z1()) > z1) continue;
+				out.add(s);
+			}
 			return out;
 		});
 	}

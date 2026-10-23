@@ -169,6 +169,12 @@ public final class ClientSelfTest {
 					}
 					if (done) break;
 				}
+				// a motorway junction
+				double[] jn = f.infra.junctions.nearest(0, 0);
+				if (jn != null) {
+					add("afrit_boven", jn[0] - 110, 150, jn[1] - 110, jn[0], 63, jn[1]);
+					add("afrit_laag", jn[0] + 60, 70, jn[1] + 35, jn[0], 68, jn[1]);
+				}
 				// bridges, viaducts, motorways, locks
 				double[] br = f.infra.findBridge(0, 0, 40000);
 				if (br != null) {

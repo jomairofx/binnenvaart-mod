@@ -284,6 +284,23 @@ final class SelfTest {
 					check("brug: doorvaarthoogte", blocked == 0 && water(w, bx, RiverField.WATER_TOP, bz),
 							blocked + " blokken in de weg, " + (Infra.DECK - 3 - RiverField.WATER_TOP) + " blokken vrij boven het water");
 				}
+				// a motorway junction: viaduct over the motorway, slip roads up to it
+				{
+					double[] jn = f.infra.junctions.nearest(0, 0);
+					check("afrit gevonden", jn != null, jn == null ? "geen" : "op " + (int) jn[0] + ", " + (int) jn[1]);
+					if (jn != null) {
+						int qx = (int) Math.floor(jn[0]), qz = (int) Math.floor(jn[1]);
+						w.getChunk(qx >> 4, qz >> 4);
+						Object[] o = f.infra.junctions.at(qx + 0.5, qz + 0.5);
+						if (o != null) {
+							Junctions.Junction j = (Junctions.Junction) o[0];
+							BlockState dk = w.getBlockState(new BlockPos(qx, j.hm() + Junctions.RISE - 1, qz));
+							BlockState under = w.getBlockState(new BlockPos(qx, j.hm() + 3, qz));
+							check("afrit: viaduct over de snelweg", dk.isOf(net.minecraft.block.Blocks.LIGHT_GRAY_CONCRETE) && !under.isOf(net.minecraft.block.Blocks.DIRT),
+									"dek " + dk.getBlock().getName().getString() + ", onder: " + under.getBlock().getName().getString());
+						} else check("afrit: viaduct over de snelweg", false, "geen afrit op dat punt");
+					}
+				}
 				// viaduct where two motorways cross
 				double[] vd = f.infra.findViaduct(0, 0, 3);
 				check("viaduct gevonden", vd != null, vd == null ? "geen" : "op " + (int) vd[0] + ", " + (int) vd[1]);

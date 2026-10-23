@@ -108,6 +108,7 @@ final class InfraBuilder {
 				if (viaduct(w, m, h, x, z)) res = Math.max(res, 1);
 			}
 		}
+		if (Junctions.build(w, m, f, x, z)) res = 2;
 		for (Locks.Site s : f.infra.locks.around(x, z)) {
 			int r = lock(w, m, f, s, x, z);
 			if (r > res) res = r;

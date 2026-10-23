@@ -105,16 +105,16 @@ public final class Junctions {
 		for (int i = -3; i <= 3; i++)
 			for (int j = -3; j <= 3; j++) {
 				Villages.Town t = f.villages.town(vcx + i, vcz + j);
-				if (t != null) cands.add(new Object[]{t, t.radius() + 3, null});
+				if (t != null) cands.add(new Object[]{t, t.radius() - 8, null});
 			}
 		Metros.Metro mt = f.metros.nearest((int) sx, (int) sz, 1);
-		if (mt != null) cands.add(new Object[]{mt.asTown(), mt.radius() + 4, mt});
+		if (mt != null) cands.add(new Object[]{mt.asTown(), mt.radius() - 12, mt});
 		cands.sort((a, b) -> Double.compare(edge(a, sx, sz), edge(b, sx, sz)));
 		for (Object[] c : cands) {
 			Villages.Town t = (Villages.Town) c[0];
 			double rb = (double) c[1];
 			double d = Math.hypot(t.cx() - sx, t.cz() - sz);
-			if (d - rb > 3200 || d - rb < 40) continue;
+			if (d - rb > 3200 || d - rb < 60) continue;
 			// on this side of the motorway
 			double[] nl = infra.nearestLine(fam, t.cx(), t.cz());
 			if ((int) nl[0] != k || Math.signum(nl[1]) != s) continue;

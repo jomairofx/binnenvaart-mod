@@ -90,7 +90,7 @@ final class MetroBuilder {
 		boolean avX = Metros.Metro.avenueX(bx), avZ = Metros.Metro.avenueZ(bz);
 		boolean inStreet = Villages.street(t, x, z);
 		boolean inBlock = Villages.blockIn(t, x, z);
-		if (!inStreet && !inBlock) return VillageBuilder.edge(w, m, t, x, z) || any;
+		if (!inStreet && !inBlock) return VillageBuilder.edge(w, m, f, t, x, z) || any;
 		// boulevards take the whole block (and run on over the streets that cross them)
 		if (avX && bu >= 0 && (inBlock || inStreet)) {
 			boulevard(w, m, x, z, bu, z - mt.cz(), true, avZ && bw >= 0, covered);
@@ -146,7 +146,9 @@ final class MetroBuilder {
 			}
 			case Metros.SUBURB -> {
 				int r = (int) Math.floorMod(bh >>> 3, 20L);
-				if (r < 1) supermarket(w, m, x, z, bu, bw, bh);
+				if (Math.floorMod(bh >>> 9, 23L) == 5) VillageBuilder.sportsField(w, m, x, z, bu, bw);
+				else if (Math.floorMod(bh >>> 9, 41L) == 7) VillageBuilder.waterTower(w, m, x, z, bu, bw, bh);
+				else if (r < 1) supermarket(w, m, x, z, bu, bw, bh);
 				else if (r < 2) school(w, m, x, z, bu, bw, bh);
 				else if (r < 4) VillageBuilder.park(w, m, x, z, bu, bw);
 				else modernRows(w, m, x, z, bu, bw, bh);
@@ -271,6 +273,16 @@ final class MetroBuilder {
 				}
 			}
 			if (Double.isNaN(sWet0)) return 0;
+			// a real crossing: one stretch of water, about as long as the river is wide, the river square across
+			for (double sv = sWet0; sv <= sWet1; sv += 4) {
+				double[] p = avenuePoint(mt, ns, index, sv);
+				if (f.great.distance(p[0], p[1]) - f.great.halfWidth(p[0], p[1]) >= 0) return 0;
+			}
+			double[] pm = avenuePoint(mt, ns, index, (sWet0 + sWet1) / 2);
+			double hwm = f.great.halfWidth(pm[0], pm[1]);
+			if (sWet1 - sWet0 > 2.6 * hwm + 8) return 0;
+			double[] nm = f.great.normal(pm[0], pm[1]);
+			if (Math.abs(ns ? nm[1] : nm[0]) < 0.8) return 0;
 			// walk out from the water on both sides until the ramp is down; that point must lie inside the city
 			for (int dir = -1; dir <= 1; dir += 2) {
 				double sv = dir < 0 ? sWet0 : sWet1;

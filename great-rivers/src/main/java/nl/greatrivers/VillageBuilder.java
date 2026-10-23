@@ -81,7 +81,7 @@ final class VillageBuilder {
 			street(w, m, t, x, z, u, wv);
 			return true;
 		}
-		if (!Villages.blockIn(t, x, z)) return edge(w, m, t, x, z);
+		if (!Villages.blockIn(t, x, z)) return edge(w, m, f, t, x, z);
 		int bu = u - Villages.STREET, bw = wv - Villages.STREET;   // 0..28, 0..20
 		int bx = Math.floorDiv(x - t.cx(), Villages.PU), bz = Math.floorDiv(z - t.cz(), Villages.PW);
 		if (t.river() && blockNearWater(f, t, bx, bz)) {
@@ -90,6 +90,16 @@ final class VillageBuilder {
 		}
 		if (bx == 0 && bz == 0) {
 			church(w, m, t, x, z, bu, bw);
+			return true;
+		}
+		// the water tower and the football pitch of the town, in two blocks towards the edge
+		int[] wt = special(t, 1), sp = special(t, 2);
+		if (bx == wt[0] && bz == wt[1]) {
+			waterTower(w, m, x, z, bu, bw, t.seed());
+			return true;
+		}
+		if (bx == sp[0] && bz == sp[1]) {
+			sportsField(w, m, x, z, bu, bw);
 			return true;
 		}
 		double zone = Math.hypot(t.cx() + bx * Villages.PU + Villages.PU / 2.0 - t.cx(), t.cz() + bz * Villages.PW + Villages.PW / 2.0 - t.cz()) / t.radius();
@@ -130,6 +140,81 @@ final class VillageBuilder {
 		return true;
 	}
 
+	/** A block towards the edge of the town for something special (n = 1 water tower, 2 football pitch). */
+	static int[] special(Villages.Town t, int n) {
+		double a = (hash(t.seed(), n, 17) >>> 11) * 0x1.0p-53 * 2 * Math.PI;
+		double d = t.radius() * 0.62;
+		int bx = (int) Math.floor((Math.cos(a) * d) / Villages.PU), bz = (int) Math.floor((Math.sin(a) * d) / Villages.PW);
+		if (bx == 0 && bz == 0) bx = 1;
+		return new int[]{bx, bz};
+	}
+
+	/** A Dutch water tower: an octagonal brick shaft, the tank storey with small windows, a pointed roof. */
+	static void waterTower(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long seed) {
+		int dx = bu - 14, dz = bw - 10;
+		double r8 = Math.max(Math.abs(dx), Math.abs(dz)) + 0.42 * Math.min(Math.abs(dx), Math.abs(dz));   // octagon "radius"
+		set(w, m, x, G, z, r8 <= 7 ? Blocks.STONE_BRICKS.getDefaultState() : ((bu % 9 == 4 || bw % 7 == 3) ? Blocks.GRAVEL.getDefaultState() : Blocks.GRASS_BLOCK.getDefaultState()));
+		if (r8 > 6.6) {
+			if ((bu == 2 || bu == 26) && (bw == 2 || bw == 18)) Countryside.tree(w, m, x, G + 1, z, hash(x, z, 5));
+			return;
+		}
+		BlockState brick = (seed & 1) == 0 ? Blocks.BRICKS.getDefaultState() : Blocks.MUD_BRICKS.getDefaultState();
+		BlockState white = Blocks.WHITE_CONCRETE.getDefaultState();
+		int top = Y0 + 26;
+		for (int y = Y0; y <= top + 12; y++) {
+			int rel = y - Y0;
+			BlockState st = AIR;
+			if (rel < 24) {
+				// the shaft
+				if (r8 <= 3.6 && r8 > 2.6) {
+					st = brick;
+					if (rel % 6 == 3 && (dx == 0 || dz == 0)) st = paneEW(Blocks.GLASS_PANE);
+					if (dz == -3 && dx == 0 && rel <= 2) st = AIR;                         // door
+				} else if (r8 <= 2.6 && rel == 0) st = Blocks.OAK_PLANKS.getDefaultState();
+				else if (dx == 0 && dz == 2 && rel >= 1) st = Blocks.LADDER.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
+				if (rel >= 20 && r8 <= 3.6 + (rel - 20) * 0.6 && r8 > 2.6 + (rel - 20) * 0.6) st = brick;   // corbels out to the tank
+			} else if (rel <= 31) {
+				// the tank storey: white band, windows, brick
+				if (r8 <= 6.0 && r8 > 5.0) {
+					st = rel == 24 || rel == 31 ? white : brick;
+					if (rel >= 26 && rel <= 28 && (Math.abs(dx) <= 1 || Math.abs(dz) <= 1)) st = paneEW(Blocks.GLASS_PANE);
+				} else if (r8 <= 5.0 && (rel == 24 || rel == 31)) st = Blocks.SPRUCE_PLANKS.getDefaultState();
+			} else {
+				// the roof: dark tiles to a point, a weather vane on top
+				int k = rel - 32;
+				double rr = 6.0 - k * 1.0;
+				if (r8 <= rr && r8 > rr - 1.2) st = Blocks.DEEPSLATE_TILES.getDefaultState();
+				if (rr < 0.8 && dx == 0 && dz == 0) st = k <= 7 ? Blocks.IRON_BARS.getDefaultState() : AIR;
+				if (k == 7 && dx == 0 && dz == 0) st = Blocks.LIGHTNING_ROD.getDefaultState();
+			}
+			if (y > top + 12) break;
+			set(w, m, x, y, z, st);
+		}
+	}
+
+	/** A football pitch with white lines, goals and floodlights. */
+	static void sportsField(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw) {
+		boolean line = ((bu == 1 || bu == 27) && bw >= 1 && bw <= 19) || ((bw == 1 || bw == 19) && bu >= 1 && bu <= 27) || (bu == 14 && bw >= 1 && bw <= 19);
+		int dx = bu - 14, dz = bw - 10;
+		double r = Math.sqrt(dx * dx + dz * dz);
+		if (Math.abs(r - 4) < 0.5) line = true;
+		if ((bu == 5 || bu == 23) && bw >= 6 && bw <= 14) line = true;                                  // penalty areas
+		if ((bw == 6 || bw == 14) && (bu <= 5 || bu >= 23) && bu >= 1 && bu <= 27) line = true;
+		set(w, m, x, G, z, line ? Blocks.WHITE_CONCRETE.getDefaultState() : Blocks.GRASS_BLOCK.getDefaultState());
+		// goals
+		if ((bu == 0 || bu == 28) && bw >= 8 && bw <= 12) {
+			if (bw == 8 || bw == 12) for (int y = G + 1; y <= G + 2; y++) set(w, m, x, y, z, Blocks.BIRCH_FENCE.getDefaultState());
+			set(w, m, x, G + 3, z, Blocks.BIRCH_SLAB.getDefaultState());
+		}
+		// floodlights at the corners
+		if ((bu == 0 || bu == 28) && (bw == 0 || bw == 20)) {
+			for (int y = G + 1; y <= G + 12; y++) set(w, m, x, y, z, Blocks.IRON_BARS.getDefaultState());
+			set(w, m, x, G + 13, z, Blocks.SEA_LANTERN.getDefaultState());
+		}
+		// a low fence around it
+		if (bu == 0 && (bw < 8 || bw > 12) || bu == 28 && (bw < 8 || bw > 12)) set(w, m, x, G + 1, z, Blocks.SPRUCE_FENCE.getDefaultState());
+	}
+
 	/** Is any part of this block of a river city on the quays or in the water? */
 	static boolean blockNearWater(RiverField f, Villages.Town t, int bx, int bz) {
 		int x0 = t.cx() + bx * Villages.PU, z0 = t.cz() + bz * Villages.PW;
@@ -145,7 +230,17 @@ final class VillageBuilder {
 	// ------------------------------------------------------------------ the edge of the town
 
 	/** Just outside the outer streets: a hedge with trees, so the town ends in green, not in stone. */
-	static boolean edge(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z) {
+	static boolean edge(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Villages.Town t, int x, int z) {
+		// roads coming in from outside run on to the first street: the provincial roads and the dike road
+		Object[] rh = f.roads.hit(x + 0.5, z + 0.5, Roads.OUTER + 1);
+		if (rh != null) {
+			double[] p = (double[]) rh[0];
+			if (Roads.build(w, m, (Roads.Seg) rh[1], p[0], p[1], x, z)) return true;
+		}
+		if (f.dikeRoad(x, z)) {
+			Countryside.dikeRoad(w, m, f, x, z);
+			return true;
+		}
 		int k = 0;
 		for (int d = 1; d <= 3 && k == 0; d++)
 			if (Villages.street(t, x + d, z) || Villages.street(t, x - d, z) || Villages.street(t, x, z + d) || Villages.street(t, x, z - d)) k = d;

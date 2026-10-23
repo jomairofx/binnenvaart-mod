@@ -57,21 +57,21 @@ public final class Roads {
 		// and into the nearest big city
 		Metros.Metro mt = f.metros.nearest(a.cx(), a.cz(), 1);
 		if (mt != null) {
-			Seg s = link(a, mt.asTown(), mt.radius() + 4, mt);
+			Seg s = link(a, mt.asTown(), mt.radius() - 12, mt);
 			if (s != null) out.add(s);
 		}
 		return out;
 	}
 
 	private Seg link(Villages.Town a, Villages.Town b) {
-		return link(a, b, b.radius() + 3, null);
+		return link(a, b, b.radius() - 8, null);
 	}
 
 	private Seg link(Villages.Town a, Villages.Town b, double rb, Metros.Metro target) {
 		double d = Math.hypot(b.cx() - a.cx(), b.cz() - a.cz());
 		if (d - rb > 2600 || d < a.radius() + rb + 60) return null;
 		double ux = (b.cx() - a.cx()) / d, uz = (b.cz() - a.cz()) / d;
-		double x0 = a.cx() + ux * (a.radius() + 3), z0 = a.cz() + uz * (a.radius() + 3);
+		double x0 = a.cx() + ux * (a.radius() - 8), z0 = a.cz() + uz * (a.radius() - 8);
 		double x1 = b.cx() - ux * rb, z1 = b.cz() - uz * rb;
 		double len = Math.hypot(x1 - x0, z1 - z0);
 		RiverField.Kind k = f.great;
@@ -262,6 +262,22 @@ public final class Roads {
 			if (straight && a >= HALF - 1) st = LINE;                                        // edge lines
 			if (straight && a < 0.5 && Math.floorMod(al, 9L) < 3) st = LINE;                // centre line
 			w.setBlockState(m.set(x, top, z), st, 2);
+			return true;
+		}
+		// a bus stop now and then on the side without the cycle path: shelter, bench, the stop sign
+		long bs = Math.floorMod(al, 900L);
+		if (side != s.bike() && a >= HALF && a < HALF + 3 && bs >= 448 && bs <= 456) {
+			boolean back = a >= HALF + 2;
+			w.setBlockState(m.set(x, top, z), Blocks.SMOOTH_STONE.getDefaultState(), 2);
+			if (bs == 448 && !back && a < HALF + 1) {
+				for (int y = top + 1; y <= top + 3; y++) w.setBlockState(m.set(x, y, z), Blocks.IRON_BARS.getDefaultState(), 2);
+				w.setBlockState(m.set(x, top + 4, z), Blocks.YELLOW_CONCRETE.getDefaultState(), 2);
+			} else if (bs >= 451 && bs <= 455) {
+				if (back) for (int y = top + 1; y <= top + 3; y++)
+					w.setBlockState(m.set(x, y, z), (Math.abs(dx) > Math.abs(dz) ? VillageBuilder.paneEW(Blocks.GLASS_PANE) : VillageBuilder.paneNS(Blocks.GLASS_PANE)), 2);
+				else if (a >= HALF + 1 && bs >= 452 && bs <= 454) w.setBlockState(m.set(x, top + 1, z), Blocks.SPRUCE_SLAB.getDefaultState(), 2);
+				if (a >= HALF + 1) w.setBlockState(m.set(x, top + 4, z), Blocks.SMOOTH_STONE_SLAB.getDefaultState(), 2);
+			}
 			return true;
 		}
 		if (a >= HALF + 0.6 && a < HALF + 1.6 && side != s.bike() && Math.floorMod(al, 11L) == 0) {

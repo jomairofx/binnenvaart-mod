@@ -23,6 +23,7 @@ final class CityLayout {
 	static final double ART = 10.5;           // half width of a main road
 	static final int RING_P = 40;             // pitch of the canal rings of the old centre
 	static final int SQUARE = 40;             // the main square in the middle
+	static final double CHAMFER = 0.56;       // short diagonal sides: long straight canals with houses, cut corners
 
 	/** What a column of the city is. */
 	static final int ARTERIAL = 0, BLOCK = 1, STREETC = 2, GREEN = 3, OLD = 4, AXIS = 5, OUTSIDE = 6;
@@ -47,13 +48,13 @@ final class CityLayout {
 	/** Octagonal distance from the city centre (the rings of the old centre are octagons). */
 	static double d8(double dx, double dz) {
 		double ax = Math.abs(dx), az = Math.abs(dz);
-		return Math.max(Math.max(ax, az), (ax + az) * 0.7071);
+		return Math.max(Math.max(ax, az), (ax + az) * CHAMFER);
 	}
 
 	/** Is (dx, dz) on a straight (axis) side of the octagon, not on a diagonal one? */
 	static boolean axisSide(double dx, double dz) {
 		double ax = Math.abs(dx), az = Math.abs(dz);
-		return Math.max(ax, az) >= (ax + az) * 0.7071 - 0.01;
+		return Math.max(ax, az) >= (ax + az) * CHAMFER - 0.01;
 	}
 
 	/** Number of whole canal rings. */

@@ -306,8 +306,14 @@ final class MetroBuilder {
 			set(w, m, x, G, z, GRASS);
 			long h = hash(x, z, 73);
 			if (mi == 23) set(w, m, x, G + 1, z, Blocks.OAK_FENCE.getDefaultState());
-			else if ((h % 23) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 8);
-			else if ((h % 7) == 0) set(w, m, x, G + 1, z, Blocks.OAK_LEAVES.getDefaultState().with(Properties.PERSISTENT, true));
+			else if (!axis) {
+				// a "hofje": a paved court with flower beds and a single tree
+				boolean bed = Math.floorMod(ix + iz, 7) == 0;
+				set(w, m, x, G, z, bed ? Blocks.GRASS_BLOCK.getDefaultState() : Blocks.STONE_BRICKS.getDefaultState());
+				if (bed && (h % 5) == 0) set(w, m, x, G + 1, z, (h & 64) == 0 ? Blocks.POPPY.getDefaultState() : Blocks.CORNFLOWER.getDefaultState());
+				else if ((h % 97) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 8);
+				else if ((h % 83) == 0) set(w, m, x, G + 1, z, VillageBuilder.stairs(Blocks.SPRUCE_STAIRS, Direction.NORTH));
+			} else if ((h % 61) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 8);       // back gardens
 			return;
 		}
 		// facing the nearer canal: row A towards the centre, row B outwards

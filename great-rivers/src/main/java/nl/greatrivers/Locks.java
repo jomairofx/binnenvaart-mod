@@ -136,7 +136,8 @@ public final class Locks {
 				int qx = (int) (x + tx * s + gx * v), qz = (int) (z + tz * s + gz * v);
 				if (f.coastal(qx, qz) < Lowlands.COAST + 0.1) return NONE;
 				if (f.harbours.siteAt(qx, qz) != null) return NONE;
-				if (f.villages.at(qx, qz) != null) return NONE;
+				Villages.Town vt = f.villages.at(qx, qz);
+				if (vt != null && !(vt.dike() && Math.abs(v) <= hw + 60)) return NONE;     // a town behind the dike may lie beside it
 				if (f.metros.near(qx, qz, 80)) return NONE;
 			}
 		// a provincial road from the lock to the nearest village or town on its side of the river

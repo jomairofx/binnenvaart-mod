@@ -488,7 +488,7 @@ final class SelfTest {
 					} else check("viaduct: dek en weg eronder vrij", false, "geen viaduct in het profiel");
 				}
 				// a lock with its weir
-				Locks.Site lk = f.infra.locks.nearest(0, 0, 8);
+				Locks.Site lk = f.infra.locks.nearest(0, 0, 14);
 				check("sluis gevonden", lk != null, lk == null ? "geen" : "op " + lk.cx() + ", " + lk.cz() + (lk.hasRoad() ? ", met weg naar een " + lk.town() : ", zonder weg"));
 				if (lk != null) {
 					int wet = 0;

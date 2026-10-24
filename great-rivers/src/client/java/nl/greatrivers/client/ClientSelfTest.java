@@ -260,7 +260,7 @@ public final class ClientSelfTest {
 					add("viaduct", e0[0], ey, e0[1] + 5, vd[0], ey + 3, vd[1]);
 					add("viaduct_boven", vd[0] - 90, 120, vd[1] - 90, vd[0], 64, vd[1]);
 				}
-				nl.greatrivers.Locks.Site lk = f.infra.locks.nearest(0, 0, 8);
+				nl.greatrivers.Locks.Site lk = f.infra.locks.nearest(0, 0, 14);
 				if (lk != null) {
 					double ow = lk.hw() + 30;
 					add("sluis_overzicht", lk.wx(-260, ow + 60), 125, lk.wz(-260, ow + 60), lk.wx(0, lk.ch0()), 63, lk.wz(0, lk.ch0()));

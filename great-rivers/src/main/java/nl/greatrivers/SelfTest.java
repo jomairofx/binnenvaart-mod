@@ -373,6 +373,29 @@ final class SelfTest {
 						}
 					}
 				}
+				// a big port: basins with water, container cranes along the quays; ports at least 5 km apart
+				{
+					Harbours.Site pt = f.harbours.nearestPort(0, 0, 2);
+					check("grote haven gevonden", pt != null, pt == null ? "geen" : "op " + pt.cx() + ", " + pt.cz() + ", " + pt.basins() + " bekkens");
+					if (pt != null) {
+						double ba = pt.basinA(0);
+						int qx = (int) Math.floor(pt.wx(ba, pt.bank() + 200)), qz = (int) Math.floor(pt.wz(ba, pt.bank() + 200));
+						w.getChunk(qx >> 4, qz >> 4);
+						check("grote haven: water in het bekken", water(w, qx, RiverField.WATER_TOP, qz) && water(w, qx, Harbours.BASIN_FLOOR + 2, qz), "op " + qx + ", " + qz);
+						int kx = (int) Math.floor(pt.wx(ba + Harbours.P_BW / 2 + 1.5, pt.bank() + 200)), kz = (int) Math.floor(pt.wz(ba + Harbours.P_BW / 2 + 1.5, pt.bank() + 200));
+						w.getChunk(kx >> 4, kz >> 4);
+						BlockState q = w.getBlockState(new BlockPos(kx, Harbours.QUAY_Y, kz));
+						check("grote haven: kade", !q.isAir() && q.getFluidState().isEmpty(), q.getBlock().getName().getString() + " op " + kx + ", " + Harbours.QUAY_Y + ", " + kz);
+						double md = Double.MAX_VALUE;
+						for (int i = -2; i <= 2; i++)
+							for (int j = -2; j <= 2; j++) {
+								Harbours.Site o = f.harbours.port(Math.floorDiv(pt.cx(), Harbours.PORT_CELL) + i, Math.floorDiv(pt.cz(), Harbours.PORT_CELL) + j);
+								if (o == null || o == pt) continue;
+								md = Math.min(md, Math.hypot(o.cx() - pt.cx(), o.cz() - pt.cz()));
+							}
+						check("grote havens: minstens 5 km uit elkaar", md >= 5000, md == Double.MAX_VALUE ? "geen andere in de buurt" : (int) md + " blokken naar de volgende");
+					}
+				}
 				// fairway buoys: red and green along the river
 				{
 					int[] by = Buoys.nearest(f, 0, 0, 10);

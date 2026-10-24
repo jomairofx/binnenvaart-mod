@@ -20,7 +20,10 @@ public final class Harbours {
 	public static final int CELL = 1400;
 	public static final int QUAY_Y = 64;          // top of the quay (two blocks above the water)
 	public static final int BASIN_FLOOR = 52;     // ten blocks of water
-	public static final int SMALL = 0, MEDIUM = 1, LARGE = 2;
+	public static final int SMALL = 0, MEDIUM = 1, LARGE = 2, PORT = 3;
+	/** A big port: one per 10 x 10 km cell, always in the middle 5 x 5 km of it, so two ports are at least 5 km apart. */
+	public static final int PORT_CELL = 10000;
+	public static final double P_BW = 90, P_PW = 150, P_BL = 560, P_BACK = 240, P_END = 120;
 	public static final String[] GOODS = {"containers", "sand", "gravel", "coal", "grain", "timber", "iron_ore", "clay"};
 	static final double BLEND = 22;               // slope back to the natural land
 	public static final double CRANE_BACK = 20;   // cranes stand this far from the quay edge
@@ -47,15 +50,27 @@ public final class Harbours {
 		}
 
 		public String sizeName() {
-			return size == SMALL ? "small" : size == MEDIUM ? "medium" : "large";
+			return size == SMALL ? "small" : size == MEDIUM ? "medium" : size == LARGE ? "large" : "big port";
+		}
+
+		/** Number of basins of a big port. */
+		public int basins() {
+			return 3 + Math.floorMod(cx, 2);
+		}
+
+		/** Middle of basin i of a big port, along the river. */
+		public double basinA(int i) {
+			return (i - (basins() - 1) / 2.0) * (P_BW + P_PW);
 		}
 
 		/** Half extent along the river, and how far inland it reaches (from the bank). */
 		double alongExtent() {
+			if (size == PORT) return (basins() * P_BW + (basins() - 1) * P_PW) / 2 + P_END;
 			return size == LARGE ? A + Q : A + side;
 		}
 
 		double inland() {
+			if (size == PORT) return P_BL + P_BACK;
 			return size == LARGE ? B + Q : B + Q;
 		}
 	}
@@ -65,6 +80,7 @@ public final class Harbours {
 	private final long seed;
 	private final ConcurrentHashMap<Long, Site> sites = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<Site, List<int[]>> cranes = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Long, Site> ports = new ConcurrentHashMap<>();
 
 	Harbours(RiverField field, long seed) {
 		this.field = field;
@@ -79,11 +95,84 @@ public final class Harbours {
 		return h ^ (h >>> 33);
 	}
 
+	/** The nearest big port, for /findriver and the tests. */
+	public Site nearestPort(int x, int z, int cells) {
+		int i0 = Math.floorDiv(x, PORT_CELL), j0 = Math.floorDiv(z, PORT_CELL);
+		Site best = null;
+		double bd = Double.MAX_VALUE;
+		for (int i = -cells; i <= cells; i++)
+			for (int j = -cells; j <= cells; j++) {
+				Site s = port(i0 + i, j0 + j);
+				if (s == null) continue;
+				double d = Math.hypot(s.cx - x, s.cz - z);
+				if (d < bd) {
+					bd = d;
+					best = s;
+				}
+			}
+		return best;
+	}
+
 	/** The harbour of a cell, or null. */
 	public Site site(int cellX, int cellZ) {
 		long key = ((long) cellX << 32) ^ (cellZ & 0xffffffffL);
 		Site s = sites.computeIfAbsent(key, k -> make(cellX, cellZ));
 		return s == NONE ? null : s;
+	}
+
+	/** The big port of a 10 km cell, or null. */
+	public Site port(int i, int j) {
+		long key = ((long) i << 32) ^ (j & 0xffffffffL);
+		Site s = ports.computeIfAbsent(key, k -> makePort(i, j));
+		return s == NONE ? null : s;
+	}
+
+	private Site portAround(int x, int z) {
+		return port(Math.floorDiv(x, PORT_CELL), Math.floorDiv(z, PORT_CELL));
+	}
+
+	private Site makePort(int i, int j) {
+		long h = mix(seed * 7 ^ mix(i * 0x632BE59BD9B4E019L + j * 0x9E3779B97F4A7C15L + 0x9087));
+		if (Math.floorMod(h, 3L) == 0) return NONE;          // two in three cells
+		int lo = PORT_CELL / 4, hi = PORT_CELL * 3 / 4;
+		for (int attempt = 0; attempt < 10; attempt++) {
+			long a = mix(h + attempt * 101);
+			int px = i * PORT_CELL + lo + (int) Math.floorMod(a, (long) (hi - lo));
+			int pz = j * PORT_CELL + lo + (int) Math.floorMod(a >>> 24, (long) (hi - lo));
+			RiverField.Kind k = field.great;
+			int[] c = GreatRivers.nearest(k, px, pz, 2500);
+			if (c == null) continue;
+			int x = c[0], z = c[1];
+			if (x < i * PORT_CELL + lo || x > i * PORT_CELL + hi || z < j * PORT_CELL + lo || z > j * PORT_CELL + hi) continue;
+			double[] nrm = k.normal(x, z);
+			double gx = nrm[0], gz = nrm[1];
+			if (((a >>> 50) & 1) == 0) {
+				gx = -gx;
+				gz = -gz;
+			}
+			double tx = -gz, tz = gx;
+			double hw = k.halfWidth(x, z);
+			if (hw < 45) continue;                             // only on the wide rivers
+			Site s = new Site(x, z, tx, tz, gx, gz, hw, k.name(), PORT, "port", P_BW / 2, P_BL, P_BACK, P_PW);
+			double along = s.alongExtent(), inland = s.inland();
+			boolean ok = true;
+			// a straight reach in front of it
+			for (double sa = -along; sa <= along && ok; sa += 20)
+				if (k.distance(x + tx * sa, z + tz * sa) > hw * 0.25 + 8) ok = false;
+			// all of it on dry land, away from the motorways, railways, canals and cities
+			for (double sa = -along - 60; sa <= along + 60 && ok; sa += 40)
+				for (double v = hw + 10; v <= hw + inland + 60 && ok; v += 40) {
+					int qx = (int) (x + tx * sa + gx * v), qz = (int) (z + tz * sa + gz * v);
+					if (field.continentalness(qx, qz) < Lowlands.COAST + 0.06) ok = false;
+					else if (k.distance(qx, qz) < k.halfWidth(qx, qz) + 30) ok = false;      // the river bends back
+					else if (field.low.canalDistance(qx, qz) < Lowlands.CANAL_HALF + 30) ok = false;
+					else if (field.infra.motorwayDistance(qx, qz) < Infra.EDGE + 80) ok = false;
+					else if (field.metros.near(qx, qz, 60)) ok = false;
+					else if (field.rails.distance(qx, qz) < 90) ok = false;
+				}
+			if (ok) return s;
+		}
+		return NONE;
 	}
 
 	private Site make(int cellX, int cellZ) {
@@ -156,11 +245,19 @@ public final class Harbours {
 				if (field.metros.near(qx, qz, 40)) return NONE;
 				if (field.rails.distance(qx, qz) < 70) return NONE;
 			}
+		// not in or next to a big port
+		Site pt = portAround(x, z);
+		if (pt != null && outside(pt, x, z) < 400) return NONE;
 		return new Site(x, z, tx, tz, gx, gz, hw, best.name(), size, goods, A, B, Q, side);
 	}
 
 	/** The harbour covering this column, or null. */
 	public Site siteAt(int x, int z) {
+		Site p = portAround(x, z);
+		if (p != null) {
+			double a = Math.abs(p.a(x, z)), v = p.v(x, z);
+			if (!(a > p.alongExtent() + BLEND + 2 || v < p.bank - 30 || v > p.bank + p.inland() + BLEND + 2)) return p;
+		}
 		Site s = site(Math.floorDiv(x, CELL), Math.floorDiv(z, CELL));
 		if (s == null) return null;
 		double a = Math.abs(s.a(x, z)), v = s.v(x, z);
@@ -170,6 +267,11 @@ public final class Harbours {
 
 	/** The harbour whose area, grown by g blocks all round, covers this column, or null. */
 	public Site siteNear(int x, int z, double g) {
+		Site p = portAround(x, z);
+		if (p != null) {
+			double a = Math.abs(p.a(x, z)), v = p.v(x, z);
+			if (!(a > p.alongExtent() + BLEND + g || v < p.bank - 30 || v > p.bank + p.inland() + BLEND + g)) return p;
+		}
 		Site s = site(Math.floorDiv(x, CELL), Math.floorDiv(z, CELL));
 		if (s == null) return null;
 		double a = Math.abs(s.a(x, z)), v = s.v(x, z);
@@ -204,7 +306,9 @@ public final class Harbours {
 	public static int kind(Site s, double x, double z) {
 		double a = Math.abs(s.a(x, z)), v = s.v(x, z) - s.bank;
 		double along = s.alongExtent();
-		if (s.size == LARGE) {
+		if (s.size == PORT) {
+			if (v >= -4 && v <= P_BL) for (int i = 0; i < s.basins(); i++) if (Math.abs(a0(s, x, z) - s.basinA(i)) <= P_BW / 2) return WATER;
+		} else if (s.size == LARGE) {
 			if (a <= s.A && v >= -4 && v <= s.B) return WATER;
 		} else if (a <= s.A && v >= -4 && v <= s.B) return WATER;
 		if (a <= along && v >= -26 && v < -4) return WATER;
@@ -227,8 +331,29 @@ public final class Harbours {
 	 * Position on the quay, measured from the nearest mooring edge: {s, e, edgeId}.
 	 * s runs along the edge, e is the distance back from it. Null where there is no mooring edge to measure from.
 	 */
+	/** Signed position along the river (not the absolute value). */
+	static double a0(Site s, double x, double z) {
+		return s.a(x, z);
+	}
+
+	/** Big port: {nearest basin, distance from its quay edge (negative in the water), v} . */
+	public static double[] portFrame(Site s, double x, double z) {
+		double a = s.a(x, z), v = s.v(x, z) - s.bank;
+		int best = 0;
+		double bd = Double.MAX_VALUE;
+		for (int i = 0; i < s.basins(); i++) {
+			double d = Math.abs(a - s.basinA(i));
+			if (d < bd) {
+				bd = d;
+				best = i;
+			}
+		}
+		return new double[]{best, bd - P_BW / 2, v, a - s.basinA(best)};
+	}
+
 	public static double[] quayFrame(Site s, double x, double z) {
 		double a = s.a(x, z), v = s.v(x, z) - s.bank;
+		if (s.size == PORT) return null;
 		if (s.size == LARGE) {
 			if (v < 6 || v > s.B - 4) return null;
 			double e = Math.abs(a) - s.A;
@@ -248,6 +373,7 @@ public final class Harbours {
 
 	private static List<int[]> makeCranes(Site s) {
 		List<int[]> list = new ArrayList<>();
+		if (s.size == PORT) return list;          // the big port has its own container cranes
 		double spacing = 44;
 		if (s.size == LARGE) {
 			for (int side = -1; side <= 1; side += 2) {
@@ -269,6 +395,7 @@ public final class Harbours {
 
 	/** Rectangle of the main building (warehouse / office): at the far end, away from the mooring edge. */
 	public static boolean inBuilding(Site s, double x, double z) {
+		if (s.size == PORT) return false;
 		double a = s.a(x, z), v = s.v(x, z) - s.bank;
 		if (s.size == LARGE) {
 			// at the head of the basin, on one side

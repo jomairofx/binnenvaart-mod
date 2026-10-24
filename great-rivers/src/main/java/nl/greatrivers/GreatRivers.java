@@ -133,6 +133,9 @@ public class GreatRivers implements ModInitializer {
 			Villages.Town t = findDikeTown(field, x, z, 10, c == 1);
 			if (t != null) report(src, "Nearest " + t.kind(), t.cx(), 80, t.cz(), x, z);
 		}
+		Harbours.Site port = field.harbours.nearestPort(x, z, 2);
+		if (port != null) report(src, "Nearest big port (" + port.basins() + " basins: containers, bulk, tanks)",
+				(int) Math.floor(port.wx(0, port.bank() + Harbours.P_BL + 20)), Harbours.QUAY_Y + 2, (int) Math.floor(port.wz(0, port.bank() + Harbours.P_BL + 20)), x, z);
 		for (int size = 0; size <= 2; size++) {
 		Harbours.Site h = findHarbour(field, x, z, 14, size);
 		if (h == null) continue;

@@ -94,7 +94,7 @@ final class Buoys {
 	/** The pair of buoys at the mouth of a harbour basin, a little out in the river. */
 	private static boolean harbourMouth(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, int x, int z) {
 		Harbours.Site s = f.harbours.siteNear(x, z, 40);
-		if (s == null) return false;
+		if (s == null || s.size() == Harbours.PORT) return false;
 		double a = s.a(x + 0.5, z + 0.5), v = s.v(x + 0.5, z + 0.5) - s.bank();
 		double half = s.A();
 		for (int sd = -1; sd <= 1; sd += 2) {

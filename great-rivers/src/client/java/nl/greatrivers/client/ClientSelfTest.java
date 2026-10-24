@@ -211,6 +211,12 @@ public final class ClientSelfTest {
 					int[] c = GreatRivers.nearest(f.great, dt.cx(), dt.cz(), 900);
 					if (c != null) add("dijkwijk", c[0], 90, c[1], dt.cx(), 66, dt.cz());
 				}
+				nl.greatrivers.Harbours.Site pt = f.harbours.nearestPort(0, 0, 2);
+				if (pt != null) {
+					double ba = pt.basinA(0);
+					add("grote_haven", pt.wx(ba - 160, pt.bank() - 60), 125, pt.wz(ba - 160, pt.bank() - 60), pt.wx(ba + 120, pt.bank() + 300), 64, pt.wz(ba + 120, pt.bank() + 300));
+					add("containerkranen", pt.wx(ba, pt.bank() + 120), 75, pt.wz(ba, pt.bank() + 120), pt.wx(ba + 55, pt.bank() + 200), 90, pt.wz(ba + 55, pt.bank() + 200));
+				}
 				int[] by = GreatRivers.buoy(f, 0, 0);
 				if (by != null) add("boei", by[0] + 9, 66, by[1] + 9, by[0], 63, by[1]);
 				// a high-voltage substation at the end of a line

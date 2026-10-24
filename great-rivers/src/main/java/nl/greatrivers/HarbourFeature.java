@@ -101,6 +101,11 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 		Harbours.Site s = field.harbours.siteAt(x, z);
 		if (s != null) {
 			int k = Harbours.kind(s, x + 0.5, z + 0.5);
+			if (s.size() == Harbours.PORT) {
+				if (k == Harbours.FLAT) PortBuilder.column(w, m, field, s, x, z);
+				else if (k == Harbours.WATER) PortBuilder.water(w, m, field, s, x, z);
+				if (k != Harbours.NO) return true;
+			}
 			if (k == Harbours.FLAT) {
 				any = true;
 				column(w, m, field, s, x, z);

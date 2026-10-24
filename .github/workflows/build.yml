@@ -142,7 +142,7 @@ jobs:
         run: |
           mkdir -p run/mods && echo "eula=true" > run/eula.txt
           cp ../kempenaar/build/libs/kempenaar-1.0.0.jar run/mods/ || true
-          printf 'online-mode=false\nspawn-protection=0\nlevel-seed=binnenvaart\nlevel-type=minecraft\\:normal\ngenerate-structures=true\nview-distance=6\nsimulation-distance=6\n' > run/server.properties
+          printf 'online-mode=false\nspawn-protection=0\nmax-tick-time=-1\nlevel-seed=binnenvaart\nlevel-type=minecraft\\:normal\ngenerate-structures=true\nview-distance=6\nsimulation-distance=6\n' > run/server.properties
           timeout 1200 ./gradlew runTestServer --stacktrace > server_out.txt 2>&1 || true
           cp run/logs/latest.log run/server.log || true
           cat run/selftest.txt || echo "geen selftest.txt"

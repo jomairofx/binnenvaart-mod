@@ -198,3 +198,22 @@ jobs:
           ! grep -l "Ship error in" run/*.log inland-barge/run/*.log kempenaar/run/*.log modern-bulk/run/*.log 2>/dev/null
           # every block in the ship templates must exist
           ! grep -h "Onbekend blok" run/logs/latest.log inland-barge/run/logs/latest.log kempenaar/run/logs/latest.log modern-bulk/run/logs/latest.log run/*.log inland-barge/run/*.log kempenaar/run/*.log modern-bulk/run/*.log 2>/dev/null | grep -v megatanker
+  quick:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Great Rivers compileren (snelle controle)
+        working-directory: great-rivers
+        run: |
+          chmod +x gradlew
+          ./gradlew compileJava compileClientJava --stacktrace > /tmp/compile.txt 2>&1 && echo "COMPILE OK" >> /tmp/compile.txt || echo "COMPILE FAILED" >> /tmp/compile.txt
+      - name: Naar branch
+        if: always()
+        run: |
+          mkdir -p /tmp/q && cp /tmp/compile.txt /tmp/q/ || true
+          cd /tmp/q && git init -q && git checkout -q -b ci-compile && git add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -qm "Compile ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" ci-compile

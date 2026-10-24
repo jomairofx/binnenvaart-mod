@@ -544,12 +544,12 @@ final class MetroBuilder {
 				// a steel truss over the whole river, on two piers
 				if (q == 2 && dc < hw + 4) {
 					int ph = (int) Math.floorMod(along, 12L);
-					boolean end = dc > hw + 3;
+					boolean endPost = dc > hw + 3;
 					for (int yy = y + 2; yy <= y + 11; yy++) {
 						int rel = yy - y;
 						boolean chord = rel == 11 || rel == 2;
 						boolean diag = rel == 2 + ph * 9 / 12 || rel == 11 - ph * 9 / 12;
-						if (chord || ph == 0 || end || diag) set(w, m, x, yy, z, Blocks.WAXED_OXIDIZED_CUT_COPPER.getDefaultState());
+						if (chord || ph == 0 || endPost || diag) set(w, m, x, yy, z, Blocks.WAXED_OXIDIZED_CUT_COPPER.getDefaultState());
 					}
 				} else if (q > 2 && dc < hw + 4 && Math.floorMod(along, 12L) == 0) set(w, m, x, y + 11, z, Blocks.WAXED_OXIDIZED_CUT_COPPER.getDefaultState());
 				if (dc > hw * 0.78 && dc < hw - 4 && Math.floorMod(along, 40L) < 3 && q >= 4 && q <= 6)

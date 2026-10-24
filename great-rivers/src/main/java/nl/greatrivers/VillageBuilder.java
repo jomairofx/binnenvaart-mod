@@ -103,12 +103,12 @@ final class VillageBuilder {
 		long bh = hash(t.seed(), bx * 31L + bz, 99);
 		if (t.dike() && t.city()) {
 			// a town behind the dike: apartment towers and flats along the dike, with a view over the river
-			double e = Villages.dikeBank(t, bx, bz) - Lowlands.foreland(f.great) - Villages.DIKE_KEEP;
-			if (e < 60 && (bh & 3) != 0) {
-				tower(w, m, x, z, bu, bw, bh, 0.55 + e / 120);
+			double ed = Villages.dikeBank(t, bx, bz) - Lowlands.foreland(f.great) - Villages.DIKE_KEEP;
+			if (ed < 60 && (bh & 3) != 0) {
+				tower(w, m, x, z, bu, bw, bh, 0.55 + ed / 120);
 				return true;
 			}
-			if (e < 130 && (bh & 3) != 0) {
+			if (ed < 130 && (bh & 3) != 0) {
 				flats(w, m, x, z, bu, bw, bh);
 				return true;
 			}

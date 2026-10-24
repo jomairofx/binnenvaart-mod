@@ -209,7 +209,8 @@ jobs:
         working-directory: great-rivers
         run: |
           chmod +x gradlew
-          ./gradlew compileJava compileClientJava --stacktrace > /tmp/compile.txt 2>&1 && echo "COMPILE OK" >> /tmp/compile.txt || echo "COMPILE FAILED" >> /tmp/compile.txt
+          ./gradlew compileJava compileClientJava --stacktrace > /tmp/compile.txt 2>&1 && echo "COMPILE OK great-rivers" >> /tmp/compile.txt || echo "COMPILE FAILED great-rivers" >> /tmp/compile.txt
+          for d in .. ../inland-barge ../kempenaar ../modern-bulk; do (cd $d && chmod +x gradlew && ./gradlew compileJava compileClientJava --stacktrace > /tmp/c.txt 2>&1 && echo "COMPILE OK $d" >> /tmp/compile.txt || { grep -A3 "error:" /tmp/c.txt >> /tmp/compile.txt; echo "COMPILE FAILED $d" >> /tmp/compile.txt; }); done
       - name: Naar branch
         if: always()
         run: |

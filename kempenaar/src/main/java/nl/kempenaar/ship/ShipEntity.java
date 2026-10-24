@@ -134,7 +134,8 @@ public class ShipEntity extends Entity {
 	// server: besturing en fysica
 	private double speed, yawRate, thrusterRate, rudder;
 	private double courseYaw = Double.NaN;   // werkelijke vaarrichting: loopt achter op de koers (drift in de bocht)
-	private int throttle, rudderInput, thrusterInput;
+	private int throttle;
+	private double rudderInput, thrusterInput;    // -1 .. 1 (hundredths from the helm)
 	private int lastControlTick = -1000, hornCooldown, bumpCooldown;
 	private boolean aground;
 	private final LongOpenHashSet displaced = new LongOpenHashSet();
@@ -595,7 +596,7 @@ public class ShipEntity extends Entity {
 		dataTracker.set(SPEED, (float) speed);
 		dataTracker.set(RUDDER, (float) rudder);
 		dataTracker.set(THROTTLE, throttle);
-		dataTracker.set(THRUSTER, thrusterInput);
+		dataTracker.set(THRUSTER, (int) Math.signum(thrusterInput));
 		dataTracker.set(AGROUND, aground);
 		if (template.liftRegion != null) {
 			double before = liftCur;
@@ -780,8 +781,8 @@ public class ShipEntity extends Entity {
 			player.sendMessage(Text.literal(on ? "Engine started" : "Engine stopped").formatted(Formatting.GRAY), true);
 		}
 		if (!engineOn()) throttle = 0;
-		rudderInput = MathHelper.clamp(c.rudder(), -1, 1);
-		thrusterInput = MathHelper.clamp(c.thruster(), -1, 1);
+		rudderInput = MathHelper.clamp(c.rudder() / 100.0, -1, 1);
+		thrusterInput = MathHelper.clamp(c.thruster() / 100.0, -1, 1);
 		if (template.liftRegion != null && c.lift() != 0)
 			liftTarget = MathHelper.clamp(liftTarget + Math.signum(c.lift()) * 0.06, 0, template.liftMax);
 		if (c.toggleLights()) {

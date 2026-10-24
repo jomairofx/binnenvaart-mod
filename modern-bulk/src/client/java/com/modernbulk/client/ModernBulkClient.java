@@ -50,7 +50,11 @@ public class ModernBulkClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> ShipEntity.safely("client tick", () -> tick(mc)));
 		ClientSelfTest.register();
-		HudRenderCallback.EVENT.register((ctx, tickCounter) -> ShipEntity.safely("hud", () -> renderHud(ctx)));
+		HudRenderCallback.EVENT.register((ctx, tickCounter) -> ShipEntity.safely("hud", () -> {
+			MinecraftClient mc = MinecraftClient.getInstance();
+			if (mc.player != null && mc.player.getVehicle() instanceof ShipEntity) Gamepad.frame(mc);
+			renderHud(ctx);
+		}));
 	}
 
 	static int testLift;
@@ -61,8 +65,11 @@ public class ModernBulkClient implements ClientModInitializer {
 		throttle = t;
 	}
 
+	private static boolean padSneak;
+
 	private static void tick(MinecraftClient mc) {
 		if (mc.player == null || mc.world == null) return;
+		Gamepad.tick();
 		// motorgeluid voor schepen in de buurt
 		for (ShipEntity ship : ShipHolder.of(mc.world)) {
 			ShipEngineSound s = SOUNDS.get(ship);
@@ -76,6 +83,10 @@ public class ModernBulkClient implements ClientModInitializer {
 
 		if (!(mc.player.getVehicle() instanceof ShipEntity ship)) {
 			lastShipId = -1;
+			if (padSneak) {
+				mc.options.sneakKey.setPressed(false);
+				padSneak = false;
+			}
 			// toetsen niet laten opstapelen
 			while (horn.wasPressed()) { }
 			while (hatches.wasPressed()) { }
@@ -94,6 +105,9 @@ public class ModernBulkClient implements ClientModInitializer {
 		if (mc.currentScreen == null) {
 			if (fw && !prevForward) throttle = Math.min(3, throttle + 1);
 			if (bk && !prevBack) throttle = Math.max(-2, throttle - 1);
+			// controller: D-pad up / down moves the engine telegraph one step
+			if (Gamepad.pressed(GLFW.GLFW_GAMEPAD_BUTTON_DPAD_UP)) throttle = Math.min(3, throttle + 1);
+			if (Gamepad.pressed(GLFW.GLFW_GAMEPAD_BUTTON_DPAD_DOWN)) throttle = Math.max(-2, throttle - 1);
 		}
 		prevForward = fw;
 		prevBack = bk;
@@ -104,7 +118,22 @@ public class ModernBulkClient implements ClientModInitializer {
 			if (held(mc, thrusterLeft)) thruster -= 1;
 			if (held(mc, thrusterRight)) thruster += 1;
 		}
-		boolean h = false, l = false;
+		// rudder and bow thruster go as hundredths: the keys give full, the controller anything in between
+		int rudderOut = rudder * 100, thrusterOut = thruster * 100;
+		if (Gamepad.connected() && mc.currentScreen == null) {
+			float sx = Gamepad.stick(GLFW.GLFW_GAMEPAD_AXIS_LEFT_X);
+			if (rudder == 0 && sx != 0) rudderOut = Math.round(sx * 100);
+			float tq = Gamepad.trigger(GLFW.GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) - Gamepad.trigger(GLFW.GLFW_GAMEPAD_AXIS_LEFT_TRIGGER);
+			if (thruster == 0 && tq != 0) thrusterOut = Math.round(tq * 100);
+			Gamepad.camera(mc);
+			// circle: leave the helm (as the sneak key)
+			boolean leave = Gamepad.held(GLFW.GLFW_GAMEPAD_BUTTON_B);
+			if (leave != padSneak) {
+				mc.options.sneakKey.setPressed(leave);
+				padSneak = leave;
+			}
+		}
+		boolean h = Gamepad.pressed(GLFW.GLFW_GAMEPAD_BUTTON_Y), l = Gamepad.pressed(GLFW.GLFW_GAMEPAD_BUTTON_A);
 		while (horn.wasPressed()) h = true;
 		while (hatches.wasPressed()) l = true;
 		// Meerdere scheepsmods gebruiken dezelfde toetsen; Minecraft geeft een toets dan maar aan één van hen door.
@@ -115,17 +144,19 @@ public class ModernBulkClient implements ClientModInitializer {
 		prevHornKey = hk;
 		prevHatchKey = lk;
 		int liftDir = 0;
-		boolean lt = false;
+		boolean lt = Gamepad.pressed(GLFW.GLFW_GAMEPAD_BUTTON_X);
 		if (mc.currentScreen == null) {
 			if (held(mc, liftUp)) liftDir += 1;
 			if (held(mc, liftDown)) liftDir -= 1;
+			if (Gamepad.held(GLFW.GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER)) liftDir += 1;
+			if (Gamepad.held(GLFW.GLFW_GAMEPAD_BUTTON_LEFT_BUMPER)) liftDir -= 1;
 		}
 		if (testLift != 0) liftDir = testLift;
 		while (lights.wasPressed()) lt = true;
 		boolean lightKey = mc.currentScreen == null && held(mc, lights);
 		if (lightKey && !prevLightKey) lt = true;
 		prevLightKey = lightKey;
-		boolean et = false;
+		boolean et = Gamepad.pressed(GLFW.GLFW_GAMEPAD_BUTTON_START);
 		while (engine.wasPressed()) et = true;
 		boolean engineKey = mc.currentScreen == null && held(mc, engine);
 		if (engineKey && !prevEngineKey) et = true;
@@ -139,7 +170,7 @@ public class ModernBulkClient implements ClientModInitializer {
 			lt = true;
 			testLights = false;
 		}
-		ClientPlayNetworking.send(new ShipPayloads.Control(ship.getId(), throttle, rudder, thruster, h, l, liftDir, lt, et));
+		ClientPlayNetworking.send(new ShipPayloads.Control(ship.getId(), throttle, rudderOut, thrusterOut, h, l, liftDir, lt, et));
 	}
 
 	/** Is de toets ingedrukt, ook als een andere mod dezelfde toets heeft. */
@@ -222,11 +253,20 @@ public class ModernBulkClient implements ClientModInitializer {
 		ctx.drawTextWithShadow(tr, extra, lx + 112, y + 69, 0xFFFFFF);
 		ctx.drawTextWithShadow(tr, String.format("Cargo %d%%  Draught %.1f m", Math.round(ship.load() * 100), ship.draft()), lx, y + 81, 0xFFFFFF);
 		if (ship.isAground()) ctx.drawTextWithShadow(tr, "AGROUND", lx + 120, y + 81, 0xFF5555);
-		String keys = String.format("W/S telegraph  A/D rudder  %s/%s thruster  H horn", keyName(thrusterLeft), keyName(thrusterRight)) + (ShipEntity.COVERS > 0 ? "  L hatches" : "");
-		ctx.drawText(tr, keys, lx, y + 93, 0x7F8C99, false);
-		ctx.drawText(tr, "F5 camera  (scroll wheel: zoom)", lx, y + 103, 0x7F8C99, false);
-		String liftTxt = ship.template.liftRegion != null ? String.format("Wheelhouse %s/%s (%.1f m)  ", keyName(liftUp), keyName(liftDown), ship.liftOffset()) : "";
-		ctx.drawText(tr, liftTxt + "Lights " + keyName(lights) + ": " + (ship.lightsOn() ? "on" : "off") + "  Engine " + keyName(engine) + ": " + (ship.engineOn() ? "on" : "OFF"), lx, y + 115, 0x7F8C99, false);
+		if (Gamepad.connected()) {
+			// PlayStation controls when a controller is plugged in
+			String pk = "L-stick rudder  D-pad \u2191\u2193 telegraph  L2/R2 thruster  \u25B3 horn" + (ShipEntity.COVERS > 0 ? "  \u2715 hatches" : "");
+			ctx.drawText(tr, pk, lx, y + 93, 0x7F8C99, false);
+			ctx.drawText(tr, "R-stick look  R3 camera  \u25CB leave helm  (" + Gamepad.name() + ")", lx, y + 103, 0x7F8C99, false);
+			String liftPad = ship.template.liftRegion != null ? String.format("Wheelhouse R1/L1 (%.1f m)  ", ship.liftOffset()) : "";
+			ctx.drawText(tr, liftPad + "Lights \u25A1: " + (ship.lightsOn() ? "on" : "off") + "  Engine OPTIONS: " + (ship.engineOn() ? "on" : "OFF"), lx, y + 115, 0x7F8C99, false);
+		} else {
+			String keys = String.format("W/S telegraph  A/D rudder  %s/%s thruster  H horn", keyName(thrusterLeft), keyName(thrusterRight)) + (ShipEntity.COVERS > 0 ? "  L hatches" : "");
+			ctx.drawText(tr, keys, lx, y + 93, 0x7F8C99, false);
+			ctx.drawText(tr, "F5 camera  (scroll wheel: zoom)", lx, y + 103, 0x7F8C99, false);
+			String liftTxt = ship.template.liftRegion != null ? String.format("Wheelhouse %s/%s (%.1f m)  ", keyName(liftUp), keyName(liftDown), ship.liftOffset()) : "";
+			ctx.drawText(tr, liftTxt + "Lights " + keyName(lights) + ": " + (ship.lightsOn() ? "on" : "off") + "  Engine " + keyName(engine) + ": " + (ship.engineOn() ? "on" : "OFF"), lx, y + 115, 0x7F8C99, false);
+		}
 		m.pop();
 	}
 }

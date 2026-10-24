@@ -44,6 +44,19 @@ public class GreatRivers implements ModInitializer {
 					for (String id : NO_ICE)
 						ctx.getGenerationSettings().removeFeature(RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.ofVanilla(id)));
 				});
+		// far fewer animals: only cows and sheep in the meadows, and only now and then
+		BiomeModifications.create(Identifier.of(MOD_ID, "fewer_animals")).add(net.fabricmc.fabric.api.biome.v1.ModificationPhase.REMOVALS,
+				BiomeSelectors.foundInOverworld(), ctx -> {
+					for (net.minecraft.entity.EntityType<?> t : new net.minecraft.entity.EntityType<?>[]{
+							net.minecraft.entity.EntityType.PIG, net.minecraft.entity.EntityType.CHICKEN, net.minecraft.entity.EntityType.HORSE,
+							net.minecraft.entity.EntityType.DONKEY, net.minecraft.entity.EntityType.RABBIT, net.minecraft.entity.EntityType.GOAT,
+							net.minecraft.entity.EntityType.LLAMA, net.minecraft.entity.EntityType.FOX, net.minecraft.entity.EntityType.WOLF,
+							net.minecraft.entity.EntityType.PANDA, net.minecraft.entity.EntityType.PARROT, net.minecraft.entity.EntityType.OCELOT,
+							net.minecraft.entity.EntityType.POLAR_BEAR, net.minecraft.entity.EntityType.MOOSHROOM, net.minecraft.entity.EntityType.CAMEL,
+							net.minecraft.entity.EntityType.ARMADILLO, net.minecraft.entity.EntityType.TURTLE, net.minecraft.entity.EntityType.FROG})
+						ctx.getSpawnSettings().removeSpawnsOfEntityType(t);
+					ctx.getSpawnSettings().setCreatureSpawnProbability(0.015f);
+				});
 		BiomeModifications.addFeature(BiomeSelectors.foundInOverworld(), GenerationStep.Feature.TOP_LAYER_MODIFICATION,
 				RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.of(MOD_ID, "harbour")));
 		CommandRegistrationCallback.EVENT.register((dispatcher, access, env) ->

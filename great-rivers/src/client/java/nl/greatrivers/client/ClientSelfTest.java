@@ -196,6 +196,12 @@ public final class ClientSelfTest {
 					double sx = vt.cx() + sp[0] * nl.greatrivers.Villages.PU + 19, sz = vt.cz() + sp[1] * nl.greatrivers.Villages.PW + 15;
 					add("voetbalveld", sx - 30, 85, sz - 30, sx, 64, sz);
 				}
+				// the Dutch street plan of the nearest big city: the canal rings of the old centre, a main road
+				nl.greatrivers.Metros.Metro qCity = f.metros.nearestNormal(0, 0, 4);
+				if (qCity != null) {
+					add("stadsplan_boven", qCity.cx() - 330, 260, qCity.cz() - 330, qCity.cx(), 64, qCity.cz());
+					add("grachtengordel", qCity.cx() + 125, 72, qCity.cz() + 70, qCity.cx() + 60, 66, qCity.cz() + 15);
+				}
 				// the metropolis: skyline from afar, the central station, a big low-rise town, a town behind the dike
 				nl.greatrivers.Metros.Metro qMg = f.metros.nearestBig(0, 0, nl.greatrivers.Metros.MEGA, 3);
 				if (qMg != null) {

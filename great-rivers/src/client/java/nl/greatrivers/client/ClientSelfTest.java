@@ -199,8 +199,9 @@ public final class ClientSelfTest {
 				// the metropolis: skyline from afar, the central station, a big low-rise town, a town behind the dike
 				nl.greatrivers.Metros.Metro qMg = f.metros.nearestBig(0, 0, nl.greatrivers.Metros.MEGA, 3);
 				if (qMg != null) {
-					add("metropool_skyline", qMg.cx() - 900, 160, qMg.cz() - 900, qMg.cx(), 90, qMg.cz());
-					add("metropool_straat", qMg.cx() + 700, 70, qMg.cz() + 15.5, qMg.cx(), 80, qMg.cz() + 15.5);
+					add("metropool_skyline", qMg.cx() - 260, 150, qMg.cz() - 260, qMg.cx() + 300, 95, qMg.cz() + 300);
+					double bxm = qMg.cx() + 3 * nl.greatrivers.Villages.PU + nl.greatrivers.Villages.STREET + 14.5;
+					add("metropool_boulevard", bxm, 68, qMg.cz() + 260, bxm, 72, qMg.cz());
 				}
 				double[] qCs = f.rails.findCentralStation(0, 0);
 				if (qCs != null) add("centraal_station", qCs[0] + 45, qCs[2] + 12, qCs[1] + 45, qCs[0], qCs[2] + 4, qCs[1]);
@@ -209,7 +210,12 @@ public final class ClientSelfTest {
 				nl.greatrivers.Villages.Town qDt = GreatRivers.findDikeTown(f, 0, 0, 12, null);
 				if (qDt != null) {
 					int[] qC = GreatRivers.nearest(f.great, qDt.cx(), qDt.cz(), 900);
-					if (qC != null) add("dijkwijk", qC[0], 90, qC[1], qDt.cx(), 66, qDt.cz());
+					if (qC != null) {
+						double[] qn = f.great.normal(qC[0], qC[1]);
+						double sd = (qDt.cx() - qC[0]) * qn[0] + (qDt.cz() - qC[1]) * qn[1] >= 0 ? 1 : -1;
+						double back = f.great.halfWidth(qC[0], qC[1]) + nl.greatrivers.Lowlands.foreland(f.great) + 10;
+						add("dijkwijk", qC[0] + qn[0] * sd * back, 78, qC[1] + qn[1] * sd * back, qDt.cx(), 70, qDt.cz());
+					}
 				}
 				nl.greatrivers.Harbours.Site qPt = f.harbours.nearestPort(0, 0, 2);
 				if (qPt != null) {

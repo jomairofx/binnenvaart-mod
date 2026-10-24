@@ -325,7 +325,7 @@ final class Pylons {
 		}
 		// busbars on posts from the gantry to the transformers
 		if ((ac == 7 || ac == 5) && du >= -1 && du < GANTRY) {
-			if (du % 4 == 0) for (int y = g + 1; y <= g + 6; y++) w.setBlockState(m.set(x, y, z), Blocks.POLISHED_ANDESITE_WALL.getDefaultState(), 2);
+			if (du % 4 == 0) for (int y = g + 1; y <= g + 6; y++) w.setBlockState(m.set(x, y, z), Blocks.ANDESITE_WALL.getDefaultState(), 2);
 			w.setBlockState(m.set(x, g + 7, z), Blocks.LIGHTNING_ROD.getDefaultState().with(Properties.FACING, ns ? Direction.SOUTH : Direction.EAST), 2);
 			return;
 		}
@@ -352,7 +352,7 @@ final class Pylons {
 			if (!wall && ac == 7 && du == -10) w.setBlockState(m.set(x, g + 3, z), Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true), 2);
 		}
 		if (ac == SUB_HALF_C - 1 && ad == SUB_HALF_U - 2) {
-			for (int y = g + 1; y <= g + 5; y++) w.setBlockState(m.set(x, y, z), Blocks.POLISHED_ANDESITE_WALL.getDefaultState(), 2);
+			for (int y = g + 1; y <= g + 5; y++) w.setBlockState(m.set(x, y, z), Blocks.ANDESITE_WALL.getDefaultState(), 2);
 			w.setBlockState(m.set(x, g + 6, z), Blocks.SEA_LANTERN.getDefaultState(), 2);
 		}
 	}

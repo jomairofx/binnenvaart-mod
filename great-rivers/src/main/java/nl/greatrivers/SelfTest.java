@@ -370,13 +370,16 @@ final class SelfTest {
 							double side = (dt.cx() - c[0]) * n[0] + (dt.cz() - c[1]) * n[1] >= 0 ? 1 : -1;
 							double hw = f.great.halfWidth(c[0], c[1]), fl = Lowlands.foreland(f.great);
 							int top = -1;
-							for (double v = hw + fl + 10; v <= hw + fl + 26; v += 1) {
+							for (double v = 0; v <= hw + fl + 80; v += 1) {
 								int qx = (int) Math.floor(c[0] + n[0] * side * v), qz = (int) Math.floor(c[1] + n[1] * side * v);
+								double[] rv0 = f.riverAt(qx, qz, true);
+								double e0 = rv0[0] - rv0[1];
+								if (e0 < fl + 15.5 || e0 > fl + 19.5) continue;          // the crest of the dike
 								w.getChunk(qx >> 4, qz >> 4);
 								top = Math.max(top, w.getTopY(net.minecraft.world.Heightmap.Type.OCEAN_FLOOR_WG, qx, qz) - 1);
 							}
 							StringBuilder dg = new StringBuilder();
-							for (double v = hw + fl + 10; v <= hw + fl + 26; v += 4) {
+							for (double v = hw + fl - 10; v <= hw + fl + 26; v += 6) {
 								int qx = (int) Math.floor(c[0] + n[0] * side * v), qz = (int) Math.floor(c[1] + n[1] * side * v);
 								double[] rv = f.riverAt(qx, qz, true);
 								Villages.Town st = f.villages.site(qx, qz);

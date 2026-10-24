@@ -28,7 +28,7 @@ public final class Metros {
 	 * a viaduct through it; LOW: a big low-rise town of 3 to 5 km (old village centre, row houses, new estates,
 	 * villas, no tall buildings).
 	 */
-	public record Metro(int cx, int cz, double radius, long seed, boolean river, double rot, int type) {
+	public record Metro(int cx, int cz, double radius, long seed, boolean river, double rot, int type, boolean coast) {
 		/** The same city seen as a town (for the house builders). */
 		public Villages.Town asTown() {
 			return new Villages.Town(cx, cz, radius, true, seed, river, false);
@@ -147,7 +147,7 @@ public final class Metros {
 		}
 	}
 
-	private static final Metro NONE = new Metro(0, 0, 0, 0, false, 0, NORMAL);
+	private static final Metro NONE = new Metro(0, 0, 0, 0, false, 0, NORMAL, false);
 	private final RiverField f;
 	private final long seed;
 	private final ConcurrentHashMap<Long, Metro> metros = new ConcurrentHashMap<>();
@@ -187,7 +187,7 @@ public final class Metros {
 			}
 			px = Math.floorDiv(px, Villages.PU) * Villages.PU + Villages.STREET;
 			pz = Math.floorDiv(pz, Villages.PW) * Villages.PW + Villages.STREET;
-			if (ok(px, pz, R, river)) return new Metro(px, pz, R, h, river || k.distance(px, pz) < R * 0.8, rot, NORMAL);
+			if (ok(px, pz, R, river)) return new Metro(px, pz, R, h, river || k.distance(px, pz) < R * 0.8, rot, NORMAL, false);
 		}
 		return NONE;
 	}
@@ -211,7 +211,7 @@ public final class Metros {
 	/** The city whose buildings and streets cover this column (within its edge), or null. */
 	public Metro at(int x, int z) {
 		Metro b = big(x, z, 30);
-		if (b != null) return b;
+		if (b != null) return b.coast && f.continentalness(x, z) < Lowlands.COAST + 0.06 ? null : b;
 		Metro m = metro(Math.floorDiv(x, CELL), Math.floorDiv(z, CELL));
 		if (m == null) return null;
 		return Math.hypot(x - m.cx, z - m.cz) <= m.radius + 30 ? m : null;
@@ -297,19 +297,23 @@ public final class Metros {
 				continue;
 			}
 			// on land: shrink until all of it is dry land
+			// mostly on land: the heart of the city on dry land, the outer districts may end at the sea (a port city)
 			for (double R = max; R >= min - 1; R = R > min ? Math.max(min, R * 0.9) : min - 2) {
 				boolean ok = true;
+				int sea = 0, all = 0;
 				for (int a = 0; a < 48 && ok; a++) {
 					double ang = a * Math.PI / 24;
-					for (double rr : new double[]{0, R * 0.25, R * 0.5, R * 0.75, R, R + RING + 60}) {
+					for (double rr : new double[]{0, R * 0.2, R * 0.4, R * 0.6, R * 0.8, R}) {
 						int x = (int) (px + Math.cos(ang) * rr), z = (int) (pz + Math.sin(ang) * rr);
+						all++;
 						if (f.continentalness(x, z) < Lowlands.COAST + 0.06) {
-							ok = false;
-							break;
+							if (rr < R * 0.5) ok = false;
+							sea++;
 						}
 					}
 				}
-				if (!ok) continue;
+				if (!ok || sea > all / 4) continue;
+				boolean coast = sea > 0;
 				boolean river = false;
 				for (int a = 0; a < 48 && !river; a++) {
 					double ang = a * Math.PI / 24;
@@ -317,7 +321,7 @@ public final class Metros {
 						if (f.great.distance(px + Math.cos(ang) * rr, pz + Math.sin(ang) * rr) < f.great.halfWidth(px, pz) + 20) river = true;
 				}
 				WHY.put(wk, "ok");
-				return new Metro(px, pz, R, h, river, rot, type);
+				return new Metro(px, pz, R, h, river, rot, type, coast);
 			}
 			why += " sea";
 		}

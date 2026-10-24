@@ -229,6 +229,11 @@ public final class ClientSelfTest {
 					add("grote_haven", qPt.wx(qBa - 160, qPt.bank() - 60), 125, qPt.wz(qBa - 160, qPt.bank() - 60), qPt.wx(qBa + 120, qPt.bank() + 300), 64, qPt.wz(qBa + 120, qPt.bank() + 300));
 					add("containerkranen", qPt.wx(qBa, qPt.bank() + 120), 75, qPt.wz(qBa, qPt.bank() + 120), qPt.wx(qBa + 55, qPt.bank() + 200), 90, qPt.wz(qBa + 55, qPt.bank() + 200));
 				}
+				// country houses of different kinds
+				int qn = 0;
+				for (int[] fs : GreatRivers.farmSpots(f, srvWorld.getSeed(), 0, 0, 7)) {
+					add("landhuis_" + (qn++) + "_type" + fs[2], fs[0] - 14, 72, fs[1] - 14, fs[0] + 6, 65, fs[1] + 6);
+				}
 				// a high-voltage substation at the end of a line
 				double[] qSs = GreatRivers.substation(f, srvWorld.getSeed(), 0, 0);
 				if (qSs != null) {

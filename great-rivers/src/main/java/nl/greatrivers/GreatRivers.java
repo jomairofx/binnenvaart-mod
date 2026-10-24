@@ -196,6 +196,11 @@ public class GreatRivers implements ModInitializer {
 		return Buoys.nearest(f, x, z, 10);
 	}
 
+	/** Places of country houses (for the client test). */
+	public static java.util.List<int[]> farmSpots(RiverField f, long seed, int x, int z, int n) {
+		return Countryside.farmSpots(f, seed, x, z, n);
+	}
+
 	/** Nearest high-voltage substation {x, z, ground, fam, dir} (for the tests). */
 	public static double[] substation(RiverField f, long seed, int x, int z) {
 		return Pylons.findSubstation(f, seed, x, z);

@@ -223,6 +223,28 @@ final class Countryside {
 		}
 	}
 
+	/** Places where a country house may stand near (x, z), for the tests: {x, z, type} (they may still be left out there). */
+	static java.util.List<int[]> farmSpots(RiverField field, long seed, int x, int z, int n) {
+		java.util.List<int[]> out = new java.util.ArrayList<>();
+		int cell = 288;
+		int c0 = Math.floorDiv(x, cell), r0 = Math.floorDiv(z, cell);
+		for (int r = 0; r < 12 && out.size() < n; r++)
+			for (int i = -r; i <= r && out.size() < n; i++)
+				for (int j = -r; j <= r && out.size() < n; j++) {
+					if (Math.max(Math.abs(i), Math.abs(j)) != r) continue;
+					int cx = c0 + i, cz = r0 + j;
+					long h = mix(seed ^ mix(cx * 0x2545F4914F6CDD1DL + cz * 977L + 5));
+					if ((h & 1) == 0) continue;
+					int fx = cx * cell + 40 + (int) ((h >>> 8 & 0xffff) % (cell - 80));
+					int fz = cz * cell + 40 + (int) ((h >>> 24 & 0xffff) % (cell - 80));
+					int bx = (fx & ~15) + 3, bz = (fz & ~15) + 1;
+					if (field.polderWeight(bx, bz) < 0.95 || field.villages.at(bx, bz) != null || field.infra.near(bx, bz, 30) || field.metros.near(bx, bz, 20)) continue;
+					if (field.harbours.siteAt(bx, bz) != null) continue;
+					out.add(new int[]{bx, bz, (int) Math.floorMod(h >>> 44, 7L)});
+				}
+		return out;
+	}
+
 	/** The roof of a country house, by type. */
 	private static void roof(StructureWorldAccess w, BlockPos.Mutable m, int type, int x, int z, int i, int j, int len, int wid, int wallTop,
 							 Direction pI, Direction pJ, BlockState wall, boolean barn) {

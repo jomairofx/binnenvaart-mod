@@ -1,0 +1,22 @@
+PASS water - wateroppervlak op y=-52
+PASS ruimte - romp vrij bij plaatsen
+PASS geregistreerd - schip in lijst
+PASS waterverplaatsing - 1141 waterblokken verplaatst
+PASS droog ruim - onder in het ruim: Block{minecraft:air}
+PASS botsing ruimvloer - voorwerp ligt op lokale y=-1.000 (vloer -1)
+PASS varen - schip voer 71.1 blokken in 15 s (snelheid 0.350 b/t)
+PASS meenemen - voorwerp op lokaal (45.50, -1.00, 4.50)
+PASS draaien - koers 59.3 graden veranderd
+PASS vulling - ruim 1: 1.0 materiaal 496
+PASS containers - ruim 2 materiaal -1
+PASS diepgang - schip zakte 1.60 blok door lading
+PASS boegschroef - koers nu 167
+PASS stilstand - snelheid 0.0000
+Schip ligt op 168, -52, -6 koers -176.1857305488717
+PASS stuurhut omhoog - stuurhut staat 2.00 blok omhoog
+PASS licht uit - lamp nu Block{minecraft:white_concrete}
+PASS licht aan - lamp weer Block{minecraft:sea_lantern}
+PASS laadkraan laden - 384 zand in ruim 1 na 32 s (rustig tempo), nog 256 in de kraan
+PASS laadkraan met STELLA MARIS - 384 grind in de ruimen van de STELLA MARIS
+PASS laadkraan lossen - kraan + bunkers hadden 256, nu 512 (in de bunkers 256)
+RESULT PASS

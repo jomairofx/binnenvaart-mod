@@ -1,0 +1,10 @@
+PASS geen kelp in ocean - 0 kelp-features
+PASS geen kelp in cold_ocean - 0 kelp-features
+PASS geen kelp in lukewarm_ocean - 0 kelp-features
+PASS geen kelp in deep_lukewarm_ocean - 0 kelp-features
+PASS geen kelp in warm_ocean - 0 kelp-features
+PASS geen kelp in river - 0 kelp-features
+PASS kelp geplaatst - kelpkolom van -57 tot -52
+PASS bestaande kelp weg - 0 kelpblokken over, water: true
+PASS drijvende kelp opgeruimd - 0 kelp-items nog in het water
+RESULT PASS

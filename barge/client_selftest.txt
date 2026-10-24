@@ -1,0 +1,43 @@
+shot 01_overzicht
+shot 02_zijkant
+shot 03_boeg
+shot 04_achterkant
+shot 05_ruim
+shot 06_woning
+shot 07_machinekamer
+shot 08_onderwater
+shot 09_stuurhuis_binnen
+shot 09b_achterdek_auto
+shot 09c_keuken
+shot 10_luiken_bewegen
+shot 11_luiken_dicht
+PASS staan aan dek - speler op lokaal (50.50, 2.00, 0.50)
+PASS meevaren aan dek - speler op lokaal (50.50, 2.00, 0.50), schip snelheid 0.161
+shot 14_aan_dek_varen
+ladder t=340 lokaal (26.50, -1.38, -0.62) climbing=true hcoll=false water=true fwd=0.00 vel=(0.0, -0.024711771010885265, 0.0)
+ladder t=350 lokaal (26.50, -0.54, -0.49) climbing=true hcoll=true water=true fwd=1.00 vel=(0.0, 0.30000001192092896, 0.0)
+ladder t=360 lokaal (26.50, 1.18, -0.49) climbing=true hcoll=true water=false fwd=1.00 vel=(0.0, 0.11760000228881837, 0.0)
+ladder t=370 lokaal (26.50, 2.00, -0.42) climbing=false hcoll=false water=false fwd=0.00 vel=(-0.00635422311856444, -0.0784000015258789, -0.004965749500991294)
+ladder t=380 lokaal (26.50, 2.00, -0.41) climbing=false hcoll=false water=false fwd=0.00 vel=(0.0, -0.0784000015258789, 0.0)
+shot 16_ladder
+ladder t=390 lokaal (26.50, 2.00, -0.41) climbing=false hcoll=false water=false fwd=0.00 vel=(0.0, -0.0784000015258789, 0.0)
+ladder t=400 lokaal (26.50, 2.00, -0.41) climbing=false hcoll=false water=false fwd=0.00 vel=(0.0, -0.0784000015258789, 0.0)
+ladder t=410 lokaal (26.50, 2.00, -0.41) climbing=false hcoll=false water=false fwd=0.00 vel=(0.0, -0.0784000015258789, 0.0)
+ladder t=420 lokaal (26.50, 2.00, -0.41) climbing=false hcoll=false water=false fwd=0.00 vel=(0.0, -0.0784000015258789, 0.0)
+ladder t=430 lokaal (26.50, 2.00, -0.41) climbing=false hcoll=false water=false fwd=0.00 vel=(0.0, -0.0784000015258789, 0.0)
+PASS ladder - vanuit het water geklommen tot lokale y=2.04 (dek = 2.0)
+PASS deur - voordeur woning: Block{minecraft:dark_oak_door}[facing=east,half=lower,hinge=right,open=true,powered=false]
+shot 15_deur_open
+PASS laadruim openen - scherm: Hold 1 (100% full)
+shot 17_laadruim
+PASS aan het roer - speler zit aan het roer
+shot 12_aan_het_roer
+PASS varen vanaf het roer - snelheid 0.319 b/t
+shot 13_varen
+PASS roer (A-toets) - koers -5.4 graden veranderd, roer -0.78
+PASS boegschroef (pijltje rechts) - boegschroef draait 1.7 graden/s naar stuurboord (koers -6.3), boegschroef 1
+PASS ladder naar opgeheven stuurhuis - geklommen tot lokale y=10.15, vloer op 10.00
+PASS stuurhuis in gelopen - speler op lokaal (15.70, 10.00, 5.50)
+shot 18_stuurhuis_omhoog_binnen
+shot 18b_stuurhuis_omhoog_buiten
+RESULT PASS

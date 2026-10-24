@@ -1,0 +1,100 @@
+PASS riviernet actief - ja
+PASS geen lavaplassen en geen ijsbergen - 0 lava- of ijs-features over
+PASS river gevonden - midden op -343, 1176
+  biome in het midden: minecraft:river
+PASS river diep genoeg - 20 blokken water in het midden
+PASS river water tot zeeniveau - bovenste water op y 62
+PASS river rivierbiome - minecraft:river
+  bodem: Gravel
+  dwars -320: afstand 844 halfbreedte 78 hoogte 62.3 kust 0.829 grond 62 biome plains
+  dwars -300: afstand 822 halfbreedte 78 hoogte 62.3 kust 0.831 grond 62 biome plains
+  dwars -280: afstand 675 halfbreedte 78 hoogte 62.3 kust 0.822 grond 62 biome plains
+  dwars -260: afstand 559 halfbreedte 78 hoogte 62.3 kust 0.818 grond 62 biome plains
+  dwars -240: afstand 466 halfbreedte 79 hoogte 62.3 kust 0.829 grond 62 biome plains
+  dwars -220: afstand 390 halfbreedte 79 hoogte 62.3 kust 0.815 grond 62 biome plains
+  dwars -200: afstand 326 halfbreedte 79 hoogte 62.3 kust 0.811 grond 62 biome plains
+  dwars -180: afstand 273 halfbreedte 79 hoogte 62.3 kust 0.817 grond 62 biome plains
+  dwars -160: afstand 227 halfbreedte 80 hoogte 62.3 kust 0.844 grond 62 biome plains
+  dwars -140: afstand 187 halfbreedte 80 hoogte 62.3 kust 0.874 grond 62 biome plains
+  dwars -120: afstand 152 halfbreedte 80 hoogte 66.5 kust 0.870 grond 66 biome plains
+  dwars -100: afstand 121 halfbreedte 80 hoogte 62.3 kust 0.918 grond 62 biome plains
+  dwars  -80: afstand 93 halfbreedte 81 hoogte 62.3 kust 0.887 grond 62 biome plains
+  dwars  -60: afstand 67 halfbreedte 81 hoogte 51.7 kust 0.879 grond 51 biome river
+  dwars  -40: afstand 43 halfbreedte 81 hoogte 43.9 kust 0.885 grond 43 biome river
+  dwars  -20: afstand 21 halfbreedte 81 hoogte 42.4 kust 0.908 grond 42 biome river
+  dwars    0: afstand 0 halfbreedte 81 hoogte 42.3 kust 0.930 grond 42 biome river
+  dwars   20: afstand 20 halfbreedte 82 hoogte 42.4 kust 0.944 grond 42 biome river
+  dwars   40: afstand 38 halfbreedte 82 hoogte 43.2 kust 0.953 grond 43 biome river
+  dwars   60: afstand 56 halfbreedte 82 hoogte 46.5 kust 0.962 grond 46 biome river
+  dwars   80: afstand 73 halfbreedte 82 hoogte 54.3 kust 0.960 grond 54 biome river
+  dwars  100: afstand 89 halfbreedte 83 hoogte 62.3 kust 0.977 grond 62 biome plains
+  dwars  120: afstand 104 halfbreedte 83 hoogte 62.3 kust 0.983 grond 62 biome plains
+  dwars  140: afstand 119 halfbreedte 83 hoogte 62.3 kust 1.020 grond 62 biome plains
+  dwars  160: afstand 135 halfbreedte 83 hoogte 65.0 kust 1.032 grond 65 biome plains
+  dwars  180: afstand 149 halfbreedte 83 hoogte 69.2 kust 1.032 grond 69 biome plains
+  dwars  200: afstand 164 halfbreedte 84 hoogte 62.3 kust 0.996 grond 62 biome plains
+  dwars  220: afstand 179 halfbreedte 84 hoogte 62.3 kust 0.949 grond 77 biome old_growth_pine_taiga
+  dwars  240: afstand 193 halfbreedte 84 hoogte 62.3 kust 0.864 grond 77 biome old_growth_pine_taiga
+  dwars  260: afstand 208 halfbreedte 84 hoogte 62.3 kust 0.792 grond 76 biome old_growth_pine_taiga
+  dwars  280: afstand 223 halfbreedte 84 hoogte 62.3 kust 0.784 grond 83 biome old_growth_pine_taiga
+  dwars  300: afstand 237 halfbreedte 85 hoogte 62.3 kust 0.700 grond 65 biome old_growth_pine_taiga
+  dwars  320: afstand 252 halfbreedte 85 hoogte 62.3 kust 0.666 grond 71 biome old_growth_pine_taiga
+PASS river breedte klopt - 162 blokken water dwars over de rivier (ontwerp 163)
+  oever op -247, 1185: land tot y 63
+PASS river vaste bodem - 5 van 5 plekken met een vaste bodem onder de bedding
+PASS dorp gevonden - op -403, -385
+PASS dorp: kerktoren - Bricks op toren-hoogte
+PASS dorp: huizen en straten - gevel Bricks, straat Bricks
+PASS stad gevonden - op -369, 5231
+PASS stad: kerktoren - Bricks op toren-hoogte
+PASS stad: huizen en straten - gevel White Concrete, straat Bricks
+PASS stad aan de rivier gevonden - op -1661, 3645
+PASS stad aan de rivier: kademuur - Smooth Stone op Bricks bij -1546, 3727
+PASS stad aan de rivier: hoogbouw - 2 torens hoger dan 22
+PASS grote stad gevonden - op 1671, 4893, 1482 breed, aan de rivier
+PASS grote stad: wijken - old centre 116, business district 55, inner city 103, flats 185, row houses 420, new estate 502, villas 220, industrial estate 207, city park 135, 
+PASS grote stad: hoogbouw - 8 torens hoger dan 30
+PASS grote stad: grachten - gracht met water
+  grote stad aan de rivier op 1671, 4893
+PASS grote stad: brug over de rivier - op 1996, 4838 (tuibrug)
+PASS grote stad: pyloon van de tuibrug - White Concrete op 1996, 128, 4898
+PASS grote stad: brugdek hoog genoeg - Light Gray Concrete op y 87, 0 blokken eronder in de weg
+PASS kleine haven gevonden - op -836, 735 aan een river, lading coal
+PASS kleine haven: kade verhard - Polished Andesite op y 64 bij -845, 843
+PASS kleine haven: bekken diep - 10 blokken water in het bekken bij -843, 822
+PASS kleine haven: kranen - 2 kranen, eerste: kempenaar:laadkraan, vol met coal
+PASS kleine haven: kraan op 20 van de rand - 20.1 blokken van de rand
+PASS middelgrote haven gevonden - op -4846, 521 aan een river, lading timber
+PASS middelgrote haven: kade verhard - Polished Andesite op y 64 bij -4857, 413
+PASS middelgrote haven: bekken diep - 10 blokken water in het bekken bij -4854, 438
+PASS middelgrote haven: kranen - 5 kranen, eerste: kempenaar:laadkraan, vol met timber
+PASS middelgrote haven: kraan op 20 van de rand - 20.4 blokken van de rand
+PASS grote haven gevonden - op 3640, -7592 aan een river, lading sand
+PASS grote haven: kade verhard - Polished Andesite op y 64 bij 3725, -7404
+PASS grote haven: bekken diep - 10 blokken water in het bekken bij 3764, -7434
+PASS grote haven: kranen - 12 kranen, eerste: kempenaar:laadkraan, vol met sand
+PASS grote haven: kraan op 20 van de rand - 20.4 blokken van de rand
+PASS brug gevonden - op 2032, -3482
+PASS brug: wegdek - Light Gray Concrete op y 87
+PASS brug: doorvaarthoogte - 0 blokken in de weg, 23 blokken vrij boven het water
+PASS afrit gevonden - op 4900, -6231
+PASS afrit: viaduct over de snelweg - dek Light Gray Concrete, onder: Light Gray Concrete
+PASS spoorlijn met rails - Rail op 2777, 64, 582
+PASS spoorbrug gevonden - op -1576, -1443
+PASS spoorbrug hoog genoeg - Light Gray Concrete, 0 blokken in de weg
+PASS viaduct gevonden - op -8075, -4120
+PASS viaduct: dek en weg eronder vrij - dek Light Gray Concrete op y 71, onder: Air
+PASS sluis gevonden - op 7419, -8302, met weg naar een town
+PASS sluis: kolk open en diep - 24 van 24 blokken breed open water van 6 diep
+PASS sluis: stuw - Cyan Terracotta in de stuw
+PASS polder gevonden - op 248, -927
+PASS polder vlak - hoogtes 62 62 62 62 62 62 58 62 62 (8 van 9 op polderhoogte 64)
+PASS sloten met water - 2 van 2 slootvakjes met water
+PASS alle sloten met water - 0 van 0 slootvakjes in 200x200
+  (geen kanaal in de buurt: kanalen zijn zeldzaam)
+PASS rivier met dijk gevonden - op -662, 2472
+PASS dijk langs de rivier - dijk tot y 69
+PASS diepe zee gevonden - op -1236, -331
+PASS zee 100 blokken diep - 100 blokken water
+PASS gewoon land buiten de rivieren - op 0, 0 hoogte 63
+RESULT PASS

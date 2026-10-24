@@ -1,0 +1,59 @@
+shot 01_overzicht
+shot 02_zijkant
+shot 03_boeg
+shot 04_achterkant
+shot 05_tankdek
+shot 05b_tankdek_boven
+shot 06_woning
+shot 06b_keuken
+shot 07_machinekamer
+shot 08_onderwater
+shot 09_stuurhuis_binnen
+shot 09b_achterdek_auto
+shot 10_luiken_bewegen
+shot 11_luiken_dicht
+PASS staan aan dek - speler op lokaal (50.50, 2.00, 1.50)
+PASS meevaren aan dek - speler op lokaal (50.50, 2.00, 1.50), schip snelheid 0.172
+shot 14_aan_dek_varen
+ladder t=340 lokaal (26.50, -1.38, -0.62) climbing=true hcoll=false water=true fwd=0.00 vel=(0.0, -0.024711771010885265, 0.0)
+ladder t=350 lokaal (26.50, -0.40, -0.49) climbing=true hcoll=true water=true fwd=1.00 vel=(0.0, 0.30000001192092896, 0.0)
+ladder t=360 lokaal (26.50, 1.14, -0.49) climbing=true hcoll=true water=false fwd=1.00 vel=(0.0, 0.11760000228881837, 0.0)
+ladder t=370 lokaal (26.50, 2.08, -0.49) climbing=false hcoll=false water=false fwd=0.00 vel=(0.0, -0.11984318109609361, 0.0)
+ladder t=380 lokaal (26.50, 0.61, -0.49) climbing=true hcoll=false water=false fwd=0.00 vel=(0.0, -0.22540001022815717, 0.0)
+shot 16_ladder
+ladder t=390 lokaal (26.50, -1.01, -0.49) climbing=true hcoll=false water=true fwd=0.00 vel=(0.0, -0.12760481055078546, 0.0)
+ladder t=400 lokaal (26.50, -1.72, -0.49) climbing=true hcoll=false water=true fwd=0.00 vel=(0.0, -0.03601711061499073, 0.0)
+ladder t=410 lokaal (26.50, -2.01, -0.49) climbing=true hcoll=false water=true fwd=0.00 vel=(0.0, -0.026182954751084953, 0.0)
+ladder t=420 lokaal (26.50, -2.27, -0.49) climbing=true hcoll=false water=true fwd=0.00 vel=(0.0, -0.0251270201482574, 0.0)
+ladder t=430 lokaal (26.50, -2.52, -0.49) climbing=true hcoll=false water=true fwd=0.00 vel=(0.0, -0.025013640016715966, 0.0)
+PASS ladder - vanuit het water geklommen tot lokale y=2.12 (dek = 2.0)
+PASS deur - voordeur woning: Block{minecraft:dark_oak_door}[facing=east,half=lower,hinge=right,open=true,powered=false]
+shot 15_deur_open
+PASS laadruim openen - scherm: Hold 1 (100% full)
+shot 17_laadruim
+PASS aan het roer - speler zit aan het roer
+shot 12_aan_het_roer
+PASS varen vanaf het roer - snelheid 0.332 b/t
+shot 13_varen
+PASS roer (A-toets) - koers -5.9 graden veranderd, roer -0.77
+PASS boegschroef (pijltje rechts) - boegschroef draait 1.7 graden/s naar stuurboord (koers -6.7), boegschroef 1
+sprong t=615 lokaal (26.50, 3.25, 0.19) water=false
+sprong t=620 lokaal (26.51, 2.50, -0.51) water=false
+sprong t=625 lokaal (26.51, 1.23, -0.95) water=false
+sprong t=630 lokaal (26.52, -0.26, -1.26) water=false
+sprong t=635 lokaal (26.54, -2.51, -1.68) water=true
+sprong t=640 lokaal (26.56, -3.40, -1.98) water=true
+shot 30_sprong_water
+sprong t=645 lokaal (26.58, -3.78, -2.20) water=true
+sprong t=650 lokaal (26.60, -3.99, -2.38) water=true
+sprong t=655 lokaal (26.62, -4.14, -2.56) water=true
+sprong t=660 lokaal (26.64, -4.27, -2.73) water=true
+sprong t=665 lokaal (26.66, -4.40, -2.88) water=true
+sprong t=670 lokaal (26.67, -4.53, -3.01) water=true
+sprong t=675 lokaal (26.69, -4.65, -3.13) water=true
+sprong t=680 lokaal (26.70, -4.78, -3.24) water=true
+sprong t=685 lokaal (26.72, -4.90, -3.36) water=true
+sprong t=690 lokaal (26.73, -5.03, -3.46) water=true
+sprong t=695 lokaal (26.75, -5.15, -3.53) water=true
+PASS in het water springen - speler op lokaal (26.80, -5.78, -3.87), water true
+RESULT PASS

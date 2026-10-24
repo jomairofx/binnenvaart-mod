@@ -50,6 +50,11 @@ public final class Metros {
 		public int district(int bx, int bz) {
 			double mx = bx * Villages.PU + Villages.PU / 2.0, mz = bz * Villages.PW + Villages.PW / 2.0;
 			long h = Harbours.mix(seed + bx * 0x9E3779B97F4A7C15L + bz * 0x632BE59BD9B4E019L);
+			return districtAt(mx, mz, h);
+		}
+
+		/** District at (mx, mz) from the centre; h a hash of the block, for a little irregularity at the borders. */
+		public int districtAt(double mx, double mz, long h) {
 			if (type == MEGA) return megaDistrict(mx, mz, h);
 			if (type == LOW) return lowDistrict(mx, mz, h);
 			double r = Math.hypot(mx, mz) / radius;

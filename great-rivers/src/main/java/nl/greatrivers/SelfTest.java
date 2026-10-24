@@ -33,6 +33,27 @@ final class SelfTest {
 		if (!ok) failed = true;
 	}
 
+	/** Count the towers of the business districts of a city (on their facade, at height h above the ground floor). */
+	private static int towers(ServerWorld w, RiverField f, Metros.Metro mt, int need, int h, int range) {
+		int tall = 0;
+		java.util.Set<Long> seen = new java.util.HashSet<>();
+		for (int dx = -range; dx <= range && tall < need; dx += 17)
+			for (int dz = -range; dz <= range && tall < need; dz += 13) {
+				int x = mt.cx() + dx, z = mt.cz() + dz;
+				CityLayout.Info in = CityLayout.at(f, mt, x, z);
+				if (in.kind != CityLayout.BLOCK || !seen.add(((long) in.x0 << 32) ^ (in.z0 & 0xffffffffL))) continue;
+				double mx = in.x0 + Villages.PU / 2.0 - mt.cx(), mz = in.z0 + Villages.PW / 2.0 - mt.cz();
+				long bh = MetroBuilder.hash(mt.seed(), in.x0 * 31L + in.z0, 7);
+				if (mt.districtAt(mx, mz, bh) != Metros.CBD) continue;
+				if (mt.mega() && MetroBuilder.railBlock(f, mt, in.x0, in.z0)) continue;
+				if (mt.river() && VillageBuilder.waterDist(f, in.x0, in.z0) < VillageBuilder.FRONT + 5) continue;
+				int qx = in.x0 + Villages.STREET + 3, qz = in.z0 + Villages.STREET + 10;
+				w.getChunk(qx >> 4, qz >> 4);
+				if (!w.getBlockState(new BlockPos(qx, VillageBuilder.Y0 + h, qz)).isAir()) tall++;
+			}
+		return tall;
+	}
+
 	private static boolean water(ServerWorld w, int x, int y, int z) {
 		w.getChunk(x >> 4, z >> 4);
 		return w.getFluidState(new BlockPos(x, y, z)).isIn(FluidTags.WATER);
@@ -190,28 +211,19 @@ final class SelfTest {
 						}
 						check("grote stad: wijken", kinds >= 7, sb.toString());
 						// a tower in the business district
-						int tall = 0;
-						for (int bx = -12; bx <= 12; bx++)
-							for (int bz = -16; bz <= 16; bz++) {
-								if (mt.district(bx, bz) != Metros.CBD) continue;
-								int qx = mt.cx() + bx * Villages.PU + Villages.STREET + 3, qz = mt.cz() + bz * Villages.PW + Villages.STREET + 10;
-								w.getChunk(qx >> 4, qz >> 4);
-								if (!w.getBlockState(new BlockPos(qx, VillageBuilder.Y0 + 30, qz)).isAir()) tall++;
-								if (tall >= 3) break;
-							}
+						int tall = towers(w, f, mt, 3, 30, 900);
 						check("grote stad: hoogbouw", tall >= 3, tall + " torens hoger dan 30");
-						// the old centre has canals with water
+						// the old centre has canal rings with water
 						int canal = 0;
-						for (int bx = -4; bx <= 4 && canal == 0; bx++)
-							for (int bz = -5; bz <= 5 && canal == 0; bz++) {
-								int qx = mt.cx() + bx * Villages.PU + Villages.STREET + 12, qz = mt.cz() + bz * Villages.PW + Villages.STREET + 10;
-								if (!MetroBuilder.canalWater(mt, qx, qz)) continue;
-								double[] rv = f.riverAt(qx, qz, true);
-								if (rv[0] - rv[1] < 20) continue;
-								w.getChunk(qx >> 4, qz >> 4);
-								if (water(w, qx, RiverField.WATER_TOP, qz) && water(w, qx, RiverField.WATER_TOP - 2, qz)) canal = 1;
-								else canal = -1;
-							}
+						for (int d = CityLayout.SQUARE; d < CityLayout.SQUARE + 3 * CityLayout.RING_P && canal == 0; d++) {
+							int qx = mt.cx() + d, qz = mt.cz() + 20;
+							if (!MetroBuilder.canalWater(mt, qx, qz)) continue;
+							double[] rv = f.riverAt(qx, qz, true);
+							if (rv[0] - rv[1] < 20) continue;
+							w.getChunk(qx >> 4, qz >> 4);
+							if (water(w, qx, RiverField.WATER_TOP, qz) && water(w, qx, RiverField.WATER_TOP - 2, qz)) canal = 1;
+							else canal = -1;
+						}
 						check("grote stad: grachten", canal >= 0, canal == 1 ? "gracht met water" : canal == 0 ? "(geen gracht op het land gevonden)" : "gracht droog");
 					}
 					Metros.Metro rm = null;
@@ -321,17 +333,7 @@ final class SelfTest {
 						int kinds = 0;
 						for (int c : count) if (c > 0) kinds++;
 						check("metropool: alle soorten wijken", kinds >= 8, kinds + " soorten");
-						int tall = 0;
-						for (int bx = -30; bx <= 30 && tall < 3; bx += 3)
-							for (int bz = -38; bz <= 38 && tall < 3; bz += 3) {
-								if (mg.district(bx, bz) != Metros.CBD || MetroBuilder.railBlock(f, mg, bx, bz)) continue;
-								if (Metros.Metro.avenueX(bx) || Metros.Metro.avenueZ(bz)) continue;
-								int qx = mg.cx() + bx * Villages.PU + Villages.STREET + 3, qz = mg.cz() + bz * Villages.PW + Villages.STREET + 10;
-								double[] rv = f.riverAt(qx, qz, true);
-								if (rv[0] - rv[1] < 110) continue;
-								w.getChunk(qx >> 4, qz >> 4);
-								if (!w.getBlockState(new BlockPos(qx, VillageBuilder.Y0 + 40, qz)).isAir()) tall++;
-							}
+						int tall = towers(w, f, mg, 3, 40, 1300);
 						check("metropool: hoogbouw in het centrum", tall >= 3, tall + " torens hoger dan 40");
 					}
 					double[] cs = f.rails.findCentralStation(0, 0);

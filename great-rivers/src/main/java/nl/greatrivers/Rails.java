@@ -389,7 +389,7 @@ public final class Rails {
 			if (h.e > Infra.BR_END - 2.5) for (int yy = ground(w, m, x, y - 3, z); yy <= y - 3; yy++) set(w, m, x, yy, z, CONCRETE);
 		}
 		// the city viaduct: concrete piers every 24 down to the street, never on a street or boulevard
-		if (h.elev && h.kind != BRIDGE && (ic == -4 || ic == 4) && Math.floorMod(al, 24L) < 2 && !MetroBuilder.openGround(h.city, x, z)) {
+		if (h.elev && h.kind != BRIDGE && (ic == -4 || ic == 4) && Math.floorMod(al, 24L) < 2 && !MetroBuilder.openGround(f, h.city, x, z)) {
 			for (int yy = Villages.GROUND + 1; yy <= y - 3; yy++) set(w, m, x, yy, z, CONCRETE);
 		}
 		if (h.kind == VIADUCT) {
@@ -435,7 +435,7 @@ public final class Rails {
 				set(w, m, x, y + 2, z, VillageBuilder.stairs(Blocks.SPRUCE_STAIRS, ns ? (h.c > 0 ? Direction.EAST : Direction.WEST) : (h.c > 0 ? Direction.SOUTH : Direction.NORTH)));
 			}
 			// piers under the wide platforms
-			if (Math.floorMod(al, 24L) < 2 && a > W - 2 && !MetroBuilder.openGround(mt, x, z))
+			if (Math.floorMod(al, 24L) < 2 && a > W - 2 && !MetroBuilder.openGround(f, mt, x, z))
 				for (int yy = Villages.GROUND + 1; yy <= y - 3; yy++) set(w, m, x, yy, z, CONCRETE);
 		}
 		// the arched roof: glass between steel ribs every 8, open at the ends

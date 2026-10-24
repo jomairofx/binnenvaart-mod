@@ -45,12 +45,7 @@ final class MetroBuilder {
 
 	/** Is this column water of a canal in the old centre? */
 	static boolean canalWater(Metros.Metro mt, int x, int z) {
-		if (mt.low()) return false;
-		int bx = Math.floorDiv(x - mt.cx(), Villages.PU), bz = Math.floorDiv(z - mt.cz(), Villages.PW);
-		if (Math.floorMod(bz, 2) != 1 || Metros.Metro.avenueZ(bz) || Metros.Metro.avenueX(bx)) return false;
-		if (mt.district(bx, bz) != Metros.OLD) return false;
-		int bw = Math.floorMod(z - mt.cz(), Villages.PW) - Villages.STREET;
-		return bw >= 6 && bw <= 14;
+		return CityLayout.canal(mt, x, z);
 	}
 
 	// ------------------------------------------------------------------ one column
@@ -75,59 +70,74 @@ final class MetroBuilder {
 	}
 
 	private static boolean ground(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Metros.Metro mt, Villages.Town t, int x, int z, double e,
-								  int u, int wv, int bx, int bz, int bu, int bw) {
-		boolean covered = mt.river() && bridgeOver(f, mt, x, z, bx, bz, u, wv);
+								  int gu, int gwv, int gbx, int gbz, int gbu, int gbw) {
+		boolean covered = mt.river() && bridgeOver(f, mt, x, z, gbx, gbz, gu, gwv);
 		// clear trees and plants above the ground
 		for (int y = G + 1; y <= G + 36; y++) {
 			BlockState st = w.getBlockState(m.set(x, y, z));
 			if (!st.isAir() && (st.isIn(BlockTags.LEAVES) || st.isIn(BlockTags.LOGS) || st.isReplaceable() || st.isIn(BlockTags.FLOWERS)))
 				set(w, m, x, y, z, AIR);
 		}
-		boolean any = false;
 		if (e < VillageBuilder.QUAY) {
 			VillageBuilder.quay(w, m, f, x, z, e);
 			return true;
 		}
-		boolean avX = Metros.Metro.avenueX(bx), avZ = Metros.Metro.avenueZ(bz);
-		boolean inStreet = Villages.street(t, x, z);
-		boolean inBlock = Villages.blockIn(t, x, z);
-		if (!inStreet && !inBlock) return VillageBuilder.edge(w, m, f, t, x, z) || any;
-		// boulevards take the whole block (and run on over the streets that cross them)
-		if (avX && bu >= 0 && (inBlock || inStreet)) {
-			boulevard(w, m, x, z, bu, z - mt.cz(), true, avZ && bw >= 0, covered);
+		CityLayout.Info in = CityLayout.at(f, mt, x, z);
+		switch (in.kind) {
+			case CityLayout.OUTSIDE -> {
+				return cityEdge(w, m, f, mt, x, z);
+			}
+			case CityLayout.AXIS -> {
+				int[] ax = CityLayout.axis(f, mt, x, z);
+				if (ax[0] == 1) boulevard(w, m, x, z, ax[1], z - mt.cz(), true, false, covered);
+				else boulevard(w, m, x, z, ax[1], x - mt.cx(), false, false, covered);
+				return true;
+			}
+			case CityLayout.ARTERIAL -> {
+				mainRoad(w, m, x, z, in.q, covered);
+				return true;
+			}
+			case CityLayout.OLD -> {
+				if (mt.mega() && f.rails.distance(x + 0.5, z + 0.5) < Rails.HALF + 9) railSquare(w, m, f, x, z, x & 31, z & 31);
+				else oldCentre(w, m, f, mt, t, x, z);
+				return true;
+			}
+			case CityLayout.GREEN -> {
+				green(w, m, x, z, covered);
+				return true;
+			}
+			default -> {
+			}
+		}
+		double mx = in.x0 + Villages.PU / 2.0 - mt.cx(), mz = in.z0 + Villages.PW / 2.0 - mt.cz();
+		int bx = in.x0, bz = in.z0;                      // the block's key for the hashes
+		long bh = hash(mt.seed(), bx * 31L + bz, 7);
+		int district = mt.districtAt(mx, mz, bh);
+		if (in.kind == CityLayout.STREETC) {
+			street(w, m, mt, x, z, in.u, in.wv, district);
 			return true;
 		}
-		if (avZ && bw >= 0 && (inBlock || inStreet)) {
-			boulevard(w, m, x, z, bw, x - mt.cx(), false, false, covered);
-			return true;
-		}
-		int district = mt.district(bx, bz);
-		if (inStreet) {
-			street(w, m, mt, x, z, u, wv, district);
-			return true;
-		}
+		int bu = in.u - Villages.STREET, bw = in.wv - Villages.STREET;
 		// under the railway viaduct through a metropolis: a long square with bike parking, the station on top
-		if (mt.mega() && railBlock(f, mt, bx, bz)) {
+		if (mt.mega() && railBlock(f, mt, in.x0, in.z0)) {
 			railSquare(w, m, f, x, z, bu, bw);
 			return true;
 		}
-		if (mt.river() && VillageBuilder.waterfront(w, m, f, t, x, z, bu, bw, bx, bz, !mt.low())) return true;
-		long bh = hash(mt.seed(), bx * 31L + bz, 7);
-		double zone = Math.hypot(bx * Villages.PU, bz * Villages.PW) / mt.radius();
+		if (mt.river() && VillageBuilder.waterfront(w, m, f, t, x, z, bu, bw, in.x0, in.z0, !mt.low())) return true;
+		double zone = Math.hypot(mx, mz) / mt.radius();
 		switch (district) {
 			case Metros.OLD -> {
+				boolean centre = mt.cx() >= in.x0 && mt.cx() < in.x0 + Villages.PU && mt.cz() >= in.z0 && mt.cz() < in.z0 + Villages.PW;
 				if (mt.low()) {
 					// the old village centre of a big low-rise town: church, brick houses with shops
-					if (bx == 0 && bz == 0) VillageBuilder.church(w, m, t, x, z, bu, bw);
+					if (centre) VillageBuilder.church(w, m, t, x, z, bu, bw);
 					else if ((bh & 7) == 5) VillageBuilder.park(w, m, x, z, bu, bw);
 					else shopHouses(w, m, t, x, z, bu, bw, bx, bz);
-				} else if (Math.floorMod(bz, 2) == 1) canal(w, m, x, z, bu, bw, bh);
-				else if (bx == 0 && bz == 0) VillageBuilder.church(w, m, t, x, z, bu, bw);
-				else canalHouses(w, m, x, z, bu, bw, bh);
+				} else canalHouses(w, m, x, z, bu, bw, bh);
 			}
 			case Metros.CBD -> {
 				if ((bh & 7) == 0) plaza(w, m, x, z, bu, bw);
-				else VillageBuilder.tower(w, m, x, z, bu, bw, bh, mt.mega() ? megaZone(mt, bx, bz) : Math.max(-0.6, (zone - 0.15) / 0.17 - 1.0));
+				else VillageBuilder.tower(w, m, x, z, bu, bw, bh, mt.mega() ? megaZone(mt, mx, mz) : Math.max(-0.6, (zone - 0.15) / 0.17 - 1.0));
 			}
 			case Metros.MIXED -> {
 				int r = (int) Math.floorMod(bh >>> 3, 20L);
@@ -178,25 +188,208 @@ final class MetroBuilder {
 		return true;
 	}
 
+	// ------------------------------------------------------------------ the Dutch street plan: main roads, green, the old centre
+
+	/**
+	 * A main road between two neighbourhoods ("wijkontsluitingsweg"), q = distance from its middle: a green central
+	 * reservation with trees, two lanes each way, a verge, red cycle paths, pavements, street lights.
+	 */
+	private static void mainRoad(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, double q, boolean covered) {
+		long h = hash(x, z, 61);
+		BlockState st;
+		if (q < 1.5) st = GRASS;
+		else if (q < 6.5) st = (Math.abs(q - 4) < 0.5 && ((x + z) & 7) < 3) ? LINE : ASPHALT;
+		else if (q < 7.5) st = GRASS;
+		else if (q < 9.5) st = CYCLE;
+		else st = (h & 3) == 0 ? WALK2 : WALK;
+		set(w, m, x, G, z, st);
+		BlockState below = w.getBlockState(m.set(x, G - 1, z));
+		if (below.isAir() || !below.getFluidState().isEmpty()) set(w, m, x, G - 1, z, Blocks.STONE.getDefaultState());
+		if (covered) return;
+		if (q < 1.0 && (h % 23) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 8);
+		else if (q >= 6.6 && q < 7.4 && (h % 41) == 0) InfraBuilder.lamp(w, m, x, G, z, Direction.NORTH, 7);
+		else if (q >= 6.6 && q < 7.4 && (h % 19) == 3) Countryside.tree(w, m, x, G + 1, z, h >>> 8);
+	}
+
+	/** Green where neighbourhoods meet: grass, trees, bushes, now and then a pond. */
+	private static void green(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, boolean covered) {
+		long h = hash(x, z, 63);
+		set(w, m, x, G, z, GRASS);
+		if (covered) return;
+		if ((h % 31) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 8);
+		else if ((h % 17) == 0) set(w, m, x, G + 1, z, Blocks.OAK_LEAVES.getDefaultState().with(Properties.PERSISTENT, true));
+		else if ((h % 9) == 0) set(w, m, x, G + 1, z, Blocks.SHORT_GRASS.getDefaultState());
+	}
+
+	/** Just outside the city: the roads coming in, the dike road, a belt of trees and hedges. */
+	private static boolean cityEdge(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Metros.Metro mt, int x, int z) {
+		Object[] rh = f.roads.hit(x + 0.5, z + 0.5, Roads.OUTER + 1);
+		if (rh != null) {
+			double[] p = (double[]) rh[0];
+			if (Roads.build(w, m, (Roads.Seg) rh[1], p[0], p[1], x, z)) return true;
+		}
+		if (f.dikeRoad(x, z)) {
+			Countryside.dikeRoad(w, m, f, x, z);
+			return true;
+		}
+		if ((int) Math.floor(f.dutchHeight(x, z)) != G) return false;
+		double d = Math.hypot(x + 0.5 - mt.cx(), z + 0.5 - mt.cz()) - mt.radius();
+		if (d < 3 || d > 6) return false;
+		long h = hash(x, z, 11);
+		if ((h & 7) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 3);
+		else set(w, m, x, G + 1, z, Blocks.OAK_LEAVES.getDefaultState().with(Properties.PERSISTENT, true));
+		return true;
+	}
+
+	/**
+	 * The old centre: the main square with the church, then the canal rings. Along each canal: a brick quay wall,
+	 * the quay street with elms and lamps, the canal houses facing the canal, back gardens between two rows. On the
+	 * diagonal sides of the rings: little gardens ("hofjes") instead of houses. Radial streets and alleys cross the
+	 * canals on brick bridges.
+	 */
+	private static void oldCentre(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Metros.Metro mt, Villages.Town t, int x, int z) {
+		double dx = x + 0.5 - mt.cx(), dz = z + 0.5 - mt.cz();
+		int ix = (int) Math.floor(dx), iz = (int) Math.floor(dz);
+		double s = CityLayout.d8(dx, dz) - CityLayout.SQUARE;
+		if (s < 0) {
+			// the main square with the church in the middle
+			if (Math.abs(ix) <= 14 && Math.abs(iz) <= 10) {
+				VillageBuilder.church(w, m, t, x, z, ix + 14, iz + 10);
+				return;
+			}
+			set(w, m, x, G, z, ((ix + iz) & 3) == 0 ? Blocks.STONE_BRICKS.getDefaultState() : BRICK);
+			long h = hash(x, z, 71);
+			if (Math.floorMod(ix, 12) == 6 && Math.floorMod(iz, 12) == 6 && CityLayout.d8(dx, dz) > 22) Countryside.tree(w, m, x, G + 1, z, h);
+			else if ((h % 57) == 0) set(w, m, x, G + 1, z, VillageBuilder.stairs(Blocks.SPRUCE_STAIRS, Direction.NORTH));
+			return;
+		}
+		int mi = (int) Math.floor(s - Math.floor(s / CityLayout.RING_P) * CityLayout.RING_P);
+		boolean water = mi >= 1 && mi < 7;
+		boolean axis = CityLayout.axisSide(dx, dz);
+		boolean eastWest = Math.abs(dx) >= Math.abs(dz);
+		int along = eastWest ? iz : ix;
+		if (CityLayout.oldStreet(dx, dz)) {
+			if (water || mi == 0 || mi == 7) {
+				// brick bridge over the canal, low parapets along the street edges
+				set(w, m, x, G - 1, z, Blocks.BRICK_SLAB.getDefaultState().with(Properties.SLAB_TYPE, SlabType.TOP));
+				set(w, m, x, G, z, BRICK);
+				int ed = Math.floorMod(along, 60) < 5 ? Math.floorMod(along, 5) : -1;
+				if (ed == 0 || ed == 4) set(w, m, x, G + 1, z, Blocks.BRICK_WALL.getDefaultState());
+			} else set(w, m, x, G, z, Blocks.STONE_BRICKS.getDefaultState());
+			return;
+		}
+		if (water) return;                                            // the canal itself
+		if (mi == 0 || mi == 7) {
+			// brick quay walls
+			for (int y = 55; y < G; y++) set(w, m, x, y, z, BRICK);
+			set(w, m, x, G, z, Blocks.STONE_BRICKS.getDefaultState());
+			if (Math.floorMod(along, 9) == 4) set(w, m, x, G + 1, z, Blocks.POLISHED_BLACKSTONE_WALL.getDefaultState());   // "Amsterdammertje"
+			return;
+		}
+		if (mi <= 12 || mi >= 34) {
+			// the quay streets along the canals, with elms and lamps
+			set(w, m, x, G, z, BRICK);
+			int qd = mi <= 12 ? mi - 8 : 39 - mi;
+			if (qd == 3 && Math.floorMod(along, 9) == 4) Countryside.tree(w, m, x, G + 1, z, hash(x, z, 9));
+			else if (qd == 0 && Math.floorMod(along, 12) == 0) {
+				for (int y = G + 1; y <= G + 3; y++) set(w, m, x, y, z, Blocks.DARK_OAK_FENCE.getDefaultState());
+				set(w, m, x, G + 4, z, Blocks.LANTERN.getDefaultState());
+			} else if (qd == 4) VillageBuilder.streetLife(w, m, x, z, 0, along, !eastWest);
+			return;
+		}
+		// the rows of canal houses (on the straight sides), gardens on the diagonal sides
+		boolean rowA = mi <= 22;
+		int pw = rowA ? mi - 13 : 33 - mi;
+		int slot = Math.floorDiv(along, 5) * 5;
+		boolean whole = axis && slotAxis(dx, dz, eastWest, slot) && slotAxis(dx, dz, eastWest, slot + 4);
+		if (mi == 23 || !whole) {
+			set(w, m, x, G, z, GRASS);
+			long h = hash(x, z, 73);
+			if (mi == 23) set(w, m, x, G + 1, z, Blocks.OAK_FENCE.getDefaultState());
+			else if ((h % 23) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 8);
+			else if ((h % 7) == 0) set(w, m, x, G + 1, z, Blocks.OAK_LEAVES.getDefaultState().with(Properties.PERSISTENT, true));
+			return;
+		}
+		// facing the nearer canal: row A towards the centre, row B outwards
+		Direction out;
+		if (eastWest) out = (dx > 0) == rowA ? Direction.WEST : Direction.EAST;
+		else out = (dz > 0) == rowA ? Direction.NORTH : Direction.SOUTH;
+		long hh = hash(mt.seed(), slot * 131L + (long) Math.floor(s / CityLayout.RING_P) * 7 + (rowA ? 1 : 2), eastWest ? (dx > 0 ? 1 : 2) : (dz > 0 ? 3 : 4));
+		canalHouse(w, m, x, z, Math.floorMod(along, 5), pw, out, hh);
+	}
+
+	/** Is this house slot position still on a straight side of the ring (at the same depth)? */
+	private static boolean slotAxis(double dx, double dz, boolean eastWest, int along) {
+		return eastWest ? CityLayout.axisSide(dx, along + 0.5) && Math.abs(dx) >= Math.abs(along + 0.5)
+				: CityLayout.axisSide(along + 0.5, dz) && Math.abs(dz) >= Math.abs(along + 0.5);
+	}
+
+	/**
+	 * One canal house ("grachtenpand"), facing out: hx 0..4 along the canal, pw 0..9 from the facade back. Four
+	 * or five floors, a stepped, bell or neck gable, white window frames, a hoisting beam.
+	 */
+	static void canalHouse(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int hx, int pw, Direction out, long hh) {
+		BlockState wall = CANAL_BRICK[(int) Math.floorMod(hh, (long) CANAL_BRICK.length)].getDefaultState();
+		BlockState trim = Blocks.WHITE_CONCRETE.getDefaultState();
+		boolean facadeX = out == Direction.NORTH || out == Direction.SOUTH;
+		BlockState pane = facadeX ? VillageBuilder.paneEW(Blocks.WHITE_STAINED_GLASS_PANE) : VillageBuilder.paneNS(Blocks.WHITE_STAINED_GLASS_PANE);
+		Direction plus = facadeX ? Direction.EAST : Direction.SOUTH;
+		int floors = 4 + (int) ((hh >>> 4) & 1);
+		int eave = Y0 + floors * 4;
+		boolean edge = hx == 0 || hx == 4 || pw == 0 || pw == 9;
+		set(w, m, x, G, z, Blocks.STONE_BRICKS.getDefaultState());
+		set(w, m, x, Y0, z, edge ? wall : Blocks.OAK_PLANKS.getDefaultState());
+		for (int y = Y0 + 1; y < eave; y++) {
+			int rel = y - Y0;
+			BlockState st = AIR;
+			if (edge) {
+				st = wall;
+				if (pw == 0 || pw == 9) {
+					boolean winCol = hx == 1 || hx == 3;
+					if (winCol && rel % 4 >= 1 && rel % 4 <= 2) st = pane;
+					if (winCol && rel % 4 == 3) st = trim;
+					if (pw == 0 && hx == 2 && rel <= 2) st = AIR;
+				}
+			} else if (rel % 4 == 0) st = Blocks.SPRUCE_PLANKS.getDefaultState();
+			set(w, m, x, y, z, st);
+		}
+		if (pw == 0 && hx == 2) VillageBuilder.door(w, m, x, z, out, Blocks.DARK_OAK_DOOR);
+		if (!edge && hx == 2 && pw == 8) for (int y = Y0 + 1; y < eave; y++) set(w, m, x, y, z, Blocks.LADDER.getDefaultState().with(Properties.HORIZONTAL_FACING, out));
+		if (!edge && hx == 2 && pw == 4) for (int fl = 0; fl < floors; fl++) set(w, m, x, Y0 + fl * 4 + 3, z, Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
+		int type = (int) ((hh >>> 6) % 3);
+		int k = Math.min(hx, 4 - hx);
+		for (int r = 0; r <= 5; r++) {
+			int y = eave + r;
+			BlockState st = AIR;
+			if (pw == 0 || pw == 9) {
+				int width = type == 0 ? 2 - r / 2 : type == 1 ? (r < 3 ? 2 : r < 5 ? 1 : 0) : (r < 2 ? 2 : r < 5 ? 1 : 0);
+				if (k >= 2 - width) st = r == 0 ? trim : wall;
+				if (hx == 2 && r == 2 && pw == 0) st = pane;
+			} else {
+				if (r == k) st = hx == 2 ? Blocks.DEEPSLATE_TILES.getDefaultState()
+						: VillageBuilder.stairs(Blocks.DEEPSLATE_TILE_STAIRS, hx < 2 ? plus : plus.getOpposite());
+			}
+			set(w, m, x, y, z, st);
+		}
+		if (pw == 0 && hx == 2) set(w, m, x + out.getOffsetX(), eave + 4, z + out.getOffsetZ(), Blocks.DARK_OAK_FENCE.getDefaultState());
+	}
+
 	/** How tall the towers of a business district of a metropolis are (lower = taller): the main centre and the second centres. */
-	private static double megaZone(Metros.Metro mt, int bx, int bz) {
-		double mx = bx * Villages.PU + Villages.PU / 2.0, mz = bz * Villages.PW + Villages.PW / 2.0;
+	private static double megaZone(Metros.Metro mt, double mx, double mz) {
 		double z = -0.6 + Math.max(0, Math.hypot(mx, mz) - 420) / 700;
 		for (double[] c : mt.subCentres()) z = Math.min(z, -0.4 + Math.hypot(mx - c[0], mz - c[1]) / 420);
 		return Math.min(1.2, z);
 	}
 
-	/** Is the block (bx, bz) of a metropolis under or beside the railway viaduct? */
-	static boolean railBlock(RiverField f, Metros.Metro mt, int bx, int bz) {
-		double mx = mt.cx() + bx * Villages.PU + Villages.PU / 2.0, mz = mt.cz() + bz * Villages.PW + Villages.PW / 2.0;
+	/** Is the block with origin (x0, z0) of a metropolis under or beside the railway viaduct? */
+	static boolean railBlock(RiverField f, Metros.Metro mt, int x0, int z0) {
+		double mx = x0 + Villages.PU / 2.0, mz = z0 + Villages.PW / 2.0;
 		return f.rails.distance(mx, mz) < Rails.HALF + 10 + 21.5;
 	}
 
-	/** Is this column of a metropolis a street or a boulevard (no piers there)? */
-	static boolean openGround(Metros.Metro mt, int x, int z) {
-		int bx = Math.floorDiv(x - mt.cx(), Villages.PU), bz = Math.floorDiv(z - mt.cz(), Villages.PW);
-		if (Metros.Metro.avenueX(bx) || Metros.Metro.avenueZ(bz)) return true;
-		return Villages.street(mt.asTown(), x, z);
+	/** Is this column of a metropolis a street, a road or a square (no piers there)? */
+	static boolean openGround(RiverField f, Metros.Metro mt, int x, int z) {
+		return CityLayout.open(f, mt, x, z);
 	}
 
 	/** The square under the railway viaduct: paving, rows of bike racks, trees along the sides. */
@@ -335,6 +528,10 @@ final class MetroBuilder {
 	 * Which boulevard of a city carries a bridge at this column: {1 for north-south, index, kind}, or null.
 	 * In a metropolis the river can run any way, so boulevards of both directions may cross it.
 	 */
+	static int[] avenueBridgeAt(RiverField f, Metros.Metro mt, int bx, int bz) {
+		return avenueBridge(f, mt, bx, bz);
+	}
+
 	private static int[] avenueBridge(RiverField f, Metros.Metro mt, int bx, int bz) {
 		boolean pref = riverAlongX(f, mt);
 		for (int o = 0; o < 2; o++) {

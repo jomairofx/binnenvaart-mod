@@ -84,7 +84,7 @@ final class VillageBuilder {
 		if (!Villages.blockIn(t, x, z)) return edge(w, m, f, t, x, z);
 		int bu = u - Villages.STREET, bw = wv - Villages.STREET;   // 0..28, 0..20
 		int bx = Math.floorDiv(x - t.cx(), Villages.PU), bz = Math.floorDiv(z - t.cz(), Villages.PW);
-		if (t.river() && waterfront(w, m, f, t, x, z, bu, bw, bx, bz, t.city())) return true;
+		if (t.river() && waterfront(w, m, f, t, x, z, bu, bw, t.cx() + bx * Villages.PU, t.cz() + bz * Villages.PW, t.city())) return true;
 		if (bx == 0 && bz == 0) {
 			church(w, m, t, x, z, bu, bw);
 			return true;
@@ -246,11 +246,10 @@ final class VillageBuilder {
 	private static final java.util.concurrent.ConcurrentHashMap<Long, Double> WATER_DIST = new java.util.concurrent.ConcurrentHashMap<>();
 
 	/** Least distance of the block (bx, bz) of a river town from the water (cached per block). */
-	static double waterDist(RiverField f, Villages.Town t, int bx, int bz) {
+	static double waterDist(RiverField f, int x0, int z0) {
 		if (WATER_DIST.size() > 200000) WATER_DIST.clear();
-		long key = t.seed() ^ (bx * 0x9E3779B97F4A7C15L) ^ (bz * 0x632BE59BD9B4E019L) ^ 0x3A7E5L;
+		long key = (x0 * 0x9E3779B97F4A7C15L) ^ (z0 * 0x632BE59BD9B4E019L) ^ 0x3A7E5L;
 		return WATER_DIST.computeIfAbsent(key, k -> {
-			int x0 = t.cx() + bx * Villages.PU, z0 = t.cz() + bz * Villages.PW;
 			double e = Double.MAX_VALUE;
 			for (int i = 0; i <= 2; i++)
 				for (int j = 0; j <= 2; j++) {
@@ -267,14 +266,14 @@ final class VillageBuilder {
 	 * into lofts, tall narrow houses, modern town houses, a restaurant pavilion with a terrace. Returns false
 	 * where the block is too far from the water to be part of the waterfront.
 	 */
-	static boolean waterfront(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Villages.Town t, int x, int z, int bu, int bw, int bx, int bz, boolean big) {
-		double e = waterDist(f, t, bx, bz);
+	static boolean waterfront(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Villages.Town t, int x, int z, int bu, int bw, int x0, int z0, boolean big) {
+		double e = waterDist(f, x0, z0);
 		if (e < PROMENADE) {
-			promenade(w, m, x, z, bu, bw, hash(t.seed(), bx * 31L + bz, 444));
+			promenade(w, m, x, z, bu, bw, hash(t.seed(), x0 * 31L + z0, 444));
 			return true;
 		}
 		if (e >= FRONT) return false;
-		long bh = hash(t.seed(), bx * 31L + bz, 555);
+		long bh = hash(t.seed(), x0 * 31L + z0, 555);
 		int kind = (int) Math.floorMod(bh >>> 7, big ? 7L : 5L);
 		switch (kind) {
 			case 0 -> terraced(w, m, x, z, bu, bw, bh);

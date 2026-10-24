@@ -171,6 +171,7 @@ final class CityLayout {
 				if ((int) wk[0] != i || (int) wk[1] != j || wk[2] < ART + 2) return false;
 				if (axis(f, mt, p[0], p[1]) != null) return false;
 			}
+			if (!Villages.level(x0, z0)) return false;
 			// keep the axes clear also between the sample points (a boulevard is 29 wide)
 			for (int sx = x0 + STREET; sx < x0 + PU; sx += 4)
 				for (int sz = z0 + STREET; sz < z0 + PW; sz += 4)

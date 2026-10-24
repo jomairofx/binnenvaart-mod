@@ -151,7 +151,31 @@ public final class Villages {
 		int bx = Math.floorDiv(x - t.cx, PU), bz = Math.floorDiv(z - t.cz, PW);
 		double mx = t.cx + bx * PU + PU / 2.0, mz = t.cz + bz * PW + PW / 2.0;
 		if (Math.hypot(mx - t.cx, mz - t.cz) > t.radius) return false;
-		return !t.dike || dikeBank(t, bx, bz) >= Lowlands.foreland(RiverField.current.great) + DIKE_KEEP;
+		if (t.dike && dikeBank(t, bx, bz) < Lowlands.foreland(RiverField.current.great) + DIKE_KEEP) return false;
+		return level(t.cx + bx * PU, t.cz + bz * PW);
+	}
+
+	private static final ConcurrentHashMap<Long, Boolean> LEVEL = new ConcurrentHashMap<>();
+
+	/**
+	 * Is the ground of the grid cell with origin (x0, z0) level at street height everywhere? Houses never stand on
+	 * a dike, a slope or a bank: such a block stays green.
+	 */
+	static boolean level(int x0, int z0) {
+		RiverField f = RiverField.current;
+		if (f == null) return true;
+		if (LEVEL.size() > 400000) LEVEL.clear();
+		long key = (x0 * 0x9E3779B97F4A7C15L) ^ (z0 * 0x632BE59BD9B4E019L) ^ 0x1E5E1L;
+		return LEVEL.computeIfAbsent(key, k -> {
+			for (int i = 0; i <= 4; i++)
+				for (int j = 0; j <= 4; j++) {
+					int x = x0 + STREET + i * (PU - STREET - 1) / 4, z = z0 + STREET + j * (PW - STREET - 1) / 4;
+					double[] rv = f.riverAt(x, z, true);
+					if (rv[0] - rv[1] < 0) continue;                       // the river in a river town: handled by the quays
+					if ((int) Math.floor(f.dutchHeight(x, z)) != GROUND) return false;
+				}
+			return true;
+		});
 	}
 
 	private static final ConcurrentHashMap<Long, Double> BANK = new ConcurrentHashMap<>();

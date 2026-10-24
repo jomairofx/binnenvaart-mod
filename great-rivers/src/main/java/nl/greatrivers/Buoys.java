@@ -35,45 +35,70 @@ final class Buoys {
 		return CELLS.computeIfAbsent(key, k -> make(f, i, j));
 	}
 
+	/**
+	 * The buoys of cell (i, j): where the middle of the river crosses the west edge of the cell (x = i * CELL, for a
+	 * river running mostly east-west) or its north edge (z = j * CELL, for one running mostly north-south). That
+	 * gives a pair every 200 to 280 blocks along the river, evenly.
+	 */
 	private static int[][] make(RiverField f, int i, int j) {
-		long h = Harbours.mix(i * 0x9E3779B97F4A7C15L + j * 0x632BE59BD9B4E019L + 0xB00);
-		double px = i * CELL + 40 + Math.floorMod(h, 120L), pz = j * CELL + 40 + Math.floorMod(h >>> 20, 120L);
 		RiverField.Kind k = f.great;
-		double d = k.distance(px, pz);
-		if (d > 220) return EMPTY;
-		double v = k.value(px, pz);
-		double[] n = k.normal(px, pz);
-		double sg = Math.signum(v);
-		double cx = px - n[0] * d * sg, cz = pz - n[1] * d * sg;
-		// walk a little closer to the real middle
-		for (int it = 0; it < 3; it++) {
-			double dd = k.distance(cx, cz), vv = k.value(cx, cz);
-			double[] nn = k.normal(cx, cz);
-			cx -= nn[0] * dd * Math.signum(vv);
-			cz -= nn[1] * dd * Math.signum(vv);
+		java.util.List<int[]> out = new java.util.ArrayList<>(4);
+		for (int edge = 0; edge < 2; edge++) {
+			boolean xLine = edge == 0;
+			double fixed = xLine ? i * (double) CELL : j * (double) CELL;
+			double lo = xLine ? j * (double) CELL : i * (double) CELL;
+			// quick reject: far from any river along this edge
+			double mid = lo + CELL / 2.0;
+			double dmid = xLine ? k.distance(fixed, mid) : k.distance(mid, fixed);
+			if (dmid > CELL) continue;
+			double prev = xLine ? k.value(fixed, lo) : k.value(lo, fixed);
+			for (double t = lo + 8; t <= lo + CELL; t += 8) {
+				double v = xLine ? k.value(fixed, t) : k.value(t, fixed);
+				if ((v > 0) != (prev > 0)) {
+					// the middle of the river: bisect the sign change
+					double a0 = t - 8, a1 = t, va = prev;
+					for (int it = 0; it < 12; it++) {
+						double am = (a0 + a1) / 2, vm = xLine ? k.value(fixed, am) : k.value(am, fixed);
+						if ((vm > 0) == (va > 0)) {
+							a0 = am;
+							va = vm;
+						} else a1 = am;
+					}
+					double am = (a0 + a1) / 2;
+					double cx = xLine ? fixed : am, cz = xLine ? am : fixed;
+					double[] n = k.normal(cx, cz);
+					double tx = -n[1], tz = n[0];
+					// each part of the river uses one kind of edge, so pairs never double up
+					if (xLine != (Math.abs(tx) >= Math.abs(tz))) {
+						prev = v;
+						continue;
+					}
+					pair(f, k, cx, cz, n, out, i, j);
+				}
+				prev = v;
+			}
 		}
-		if (k.distance(cx, cz) > 8) return EMPTY;
-		// the middle must lie in this cell, so neighbouring cells do not put two pairs side by side
-		if (Math.floorDiv((int) Math.floor(cx), CELL) != i || Math.floorDiv((int) Math.floor(cz), CELL) != j) return EMPTY;
-		n = k.normal(cx, cz);
+		return out.isEmpty() ? EMPTY : out.toArray(new int[0][]);
+	}
+
+	private static void pair(RiverField f, RiverField.Kind k, double cx, double cz, double[] n, java.util.List<int[]> out, int i, int j) {
 		double hw = k.halfWidth(cx, cz);
 		int ix = (int) Math.floor(cx), iz = (int) Math.floor(cz);
-		if (!f.land(ix, iz)) return EMPTY;
-		if (f.infra.motorwayDistance(cx, cz) < 70 || f.rails.distance(cx, cz) < 50) return EMPTY;
-		if (f.infra.locks.near(ix, iz, 120)) return EMPTY;
-		if (f.harbours.siteNear(ix, iz, 60) != null) return EMPTY;
+		if (!f.land(ix, iz)) return;
+		if (f.infra.motorwayDistance(cx, cz) < 70 || f.rails.distance(cx, cz) < 50) return;
+		if (f.infra.locks.near(ix, iz, 120)) return;
+		if (f.harbours.siteNear(ix, iz, 60) != null) return;
 		Villages.Town t = f.villages.at(ix, iz);
-		if (t != null && t.river() && Math.hypot(cx - t.cx(), cz - t.cz()) < 60) return EMPTY;    // the ferry
+		if (t != null && t.river() && Math.hypot(cx - t.cx(), cz - t.cz()) < 60) return;    // the ferry
+		long h = Harbours.mix(i * 0x9E3779B97F4A7C15L + j * 0x632BE59BD9B4E019L + 0xB00 + out.size());
 		boolean lit = Math.floorMod(h >>> 40, 3L) == 0;
-		int[][] out = new int[2][];
 		for (int s = 0; s < 2; s++) {
 			double o = (s == 0 ? 1 : -1) * hw * IN;
 			int bx = (int) Math.floor(cx + n[0] * o), bz = (int) Math.floor(cz + n[1] * o);
 			// red on the side where the river noise is positive, green on the other: the same all along the river
 			int colour = k.value(bx + 0.5, bz + 0.5) > 0 ? 0 : 1;
-			out[s] = new int[]{bx, bz, colour, lit ? 1 : 0};
+			out.add(new int[]{bx, bz, colour, lit ? 1 : 0});
 		}
-		return out;
 	}
 
 	/** Builds a buoy if one stands in this column. */

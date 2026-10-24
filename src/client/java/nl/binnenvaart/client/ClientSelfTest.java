@@ -42,7 +42,7 @@ public final class ClientSelfTest {
 			new Shot("06b_keuken", new double[]{13.5, 3.62, 8.5}, new double[]{19.5, 2.5, 12.0}, false),
 			new Shot("07_machinekamer", new double[]{11.0, -2.4, 8.5}, new double[]{18.5, -3.0, 4.0}, false),
 			new Shot("08_onderwater", new double[]{71, -6, 32}, new double[]{71, -2, 8}, false),
-			new Shot("09_stuurhuis_binnen", new double[]{15.0, 9.62, 6.5}, new double[]{80, 4, 6.5}, false),
+			new Shot("09_stuurhuis_binnen", new double[]{15.0, 8.62, 6.5}, new double[]{80, 4, 6.5}, false),
 			new Shot("09b_achterdek_auto", new double[]{-6.0, 8.0, 4.0}, new double[]{4.0, 2.5, 11.5}, false),
 	};
 
@@ -188,14 +188,14 @@ public final class ClientSelfTest {
 		int helm = t0 + 500;
 		if (t == helm) {
 			cmd(srv, "gamemode creative @p");
-			tp(srv, ship, new double[]{15.5, 9.62, 6.5}, new double[]{60, 6, 6.5});
+			tp(srv, ship, new double[]{15.5, 8.62, 6.5}, new double[]{60, 6, 6.5});
 		}
 		if (t == helm + 30) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
 				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) {
 					s.testMode = false;
-					s.handleInteract(sp, new Vec3d(16.5, 8.5, 6.5), false);
+					s.handleInteract(sp, new Vec3d(16.5, 7.5, 6.5), false);
 				}
 			});
 		}

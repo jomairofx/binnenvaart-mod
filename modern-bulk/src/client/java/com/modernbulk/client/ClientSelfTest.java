@@ -45,7 +45,7 @@ public final class ClientSelfTest {
 			new Shot("08b_machinekamer", new double[]{11.0, -2.4, 9.5}, new double[]{19.5, -3.0, 3.5}, false),
 			new Shot("08c_machinekamer_ladder", new double[]{17.5, -2.4, 9.5}, new double[]{20.5, 1.0, 9.5}, false),
 			new Shot("09e_auto", new double[]{8.5, 4.5, 8.0}, new double[]{3.5, 2.5, 11.5}, false),
-			new Shot("09_stuurhuis_binnen", new double[]{15.0, 9.62, 9.5}, new double[]{80, 4, 9.5}, false),
+			new Shot("09_stuurhuis_binnen", new double[]{15.0, 8.62, 9.5}, new double[]{80, 4, 9.5}, false),
 			new Shot("09b_achterdek_auto", new double[]{-7.0, 8.0, 5.0}, new double[]{4.0, 2.5, 11.5}, false),
 			new Shot("09c_gangboord", new double[]{40.5, 3.62, 1.5}, new double[]{90, 3, 4}, false),
 			new Shot("09d_bovenaanzicht", new double[]{60, 45, 9.6}, new double[]{60.5, 0, 9.5}, false),
@@ -227,14 +227,14 @@ public final class ClientSelfTest {
 		int helm = t0 + 720;
 		if (t == helm) {
 			cmd(srv, "gamemode creative @p");
-			tp(srv, ship, new double[]{15.5, 9.62, 7.5}, new double[]{60, 6, 9.5});
+			tp(srv, ship, new double[]{15.5, 8.62, 7.5}, new double[]{60, 6, 9.5});
 		}
 		if (t == helm + 30) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
 				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) {
 					s.testMode = false;
-					s.handleInteract(sp, new Vec3d(16.5, 8.5, 9.5), false);
+					s.handleInteract(sp, new Vec3d(16.5, 7.5, 9.5), false);
 				}
 			});
 		}
@@ -298,10 +298,10 @@ public final class ClientSelfTest {
 		}
 		if (t == helm + 810) {
 			Vec3d l = ship.toLocal(mc.player.getPos());
-			check("staan in opgeheven stuurhut", Math.abs(l.y - (8.0 + ship.liftOffset())) < 0.25,
-					String.format("speler op lokale y=%.2f, vloer op %.2f", l.y, 8.0 + ship.liftOffset()));
+			check("staan in opgeheven stuurhut", Math.abs(l.y - (7.0 + ship.liftOffset())) < 0.25,
+					String.format("speler op lokale y=%.2f, vloer op %.2f", l.y, 7.0 + ship.liftOffset()));
 			// over de ladder op het dak naar de opgeheven stuurhut klimmen
-			tp(srv, ship, new double[]{13.5, 7.0 + 1.62, 9.5}, new double[]{9.0, 8.6, 9.5});
+			tp(srv, ship, new double[]{13.5, 6.0 + 1.62, 9.5}, new double[]{9.0, 7.6, 9.5});
 		}
 		if (t == helm + 820) {
 			ladderMax = -99;
@@ -311,12 +311,12 @@ public final class ClientSelfTest {
 			double ly = ship.toLocal(mc.player.getPos()).y;
 			if (ly > ladderMax) ladderMax = ly;
 			if (t % 10 == 0) log.add(String.format("ladder stuurhut t=%d y=%.2f climbing=%s", t - helm, ly, mc.player.isClimbing()));
-			if (ly >= 8.0 + ship.liftOffset() + 0.05) mc.options.forwardKey.setPressed(false);
+			if (ly >= 7.0 + ship.liftOffset() + 0.05) mc.options.forwardKey.setPressed(false);
 		}
 		if (t == helm + 900) {
 			mc.options.forwardKey.setPressed(false);
-			check("ladder naar opgeheven stuurhut", ladderMax >= 8.0 + ship.liftOffset() - 0.05,
-					String.format("geklommen tot lokale y=%.2f, vloer stuurhut op %.2f", ladderMax, 8.0 + ship.liftOffset()));
+			check("ladder naar opgeheven stuurhut", ladderMax >= 7.0 + ship.liftOffset() - 0.05,
+					String.format("geklommen tot lokale y=%.2f, vloer stuurhut op %.2f", ladderMax, 7.0 + ship.liftOffset()));
 			mc.player.setYaw((float) Math.toDegrees(ship.shipYaw) - 90f);
 			mc.player.setPitch(0f);
 			mc.options.forwardKey.setPressed(true);
@@ -324,7 +324,7 @@ public final class ClientSelfTest {
 		if (t == helm + 930) {
 			mc.options.forwardKey.setPressed(false);
 			Vec3d l = ship.toLocal(mc.player.getPos());
-			check("stuurhut in gelopen", l.x > 14.2 && Math.abs(l.y - (8.0 + ship.liftOffset())) < 0.3,
+			check("stuurhut in gelopen", l.x > 14.2 && Math.abs(l.y - (7.0 + ship.liftOffset())) < 0.3,
 					String.format("speler op lokaal (%.2f, %.2f, %.2f)", l.x, l.y, l.z));
 			shot(mc, "20b_ladder_stuurhut");
 			srv.execute(() -> {
@@ -333,7 +333,7 @@ public final class ClientSelfTest {
 		}
 		if (t == helm + 1100) {
 			Vec3d l = ship.toLocal(mc.player.getPos());
-			check("meezakken met de stuurhut", ship.liftOffset() < 0.05 && Math.abs(l.y - 8.0) < 0.25,
+			check("meezakken met de stuurhut", ship.liftOffset() < 0.05 && Math.abs(l.y - 7.0) < 0.25,
 					String.format("stuurhut %.2f, speler op lokale y=%.2f", ship.liftOffset(), l.y));
 			shot(mc, "20_stuurhut_omlaag");
 			cmd(srv, "weather rain");

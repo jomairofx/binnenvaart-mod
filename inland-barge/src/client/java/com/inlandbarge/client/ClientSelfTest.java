@@ -40,7 +40,7 @@ public final class ClientSelfTest {
 			new Shot("06_woning", new double[]{12.4, 3.62, 7.5}, new double[]{8.5, 2.6, 4.0}, false),
 			new Shot("07_machinekamer", new double[]{11.0, -2.4, 5.5}, new double[]{18.5, -3.0, 3.0}, false),
 			new Shot("08_onderwater", new double[]{48, -6, 22}, new double[]{48, -2, 5.5}, false),
-			new Shot("09_stuurhuis_binnen", new double[]{15.0, 9.62, 5.5}, new double[]{60, 4, 5.5}, false),
+			new Shot("09_stuurhuis_binnen", new double[]{15.0, 8.62, 5.5}, new double[]{60, 4, 5.5}, false),
 			new Shot("09b_achterdek_auto", new double[]{-6.0, 8.0, 2.0}, new double[]{4.0, 2.5, 6.5}, false),
 			new Shot("09c_keuken", new double[]{13.6, 3.62, 6.5}, new double[]{16.5, 2.5, 3.0}, false),
 	};
@@ -187,14 +187,14 @@ public final class ClientSelfTest {
 		int helm = t0 + 500;
 		if (t == helm) {
 			cmd(srv, "gamemode creative @p");
-			tp(srv, ship, new double[]{15.5, 9.62, 5.5}, new double[]{60, 6, 5.5});
+			tp(srv, ship, new double[]{15.5, 8.62, 5.5}, new double[]{60, 6, 5.5});
 		}
 		if (t == helm + 30) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
 				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) {
 					s.testMode = false;
-					s.handleInteract(sp, new Vec3d(16.5, 8.5, 5.5), false);
+					s.handleInteract(sp, new Vec3d(16.5, 7.5, 5.5), false);
 				}
 			});
 		}
@@ -235,7 +235,7 @@ public final class ClientSelfTest {
 			});
 		}
 		// stuurhuis omhoog en dan over de ladder op het dak naar binnen klimmen
-		if (t == helm + 720) tp(srv, ship, new double[]{13.5, 7.0 + 1.62, 5.5}, new double[]{9.0, 8.6, 5.5});
+		if (t == helm + 720) tp(srv, ship, new double[]{13.5, 6.0 + 1.62, 5.5}, new double[]{9.0, 7.6, 5.5});
 		if (t == helm + 730) {
 			ladderMax = -99;
 			mc.options.forwardKey.setPressed(true);
@@ -243,12 +243,12 @@ public final class ClientSelfTest {
 		if (t > helm + 730 && t < helm + 810) {
 			double ly = ship.toLocal(mc.player.getPos()).y;
 			if (ly > ladderMax) ladderMax = ly;
-			if (ly >= 8.0 + ship.liftOffset() + 0.05) mc.options.forwardKey.setPressed(false);
+			if (ly >= 7.0 + ship.liftOffset() + 0.05) mc.options.forwardKey.setPressed(false);
 		}
 		if (t == helm + 810) {
 			mc.options.forwardKey.setPressed(false);
-			check("ladder naar opgeheven stuurhuis", ladderMax >= 8.0 + ship.liftOffset() - 0.05,
-					String.format("geklommen tot lokale y=%.2f, vloer op %.2f", ladderMax, 8.0 + ship.liftOffset()));
+			check("ladder naar opgeheven stuurhuis", ladderMax >= 7.0 + ship.liftOffset() - 0.05,
+					String.format("geklommen tot lokale y=%.2f, vloer op %.2f", ladderMax, 7.0 + ship.liftOffset()));
 			mc.player.setYaw((float) Math.toDegrees(ship.shipYaw) - 90f);
 			mc.player.setPitch(0f);
 			mc.options.forwardKey.setPressed(true);
@@ -256,7 +256,7 @@ public final class ClientSelfTest {
 		if (t == helm + 840) {
 			mc.options.forwardKey.setPressed(false);
 			Vec3d l = ship.toLocal(mc.player.getPos());
-			check("stuurhuis in gelopen", l.x > 14.2 && Math.abs(l.y - (8.0 + ship.liftOffset())) < 0.3,
+			check("stuurhuis in gelopen", l.x > 14.2 && Math.abs(l.y - (7.0 + ship.liftOffset())) < 0.3,
 					String.format("speler op lokaal (%.2f, %.2f, %.2f)", l.x, l.y, l.z));
 			shot(mc, "18_stuurhuis_omhoog_binnen");
 			tp(srv, ship, new double[]{-8.0, 12.0, -6.0}, new double[]{14.0, 7.0, 5.5});

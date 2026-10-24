@@ -454,8 +454,8 @@ def build(cfg):
     for xx in BOARD_X:
         S(xx, 2, 0, "air"); S(xx, 2, W - 1, "air"); S(xx, 3, 0, "air"); S(xx, 3, W - 1, "air")
 
-    # the accommodation one block higher (more room inside)
-    if cfg.get("house_extra", 1):
+    # optional: the accommodation one block higher (off: the original height)
+    if cfg.get("house_extra", 0):
         from raise_house import raise_house
         raise_house(B)
         WY += 1

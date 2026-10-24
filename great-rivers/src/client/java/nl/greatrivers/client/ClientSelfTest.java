@@ -196,6 +196,13 @@ public final class ClientSelfTest {
 					double sx = vt.cx() + sp[0] * nl.greatrivers.Villages.PU + 19, sz = vt.cz() + sp[1] * nl.greatrivers.Villages.PW + 15;
 					add("voetbalveld", sx - 30, 85, sz - 30, sx, 64, sz);
 				}
+				// a high-voltage substation at the end of a line
+				double[] ss = GreatRivers.substation(f, srvWorld.getSeed(), 0, 0);
+				if (ss != null) {
+					boolean ns = ss[3] == 0;
+					double dx = ns ? 34 : ss[4] * 70, dz = ns ? ss[4] * 70 : 34;
+					add("hoogspanningsstation", ss[0] + dx, ss[2] + 22, ss[1] + dz, ss[0], ss[2] + 6, ss[1]);
+				}
 				// a motorway junction
 				double[] jn = f.infra.junctions.nearest(0, 0);
 				if (jn != null) {

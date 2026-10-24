@@ -67,43 +67,9 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 			for (int dz = 0; dz < 16; dz++) {
 				int x = x0 + dx, z = z0 + dz;
 				try {
-				Metros.Metro metro = field.metros.at(x, z);
-				if (metro != null && MetroBuilder.column(w, m, field, metro, x, z)) {
-					any = true;
-					continue;
-				}
-				Villages.Town town = field.villages.at(x, z);
-				if (town != null && VillageBuilder.column(w, m, field, town, x, z)) {
-					any = true;
-					continue;
-				}
-				Harbours.Site s = field.harbours.siteAt(x, z);
-				if (s != null) {
-					int k = Harbours.kind(s, x + 0.5, z + 0.5);
-					if (k == Harbours.FLAT) {
-						any = true;
-						column(w, m, field, s, x, z);
-					}
-					if (k != Harbours.NO) continue;
-				}
-				int inf = InfraBuilder.column(w, m, field, x, z);
-				if (inf > 0) any = true;
-				if (inf == 2) continue;
-				if (Countryside.riverBank(w, m, field, x, z)) any = true;
-				if (Landscape.column(w, m, field, x, z)) any = true;
-				if (Pylons.column(w, m, field, x, z)) any = true;
-				double p = field.polderWeight(x, z);
-				if (p > 0.8 && field.dikeRoad(x, z)) {
-					any = true;
-					Countryside.dikeRoad(w, m, field, x, z);
-				}
-				if (p > 0.8 && Countryside.dikeLamp(w, m, field, x, z)) any = true;
-				// ditches and lakes can be too narrow for the aquifers to fill them: put the water in
-				double t = field.dutchHeight(x, z);
-				if (t < RiverField.WATER_TOP && field.land(x, z)) {
-					for (int y = Math.max((int) Math.floor(t), RiverField.WATER_TOP - 12); y <= RiverField.WATER_TOP; y++)
-						if (w.getBlockState(m.set(x, y, z)).isAir()) set(w, m, x, y, z, Blocks.WATER.getDefaultState());
-				}
+					if (dress(w, m, field, x, z)) any = true;
+					// the high-voltage lines last: their wires hang over roads and fields alike
+					if (Pylons.column(w, m, field, x, z)) any = true;
 				} catch (RuntimeException ex) {
 					// never let one column stop the world from generating
 					if (!warned) {
@@ -114,6 +80,46 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 			}
 		Countryside.windmill(w, m, field, x0, z0);
 		Countryside.farm(w, m, field, x0, z0);
+		return any;
+	}
+
+	/** Everything but the high-voltage lines, for one column. */
+	private boolean dress(StructureWorldAccess w, BlockPos.Mutable m, RiverField field, int x, int z) {
+		boolean any = false;
+		Metros.Metro metro = field.metros.at(x, z);
+		if (metro != null && MetroBuilder.column(w, m, field, metro, x, z)) {
+			return true;
+		}
+		Villages.Town town = field.villages.at(x, z);
+		if (town != null && VillageBuilder.column(w, m, field, town, x, z)) {
+			return true;
+		}
+		Harbours.Site s = field.harbours.siteAt(x, z);
+		if (s != null) {
+			int k = Harbours.kind(s, x + 0.5, z + 0.5);
+			if (k == Harbours.FLAT) {
+				any = true;
+				column(w, m, field, s, x, z);
+			}
+			if (k != Harbours.NO) return any;
+		}
+		int inf = InfraBuilder.column(w, m, field, x, z);
+		if (inf > 0) any = true;
+		if (inf == 2) return any;
+		if (Countryside.riverBank(w, m, field, x, z)) any = true;
+		if (Landscape.column(w, m, field, x, z)) any = true;
+		double p = field.polderWeight(x, z);
+		if (p > 0.8 && field.dikeRoad(x, z)) {
+			any = true;
+			Countryside.dikeRoad(w, m, field, x, z);
+		}
+		if (p > 0.8 && Countryside.dikeLamp(w, m, field, x, z)) any = true;
+		// ditches and lakes can be too narrow for the aquifers to fill them: put the water in
+		double t = field.dutchHeight(x, z);
+		if (t < RiverField.WATER_TOP && field.land(x, z)) {
+			for (int y = Math.max((int) Math.floor(t), RiverField.WATER_TOP - 12); y <= RiverField.WATER_TOP; y++)
+				if (w.getBlockState(m.set(x, y, z)).isAir()) set(w, m, x, y, z, Blocks.WATER.getDefaultState());
+		}
 		return any;
 	}
 

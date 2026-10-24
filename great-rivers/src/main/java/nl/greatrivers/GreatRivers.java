@@ -158,7 +158,14 @@ public class GreatRivers implements ModInitializer {
 			report(src, "Nearest lock and weir" + (lk.hasRoad() ? " (road to a " + lk.town() + ")" : ""),
 					(int) Math.floor(lk.wx(la, lw)), Locks.WALL_TOP + 1, (int) Math.floor(lk.wz(la, lw)), x, z);
 		}
+		double[] ss = Pylons.findSubstation(field, src.getWorld().getSeed(), x, z);
+		if (ss != null) report(src, "Nearest high-voltage substation", (int) ss[0], (int) ss[2] + 1, (int) ss[1], x, z);
 		return 1;
+	}
+
+	/** Nearest high-voltage substation {x, z, ground, fam, dir} (for the tests). */
+	public static double[] substation(RiverField f, long seed, int x, int z) {
+		return Pylons.findSubstation(f, seed, x, z);
 	}
 
 	public static double[] cityPylon(RiverField f, Metros.Metro mt) {

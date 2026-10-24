@@ -301,6 +301,21 @@ final class SelfTest {
 						} else check("afrit: viaduct over de snelweg", false, "geen afrit op dat punt");
 					}
 				}
+				// high-voltage lines: unbroken chains of towers from substation to substation
+				{
+					long sd = w.getSeed();
+					String lines = Pylons.checkLines(f, sd, 0, 0);
+					check("hoogspanning: geen losse masten", lines.startsWith("OK"), lines);
+					double[] ss = Pylons.findSubstation(f, sd, 0, 0);
+					check("hoogspanningsstation gevonden", ss != null, ss == null ? "geen" : "op " + (int) ss[0] + ", " + (int) ss[1]);
+					if (ss != null) {
+						int g = (int) ss[2], fam = (int) ss[3], dir = (int) ss[4];
+						int gx = (int) Math.floor(ss[0] + (fam == 0 ? 9 : dir * Pylons.GANTRY)), gz = (int) Math.floor(ss[1] + (fam == 0 ? dir * Pylons.GANTRY : 9));
+						w.getChunk(gx >> 4, gz >> 4);
+						BlockState post = w.getBlockState(new BlockPos(gx, g + 6, gz));
+						check("hoogspanningsstation: portaal", post.isOf(net.minecraft.block.Blocks.IRON_BARS), post.getBlock().getName().getString() + " op " + gx + ", " + (g + 6) + ", " + gz);
+					}
+				}
 				// railways: double track with overhead wire, a truss bridge over the river
 				{
 					int found = 0;

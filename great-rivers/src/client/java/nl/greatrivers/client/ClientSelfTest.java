@@ -229,8 +229,6 @@ public final class ClientSelfTest {
 					add("grote_haven", qPt.wx(qBa - 160, qPt.bank() - 60), 125, qPt.wz(qBa - 160, qPt.bank() - 60), qPt.wx(qBa + 120, qPt.bank() + 300), 64, qPt.wz(qBa + 120, qPt.bank() + 300));
 					add("containerkranen", qPt.wx(qBa, qPt.bank() + 120), 75, qPt.wz(qBa, qPt.bank() + 120), qPt.wx(qBa + 55, qPt.bank() + 200), 90, qPt.wz(qBa + 55, qPt.bank() + 200));
 				}
-				int[] qBy = GreatRivers.buoy(f, 0, 0);
-				if (qBy != null) add("boei", qBy[0] + 9, 66, qBy[1] + 9, qBy[0], 63, qBy[1]);
 				// a high-voltage substation at the end of a line
 				double[] qSs = GreatRivers.substation(f, srvWorld.getSeed(), 0, 0);
 				if (qSs != null) {

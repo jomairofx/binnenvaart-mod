@@ -419,17 +419,6 @@ final class SelfTest {
 						check("grote havens: minstens 5 km uit elkaar", md >= 5000, md == Double.MAX_VALUE ? "geen andere in de buurt" : (int) md + " blokken naar de volgende");
 					}
 				}
-				// fairway buoys: red and green along the river
-				{
-					int[] by = Buoys.nearest(f, 0, 0, 10);
-					check("boei gevonden", by != null, by == null ? "geen" : "op " + by[0] + ", " + by[1]);
-					if (by != null) {
-						w.getChunk(by[0] >> 4, by[1] >> 4);
-						BlockState b = w.getBlockState(new BlockPos(by[0], RiverField.WATER_TOP + 1, by[1]));
-						check("boei: rood of groen boven water", b.isOf(net.minecraft.block.Blocks.RED_TERRACOTTA) || b.isOf(net.minecraft.block.Blocks.GREEN_TERRACOTTA),
-								b.getBlock().getName().getString() + " op " + by[0] + ", " + (RiverField.WATER_TOP + 1) + ", " + by[1]);
-					}
-				}
 				// high-voltage lines: unbroken chains of towers from substation to substation
 				{
 					long sd = w.getSeed();

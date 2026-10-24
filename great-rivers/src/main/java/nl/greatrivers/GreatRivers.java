@@ -186,8 +186,6 @@ public class GreatRivers implements ModInitializer {
 			report(src, "Nearest lock and weir" + (lk.hasRoad() ? " (road to a " + lk.town() + ")" : ""),
 					(int) Math.floor(lk.wx(la, lw)), Locks.WALL_TOP + 1, (int) Math.floor(lk.wz(la, lw)), x, z);
 		}
-		int[] by = Buoys.nearest(field, x, z, 6);
-		if (by != null) report(src, "Nearest fairway buoy (" + (by[2] == 0 ? "red" : "green") + ")", by[0], RiverField.WATER_TOP + 3, by[1], x, z);
 		double[] ss = Pylons.findSubstation(field, src.getWorld().getSeed(), x, z);
 		if (ss != null) report(src, "Nearest high-voltage substation", (int) ss[0], (int) ss[2] + 1, (int) ss[1], x, z);
 		return 1;

@@ -317,12 +317,13 @@ final class SelfTest {
 						for (int c : count) if (c > 0) kinds++;
 						check("metropool: alle soorten wijken", kinds >= 8, kinds + " soorten");
 						int tall = 0;
-						for (int bx = -12; bx <= 12 && tall < 3; bx++)
-							for (int bz = -16; bz <= 16 && tall < 3; bz++) {
+						for (int bx = -30; bx <= 30 && tall < 3; bx += 3)
+							for (int bz = -38; bz <= 38 && tall < 3; bz += 3) {
 								if (mg.district(bx, bz) != Metros.CBD || MetroBuilder.railBlock(f, mg, bx, bz)) continue;
+								if (Metros.Metro.avenueX(bx) || Metros.Metro.avenueZ(bz)) continue;
 								int qx = mg.cx() + bx * Villages.PU + Villages.STREET + 3, qz = mg.cz() + bz * Villages.PW + Villages.STREET + 10;
 								double[] rv = f.riverAt(qx, qz, true);
-								if (rv[0] - rv[1] < 60) continue;
+								if (rv[0] - rv[1] < 110) continue;
 								w.getChunk(qx >> 4, qz >> 4);
 								if (!w.getBlockState(new BlockPos(qx, VillageBuilder.Y0 + 40, qz)).isAir()) tall++;
 							}

@@ -197,34 +197,34 @@ public final class ClientSelfTest {
 					add("voetbalveld", sx - 30, 85, sz - 30, sx, 64, sz);
 				}
 				// the metropolis: skyline from afar, the central station, a big low-rise town, a town behind the dike
-				nl.greatrivers.Metros.Metro mg = f.metros.nearestBig(0, 0, nl.greatrivers.Metros.MEGA, 3);
-				if (mg != null) {
-					add("metropool_skyline", mg.cx() - 900, 160, mg.cz() - 900, mg.cx(), 90, mg.cz());
-					add("metropool_straat", mg.cx() + 700, 70, mg.cz() + 15.5, mg.cx(), 80, mg.cz() + 15.5);
+				nl.greatrivers.Metros.Metro qMg = f.metros.nearestBig(0, 0, nl.greatrivers.Metros.MEGA, 3);
+				if (qMg != null) {
+					add("metropool_skyline", qMg.cx() - 900, 160, qMg.cz() - 900, qMg.cx(), 90, qMg.cz());
+					add("metropool_straat", qMg.cx() + 700, 70, qMg.cz() + 15.5, qMg.cx(), 80, qMg.cz() + 15.5);
 				}
-				double[] cs = f.rails.findCentralStation(0, 0);
-				if (cs != null) add("centraal_station", cs[0] + 45, cs[2] + 12, cs[1] + 45, cs[0], cs[2] + 4, cs[1]);
-				nl.greatrivers.Metros.Metro lw = f.metros.nearestBig(0, 0, nl.greatrivers.Metros.LOW, 3);
-				if (lw != null) add("groot_dorp", lw.cx() - 300, 140, lw.cz() - 300, lw.cx(), 64, lw.cz());
-				nl.greatrivers.Villages.Town dt = GreatRivers.findDikeTown(f, 0, 0, 12, null);
-				if (dt != null) {
-					int[] c = GreatRivers.nearest(f.great, dt.cx(), dt.cz(), 900);
-					if (c != null) add("dijkwijk", c[0], 90, c[1], dt.cx(), 66, dt.cz());
+				double[] qCs = f.rails.findCentralStation(0, 0);
+				if (qCs != null) add("centraal_station", qCs[0] + 45, qCs[2] + 12, qCs[1] + 45, qCs[0], qCs[2] + 4, qCs[1]);
+				nl.greatrivers.Metros.Metro qLw = f.metros.nearestBig(0, 0, nl.greatrivers.Metros.LOW, 3);
+				if (qLw != null) add("groot_dorp", qLw.cx() - 300, 140, qLw.cz() - 300, qLw.cx(), 64, qLw.cz());
+				nl.greatrivers.Villages.Town qDt = GreatRivers.findDikeTown(f, 0, 0, 12, null);
+				if (qDt != null) {
+					int[] qC = GreatRivers.nearest(f.great, qDt.cx(), qDt.cz(), 900);
+					if (qC != null) add("dijkwijk", qC[0], 90, qC[1], qDt.cx(), 66, qDt.cz());
 				}
-				nl.greatrivers.Harbours.Site pt = f.harbours.nearestPort(0, 0, 2);
-				if (pt != null) {
-					double ba = pt.basinA(0);
-					add("grote_haven", pt.wx(ba - 160, pt.bank() - 60), 125, pt.wz(ba - 160, pt.bank() - 60), pt.wx(ba + 120, pt.bank() + 300), 64, pt.wz(ba + 120, pt.bank() + 300));
-					add("containerkranen", pt.wx(ba, pt.bank() + 120), 75, pt.wz(ba, pt.bank() + 120), pt.wx(ba + 55, pt.bank() + 200), 90, pt.wz(ba + 55, pt.bank() + 200));
+				nl.greatrivers.Harbours.Site qPt = f.harbours.nearestPort(0, 0, 2);
+				if (qPt != null) {
+					double qBa = qPt.basinA(0);
+					add("grote_haven", qPt.wx(qBa - 160, qPt.bank() - 60), 125, qPt.wz(qBa - 160, qPt.bank() - 60), qPt.wx(qBa + 120, qPt.bank() + 300), 64, qPt.wz(qBa + 120, qPt.bank() + 300));
+					add("containerkranen", qPt.wx(qBa, qPt.bank() + 120), 75, qPt.wz(qBa, qPt.bank() + 120), qPt.wx(qBa + 55, qPt.bank() + 200), 90, qPt.wz(qBa + 55, qPt.bank() + 200));
 				}
-				int[] by = GreatRivers.buoy(f, 0, 0);
-				if (by != null) add("boei", by[0] + 9, 66, by[1] + 9, by[0], 63, by[1]);
+				int[] qBy = GreatRivers.buoy(f, 0, 0);
+				if (qBy != null) add("boei", qBy[0] + 9, 66, qBy[1] + 9, qBy[0], 63, qBy[1]);
 				// a high-voltage substation at the end of a line
-				double[] ss = GreatRivers.substation(f, srvWorld.getSeed(), 0, 0);
-				if (ss != null) {
-					boolean ns = ss[3] == 0;
-					double dx = ns ? 34 : ss[4] * 70, dz = ns ? ss[4] * 70 : 34;
-					add("hoogspanningsstation", ss[0] + dx, ss[2] + 22, ss[1] + dz, ss[0], ss[2] + 6, ss[1]);
+				double[] qSs = GreatRivers.substation(f, srvWorld.getSeed(), 0, 0);
+				if (qSs != null) {
+					boolean qNs = qSs[3] == 0;
+					double qDx = qNs ? 34 : qSs[4] * 70, qDz = qNs ? qSs[4] * 70 : 34;
+					add("hoogspanningsstation", qSs[0] + qDx, qSs[2] + 22, qSs[1] + qDz, qSs[0], qSs[2] + 6, qSs[1]);
 				}
 				// a motorway junction
 				double[] jn = f.infra.junctions.nearest(0, 0);

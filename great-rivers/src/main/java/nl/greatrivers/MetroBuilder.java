@@ -353,7 +353,10 @@ final class MetroBuilder {
 		long key = mt.seed() ^ (index * 0x9E3779B97F4A7C15L) ^ 0xB81D6EL ^ (ns0 ? 0x5A5A5A5AL : 0);
 		return KINDS.computeIfAbsent(key, k -> {
 			long hk = Harbours.mix(mt.seed() + index * 131L);
-			if (Math.floorMod(hk, 3L) == 2) return 0;
+			// only every few boulevards gets a bridge: about 800 m apart in a city, 1.4 km in a metropolis
+			int ord = ns0 ? Math.floorDiv(index - 3, 6) : Math.floorDiv(index - 3, 7);
+			int every = mt.mega() ? 7 : 4;
+			if (Math.floorMod(ord + (int) Math.floorMod(mt.seed() >>> 5, (long) every), every) != 0) return 0;
 			int i = (int) Math.floorMod(hk >>> 8, 5L);          // arch, cable-stayed, suspension, lift bridge, truss
 			boolean ns = ns0;
 			double end = VillageBuilder.QUAY + 6 + RAMP;

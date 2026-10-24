@@ -211,6 +211,8 @@ public final class ClientSelfTest {
 					int[] c = GreatRivers.nearest(f.great, dt.cx(), dt.cz(), 900);
 					if (c != null) add("dijkwijk", c[0], 90, c[1], dt.cx(), 66, dt.cz());
 				}
+				int[] by = GreatRivers.buoy(f, 0, 0);
+				if (by != null) add("boei", by[0] + 9, 66, by[1] + 9, by[0], 63, by[1]);
 				// a high-voltage substation at the end of a line
 				double[] ss = GreatRivers.substation(f, srvWorld.getSeed(), 0, 0);
 				if (ss != null) {

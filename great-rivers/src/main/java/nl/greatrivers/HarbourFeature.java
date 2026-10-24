@@ -70,6 +70,7 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 					if (dress(w, m, field, x, z)) any = true;
 					// the high-voltage lines last: their wires hang over roads and fields alike
 					if (Pylons.column(w, m, field, x, z)) any = true;
+					if (Buoys.column(w, m, field, x, z)) any = true;
 				} catch (RuntimeException ex) {
 					// never let one column stop the world from generating
 					if (!warned) {

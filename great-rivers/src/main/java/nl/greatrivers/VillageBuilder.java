@@ -84,10 +84,7 @@ final class VillageBuilder {
 		if (!Villages.blockIn(t, x, z)) return edge(w, m, f, t, x, z);
 		int bu = u - Villages.STREET, bw = wv - Villages.STREET;   // 0..28, 0..20
 		int bx = Math.floorDiv(x - t.cx(), Villages.PU), bz = Math.floorDiv(z - t.cz(), Villages.PW);
-		if (t.river() && blockNearWater(f, t, bx, bz)) {
-			park(w, m, x, z, bu, bw);
-			return true;
-		}
+		if (t.river() && waterfront(w, m, f, t, x, z, bu, bw, bx, bz, t.city())) return true;
 		if (bx == 0 && bz == 0) {
 			church(w, m, t, x, z, bu, bw);
 			return true;
@@ -240,6 +237,202 @@ final class VillageBuilder {
 				if (rv[0] - rv[1] < QUAY + 3) return true;
 			}
 		return false;
+	}
+
+	// ------------------------------------------------------------------ the waterfront of a river town
+
+	/** Buildings keep at least this far from the water: a green promenade in between. */
+	static final double PROMENADE = QUAY + 22, FRONT = QUAY + 80;
+	private static final java.util.concurrent.ConcurrentHashMap<Long, Double> WATER_DIST = new java.util.concurrent.ConcurrentHashMap<>();
+
+	/** Least distance of the block (bx, bz) of a river town from the water (cached per block). */
+	static double waterDist(RiverField f, Villages.Town t, int bx, int bz) {
+		if (WATER_DIST.size() > 200000) WATER_DIST.clear();
+		long key = t.seed() ^ (bx * 0x9E3779B97F4A7C15L) ^ (bz * 0x632BE59BD9B4E019L) ^ 0x3A7E5L;
+		return WATER_DIST.computeIfAbsent(key, k -> {
+			int x0 = t.cx() + bx * Villages.PU, z0 = t.cz() + bz * Villages.PW;
+			double e = Double.MAX_VALUE;
+			for (int i = 0; i <= 2; i++)
+				for (int j = 0; j <= 2; j++) {
+					double[] rv = f.riverAt(x0 + i * Villages.PU / 2, z0 + j * Villages.PW / 2, true);
+					e = Math.min(e, rv[0] - rv[1]);
+				}
+			return e;
+		});
+	}
+
+	/**
+	 * The blocks along the river in a river town or city: first a green promenade, then a varied front of
+	 * buildings: apartment towers, terraced apartments stepping down to the water, old brick warehouses turned
+	 * into lofts, tall narrow houses, modern town houses, a restaurant pavilion with a terrace. Returns false
+	 * where the block is too far from the water to be part of the waterfront.
+	 */
+	static boolean waterfront(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Villages.Town t, int x, int z, int bu, int bw, int bx, int bz, boolean big) {
+		double e = waterDist(f, t, bx, bz);
+		if (e < PROMENADE) {
+			promenade(w, m, x, z, bu, bw, hash(t.seed(), bx * 31L + bz, 444));
+			return true;
+		}
+		if (e >= FRONT) return false;
+		long bh = hash(t.seed(), bx * 31L + bz, 555);
+		int kind = (int) Math.floorMod(bh >>> 7, big ? 7L : 5L);
+		switch (kind) {
+			case 0 -> terraced(w, m, x, z, bu, bw, bh);
+			case 1 -> lofts(w, m, x, z, bu, bw, bh);
+			case 2 -> MetroBuilder.canalHouses(w, m, x, z, bu, bw, bh);
+			case 3 -> pavilion(w, m, x, z, bu, bw, bh);
+			case 4 -> MetroBuilder.modernRows(w, m, x, z, bu, bw, bh);
+			case 5 -> tower(w, m, x, z, bu, bw, bh, 0.6);
+			default -> flats(w, m, x, z, bu, bw, bh);
+		}
+		return true;
+	}
+
+	/** Green promenade along the water: lawns, trees, paths, benches, a playground. */
+	static void promenade(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh) {
+		long h = hash(x, z, 41);
+		boolean path = bu == 14 || bw == 10 || bu == 0 || bw == 0;
+		set(w, m, x, G, z, path ? (((x + z) & 3) == 0 ? Blocks.POLISHED_ANDESITE.getDefaultState() : Blocks.SMOOTH_STONE.getDefaultState()) : Blocks.GRASS_BLOCK.getDefaultState());
+		if (path) {
+			if ((bu == 14 && bw % 6 == 3) || (bw == 10 && bu % 8 == 4)) set(w, m, x, G + 1, z, stairs(Blocks.SPRUCE_STAIRS, bu == 14 ? Direction.EAST : Direction.NORTH));
+			if (bu == 0 && bw % 10 == 5) {
+				for (int y = G + 1; y <= G + 3; y++) set(w, m, x, y, z, Blocks.DARK_OAK_FENCE.getDefaultState());
+				set(w, m, x, G + 4, z, Blocks.LANTERN.getDefaultState());
+			}
+			return;
+		}
+		if ((bh & 3) == 0 && bu >= 3 && bu <= 11 && bw >= 2 && bw <= 8) {
+			// a playground: sand, a climbing frame, a slide
+			set(w, m, x, G, z, Blocks.SAND.getDefaultState());
+			if ((bu == 5 || bu == 9) && (bw == 3 || bw == 7)) for (int y = G + 1; y <= G + 3; y++) set(w, m, x, y, z, Blocks.OAK_FENCE.getDefaultState());
+			if (bu >= 5 && bu <= 9 && (bw == 3 || bw == 7) && !(bu == 5 || bu == 9)) set(w, m, x, G + 4, z, Blocks.OAK_SLAB.getDefaultState());
+			if (bu == 7 && bw == 5) set(w, m, x, G + 1, z, Blocks.RED_CONCRETE.getDefaultState());
+			return;
+		}
+		if ((h % 23) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 8);
+		else if ((h % 13) == 0) set(w, m, x, G + 1, z, Blocks.SHORT_GRASS.getDefaultState());
+		else if ((h % 41) == 0) set(w, m, x, G + 1, z, (h & 64) == 0 ? Blocks.POPPY.getDefaultState() : Blocks.CORNFLOWER.getDefaultState());
+	}
+
+	/** Terraced apartments: white blocks stepping up from 3 to 9 floors, roof terraces with glass balustrades. */
+	static void terraced(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh) {
+		boolean body = bu >= 2 && bu <= 26 && bw >= 3 && bw <= 17;
+		if (!body) {
+			set(w, m, x, G, z, (bw == 1 || bw == 19) ? Blocks.SMOOTH_STONE.getDefaultState() : Blocks.GRASS_BLOCK.getDefaultState());
+			if ((bu == 0 || bu == 28) && bw % 6 == 3) Countryside.tree(w, m, x, G + 1, z, bh + bw);
+			return;
+		}
+		boolean up = ((bh >>> 3) & 1) == 0;
+		int step = (up ? bu - 2 : 26 - bu) / 5;                 // 0..4
+		int floors = 3 + step * 2 - (step == 4 ? 1 : 0);
+		int H = floors * 3;
+		boolean stepEdge = (up ? bu - 2 : 26 - bu) % 5 == 4 && step < 4;
+		boolean edge = bu == 2 || bu == 26 || bw == 3 || bw == 17;
+		BlockState wall = ((bh >>> 5) & 1) == 0 ? Blocks.WHITE_CONCRETE.getDefaultState() : Blocks.SMOOTH_SANDSTONE.getDefaultState();
+		BlockState glass = bw == 3 || bw == 17 ? paneEW(Blocks.GLASS_PANE) : paneNS(Blocks.GLASS_PANE);
+		set(w, m, x, G, z, Blocks.SMOOTH_STONE.getDefaultState());
+		for (int y = Y0; y <= Y0 + H; y++) {
+			int rel = y - Y0;
+			BlockState st;
+			if (edge || stepEdge) {
+				if (rel % 3 == 0) st = wall;
+				else st = ((bu + bw) % 3 != 0) ? glass : wall;
+				if (rel <= 2 && bw == 3 && bu % 8 == 4) st = AIR;                    // front doors
+			} else {
+				st = rel % 3 == 0 ? Blocks.SMOOTH_STONE.getDefaultState() : AIR;
+				boolean lit = Math.floorMod(Harbours.mix(bh + bu / 4 * 31L + rel / 3 * 7L), 10L) < 5;
+				if (rel % 3 == 2 && bu % 4 == 1 && bw % 5 == 0 && lit) st = Blocks.SEA_LANTERN.getDefaultState();
+				if (rel % 3 == 1 && bu % 4 == 3 && bw % 5 == 2) st = Blocks.SPRUCE_STAIRS.getDefaultState();
+			}
+			set(w, m, x, y, z, st);
+		}
+		// roof terrace: glass balustrade round the edge, a few plants
+		int roof = Y0 + H + 1;
+		set(w, m, x, roof - 1, z, wall);
+		if (edge || stepEdge) set(w, m, x, roof, z, glass);
+		else if (((bu * 7 + bw * 3) % 11) == 0) set(w, m, x, roof, z, Blocks.POTTED_AZALEA_BUSH.getDefaultState());
+		for (int y = roof + 1; y <= Y0 + 40; y++) {
+			BlockState o = w.getBlockState(m.set(x, y, z));
+			if (o.isIn(BlockTags.LEAVES) || o.isIn(BlockTags.LOGS)) set(w, m, x, y, z, AIR);
+		}
+	}
+
+	/** Old brick warehouses on the quay ("pakhuizen") turned into lofts: five storeys, rows of arched windows, a name band. */
+	static void lofts(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh) {
+		boolean body = bu >= 1 && bu <= 27 && bw >= 2 && bw <= 18;
+		if (!body) {
+			set(w, m, x, G, z, Blocks.BRICKS.getDefaultState());
+			if (bw == 0 && bu % 7 == 3) set(w, m, x, G + 1, z, Blocks.POLISHED_BLACKSTONE_WALL.getDefaultState());
+			return;
+		}
+		boolean split = bu == 14;                                    // two warehouses side by side
+		boolean edge = bu == 1 || bu == 27 || bw == 2 || bw == 18 || split;
+		Block brick = new Block[]{Blocks.BRICKS, Blocks.MUD_BRICKS, Blocks.BRICKS, Blocks.DEEPSLATE_BRICKS}[(int) ((bh >>> 9) & 3)];
+		BlockState b = brick.getDefaultState();
+		int H = 20;
+		boolean sideNS = bu == 1 || bu == 27 || split;
+		set(w, m, x, G, z, Blocks.STONE_BRICKS.getDefaultState());
+		for (int y = Y0; y <= Y0 + H; y++) {
+			int rel = y - Y0;
+			BlockState st;
+			int along = sideNS ? bw : bu;
+			if (edge) {
+				st = b;
+				if (!split && along % 3 == 1 && rel % 4 >= 1 && rel % 4 <= 2 && rel > 0) st = sideNS ? paneNS(Blocks.GLASS_PANE) : paneEW(Blocks.GLASS_PANE);
+				if (!split && along % 3 == 1 && rel % 4 == 3) st = stairs(brick == Blocks.MUD_BRICKS ? Blocks.MUD_BRICK_STAIRS : brick == Blocks.DEEPSLATE_BRICKS ? Blocks.DEEPSLATE_BRICK_STAIRS : Blocks.BRICK_STAIRS,
+						sideNS ? (bu == 1 ? Direction.EAST : Direction.WEST) : (bw == 2 ? Direction.SOUTH : Direction.NORTH)).with(Properties.BLOCK_HALF, BlockHalf.TOP);
+				if (rel == H - 2 && !split) st = Blocks.WHITE_CONCRETE.getDefaultState();          // the painted name band
+				if (bw == 2 && rel <= 2 && bu % 7 == 3) st = AIR;                                    // the big doors
+			} else {
+				st = rel % 4 == 0 ? Blocks.SPRUCE_PLANKS.getDefaultState() : AIR;
+				if (rel % 4 == 0 && bu % 7 == 5 && bw == 10) st = AIR;
+				if (bu % 7 == 5 && bw == 10) st = Blocks.LADDER.getDefaultState().with(Properties.HORIZONTAL_FACING, Direction.NORTH);
+				boolean lit = Math.floorMod(Harbours.mix(bh + bu / 5 * 31L + rel / 4 * 7L), 10L) < 6;
+				if (rel % 4 == 3 && bu % 5 == 2 && bw % 5 == 0 && lit) st = Blocks.SEA_LANTERN.getDefaultState();
+			}
+			set(w, m, x, y, z, st);
+		}
+		// gabled top of the facade at both ends and a hoisting beam
+		set(w, m, x, Y0 + H + 1, z, edge ? Blocks.STONE_BRICK_SLAB.getDefaultState() : Blocks.DEEPSLATE_TILES.getDefaultState());
+		if (bw == 2 && (bu == 7 || bu == 21)) set(w, m, x, Y0 + H - 3, z - 1, Blocks.DARK_OAK_FENCE.getDefaultState());
+	}
+
+	/** A restaurant pavilion on the waterfront: a glass box with a flat white roof and a terrace with parasols. */
+	static void pavilion(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh) {
+		boolean hall = bu >= 7 && bu <= 21 && bw >= 7 && bw <= 13;
+		boolean roof = bu >= 6 && bu <= 22 && bw >= 6 && bw <= 14;
+		set(w, m, x, G, z, ((bu + bw) & 1) == 0 ? Blocks.SPRUCE_PLANKS.getDefaultState() : Blocks.BIRCH_PLANKS.getDefaultState());
+		if (bu <= 1 || bu >= 27 || bw <= 1 || bw >= 19) {
+			set(w, m, x, G, z, Blocks.GRASS_BLOCK.getDefaultState());
+			if (bw <= 1 && bu % 4 == 2) set(w, m, x, G + 1, z, Blocks.FLOWER_POT.getDefaultState());
+			return;
+		}
+		if (hall) {
+			boolean edge = bu == 7 || bu == 21 || bw == 7 || bw == 13;
+			for (int y = Y0; y <= Y0 + 3; y++) {
+				BlockState st = AIR;
+				if (edge) st = (bw == 7 || bw == 13) ? paneEW(Blocks.GLASS_PANE) : paneNS(Blocks.GLASS_PANE);
+				if (edge && y == Y0 && bw == 7 && bu == 14) st = AIR;
+				if (!edge && y == Y0 && bu % 3 == 1 && bw % 3 == 1) st = Blocks.SPRUCE_FENCE.getDefaultState();
+				if (!edge && y == Y0 + 1 && bu % 3 == 1 && bw % 3 == 1) st = Blocks.SPRUCE_PRESSURE_PLATE.getDefaultState();
+				if (!edge && y == Y0 + 3 && bu % 4 == 2 && bw == 10) st = Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true);
+				set(w, m, x, y, z, st);
+			}
+		}
+		if (roof) {
+			set(w, m, x, Y0 + 4, z, Blocks.WHITE_CONCRETE.getDefaultState());
+			return;
+		}
+		// the terrace: tables with parasols
+		if (bu % 5 == 2 && bw % 5 == 2) {
+			set(w, m, x, Y0, z, Blocks.SPRUCE_FENCE.getDefaultState());
+			set(w, m, x, Y0 + 1, z, Blocks.SPRUCE_FENCE.getDefaultState());
+			Block cloth = new Block[]{Blocks.WHITE_WOOL, Blocks.RED_WOOL, Blocks.GREEN_WOOL}[(int) ((bh >>> 4) % 3)];
+			set(w, m, x, Y0 + 2, z, cloth.getDefaultState());
+			for (Direction d : Direction.Type.HORIZONTAL) set(w, m, x + d.getOffsetX(), Y0 + 2, z + d.getOffsetZ(), cloth.getDefaultState());
+		} else if ((bu % 5 == 2 && (bw % 5 == 1 || bw % 5 == 3)) || (bw % 5 == 2 && (bu % 5 == 1 || bu % 5 == 3))) {
+			set(w, m, x, Y0, z, stairs(Blocks.SPRUCE_STAIRS, bu % 5 == 1 ? Direction.EAST : bu % 5 == 3 ? Direction.WEST : bw % 5 == 1 ? Direction.SOUTH : Direction.NORTH));
+		}
 	}
 
 	// ------------------------------------------------------------------ the edge of the town

@@ -111,10 +111,7 @@ final class MetroBuilder {
 			railSquare(w, m, f, x, z, bu, bw);
 			return true;
 		}
-		if (mt.river() && nearWater(f, mt, t, bx, bz)) {
-			plaza(w, m, x, z, bu, bw);
-			return true;
-		}
+		if (mt.river() && VillageBuilder.waterfront(w, m, f, t, x, z, bu, bw, bx, bz, !mt.low())) return true;
 		long bh = hash(mt.seed(), bx * 31L + bz, 7);
 		double zone = Math.hypot(bx * Villages.PU, bz * Villages.PW) / mt.radius();
 		switch (district) {
@@ -611,7 +608,7 @@ final class MetroBuilder {
 	private static final Block[] CANAL_BRICK = {Blocks.BRICKS, Blocks.MUD_BRICKS, Blocks.DEEPSLATE_BRICKS, Blocks.BRICKS, Blocks.GRANITE, Blocks.POLISHED_GRANITE};
 
 	/** Tall narrow canal houses ("grachtenpanden"): five wide, four floors, a gable on top, a hoisting beam. */
-	private static void canalHouses(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh) {
+	static void canalHouses(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh) {
 		if (bu >= 25) {
 			set(w, m, x, G, z, Blocks.DIRT_PATH.getDefaultState());
 			return;
@@ -704,7 +701,7 @@ final class MetroBuilder {
 	}
 
 	/** New estate ("Vinex"): modern row houses with flat or single-pitch roofs, front gardens, cars, solar panels. */
-	private static void modernRows(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh) {
+	static void modernRows(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int bu, int bw, long bh) {
 		boolean front = bw <= 9;
 		int pw = front ? bw : 20 - bw;            // 0 at the street
 		if (bw == 10) {

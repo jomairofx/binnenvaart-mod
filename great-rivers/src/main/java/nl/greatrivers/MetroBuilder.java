@@ -328,13 +328,34 @@ final class MetroBuilder {
 	 * Only where the ramps on both sides come back down to the street well inside the city.
 	 */
 	private static int bridgeKind(RiverField f, Metros.Metro mt, int index) {
+		return bridgeKind(f, mt, riverAlongX(f, mt), index);
+	}
+
+	/**
+	 * Which boulevard of a city carries a bridge at this column: {1 for north-south, index, kind}, or null.
+	 * In a metropolis the river can run any way, so boulevards of both directions may cross it.
+	 */
+	private static int[] avenueBridge(RiverField f, Metros.Metro mt, int bx, int bz) {
+		boolean pref = riverAlongX(f, mt);
+		for (int o = 0; o < 2; o++) {
+			if (o == 1 && !mt.mega()) break;
+			boolean ns = o == 0 ? pref : !pref;
+			if (ns ? !Metros.Metro.avenueX(bx) : !Metros.Metro.avenueZ(bz)) continue;
+			int index = ns ? bx : bz;
+			int kind = bridgeKind(f, mt, ns, index);
+			if (kind != 0) return new int[]{ns ? 1 : 0, index, kind};
+		}
+		return null;
+	}
+
+	private static int bridgeKind(RiverField f, Metros.Metro mt, boolean ns0, int index) {
 		if (KINDS.size() > 50000) KINDS.clear();
-		long key = mt.seed() ^ (index * 0x9E3779B97F4A7C15L) ^ 0xB81D6EL;
+		long key = mt.seed() ^ (index * 0x9E3779B97F4A7C15L) ^ 0xB81D6EL ^ (ns0 ? 0x5A5A5A5AL : 0);
 		return KINDS.computeIfAbsent(key, k -> {
 			long hk = Harbours.mix(mt.seed() + index * 131L);
 			if (Math.floorMod(hk, 3L) == 2) return 0;
 			int i = (int) Math.floorMod(hk >>> 8, 5L);          // arch, cable-stayed, suspension, lift bridge, truss
-			boolean ns = riverAlongX(f, mt);
+			boolean ns = ns0;
 			double end = VillageBuilder.QUAY + 6 + RAMP;
 			double sWet0 = Double.NaN, sWet1 = Double.NaN;
 			for (double sv = -mt.radius(); sv <= mt.radius(); sv += 4) {
@@ -434,10 +455,9 @@ final class MetroBuilder {
 
 	/** Is there a bridge ramp (higher than a few blocks) over this column? */
 	private static boolean bridgeOver(RiverField f, Metros.Metro mt, int x, int z, int bx, int bz, int u, int wv) {
-		boolean ns = riverAlongX(f, mt);
-		if (ns ? !Metros.Metro.avenueX(bx) : !Metros.Metro.avenueZ(bz)) return false;
-		int index = ns ? bx : bz;
-		if (bridgeKind(f, mt, index) == 0) return false;
+		int[] ab = avenueBridge(f, mt, bx, bz);
+		if (ab == null) return false;
+		boolean ns = ab[0] == 1;
 		double cxl = ns ? mt.cx() + bx * Villages.PU + Villages.STREET + 14.5 : x + 0.5;
 		double czl = ns ? z + 0.5 : mt.cz() + bz * Villages.PW + Villages.STREET + 10.5;
 		double ec = f.great.distance(cxl, czl) - f.great.halfWidth(cxl, czl);
@@ -446,17 +466,17 @@ final class MetroBuilder {
 
 	/** The high bridges of a river city, with their ramps along the boulevards. Returns true if it built here. */
 	private static boolean bridge(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Metros.Metro mt, int x, int z, int bx, int bz, int u, int wv) {
-		boolean ns = riverAlongX(f, mt);
+		int[] ab = avenueBridge(f, mt, bx, bz);
+		if (ab == null) return false;
+		boolean ns = ab[0] == 1;
 		int p, index;
 		double cxl, czl;
 		if (ns) {
-			if (!Metros.Metro.avenueX(bx)) return false;
 			p = u - Villages.STREET;
 			index = bx;
 			cxl = mt.cx() + bx * Villages.PU + Villages.STREET + 14.5;
 			czl = z + 0.5;
 		} else {
-			if (!Metros.Metro.avenueZ(bz)) return false;
 			p = wv - Villages.STREET;
 			index = bz;
 			cxl = x + 0.5;
@@ -464,7 +484,7 @@ final class MetroBuilder {
 		}
 		int W = ns ? 28 : 20;
 		if (p < 2 || p > W - 2) return false;
-		int kind = bridgeKind(f, mt, index);
+		int kind = ab[2];
 		if (kind == 0) return false;
 		if (Math.hypot(cxl - mt.cx(), czl - mt.cz()) > mt.radius() + 20) return false;
 		double dc = f.great.distance(cxl, czl), hw = f.great.halfWidth(cxl, czl), ec = dc - hw;

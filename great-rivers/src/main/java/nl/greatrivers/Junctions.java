@@ -137,6 +137,7 @@ public final class Junctions {
 			double qx = x0 + (x1 - x0) * s / len, qz = z0 + (z1 - z0) * s / len;
 			int ix = (int) Math.floor(qx), iz = (int) Math.floor(qz);
 			if (kr.distance(qx, qz) - kr.halfWidth(qx, qz) < 14) return false;
+			if (Roads.inDike(f, ix, iz, qx, qz)) return false;
 			if (infra.motorwayDistance(qx, qz) < REACH - 2) return false;
 			if (f.harbours.siteAt(ix, iz) != null) return false;
 			if (f.coastal(ix, iz) < Lowlands.COAST + 0.07) return false;

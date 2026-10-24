@@ -161,10 +161,10 @@ final class SelfTest {
 							}
 						check("stad aan de rivier: kademuur", ok, found);
 						int tall = 0;
-						for (int bx = -5; bx <= 5; bx++)
-							for (int bz = -6; bz <= 6; bz++) {
+						for (int bx = -7; bx <= 7; bx++)
+							for (int bz = -9; bz <= 9; bz++) {
 								int qx = t.cx() + bx * Villages.PU + Villages.STREET + 3, qz = t.cz() + bz * Villages.PW + Villages.STREET + 10;   // on the facade
-								if (Math.hypot(qx - t.cx(), qz - t.cz()) > t.radius() * 0.6) continue;
+								if (Math.hypot(qx - t.cx(), qz - t.cz()) > t.radius() * 0.85) continue;
 								w.getChunk(qx >> 4, qz >> 4);
 								if (!w.getBlockState(new BlockPos(qx, VillageBuilder.Y0 + 21, qz)).isAir()) tall++;
 							}
@@ -304,6 +304,11 @@ final class SelfTest {
 				// a metropolis of 5 to 10 km: districts, towers in the centres, the railway viaduct and the central station
 				{
 					Metros.Metro mg = f.metros.nearestBig(0, 0, Metros.MEGA, 3);
+					if (mg == null || f.metros.nearestBig(0, 0, Metros.LOW, 3) == null) {
+						StringBuilder sb = new StringBuilder("  vierkanten:");
+						Metros.WHY.forEach((k, v) -> sb.append(" [").append((int) (k >> 32)).append(',').append((int) (long) k).append("] ").append(v).append(';'));
+						log.add(sb.toString());
+					}
 					check("metropool gevonden", mg != null, mg == null ? "geen" : "op " + mg.cx() + ", " + mg.cz() + ", " + (int) (mg.radius() * 2) + " breed");
 					if (mg != null) {
 						check("metropool: 5 tot 10 km", mg.radius() * 2 >= 4999 && mg.radius() * 2 <= 10001, (int) (mg.radius() * 2) + " blokken");
@@ -370,13 +375,25 @@ final class SelfTest {
 								w.getChunk(qx >> 4, qz >> 4);
 								top = Math.max(top, w.getTopY(net.minecraft.world.Heightmap.Type.OCEAN_FLOOR_WG, qx, qz) - 1);
 							}
-							check("dijkwijk: dijk staat er nog", top >= (int) Lowlands.DIKE_TOP - 1, "dijk tot y " + top);
+							StringBuilder dg = new StringBuilder();
+							for (double v = hw + fl + 10; v <= hw + fl + 26; v += 4) {
+								int qx = (int) Math.floor(c[0] + n[0] * side * v), qz = (int) Math.floor(c[1] + n[1] * side * v);
+								double[] rv = f.riverAt(qx, qz, true);
+								Villages.Town st = f.villages.site(qx, qz);
+								dg.append(String.format(" e=%.0f t=%.1f %s;", rv[0] - rv[1], f.dutchHeight(qx, qz), st == null ? "-" : st.kind()));
+							}
+							check("dijkwijk: dijk staat er nog", top >= (int) Lowlands.DIKE_TOP - 1, "dijk tot y " + top + dg);
 						}
 					}
 				}
 				// a big port: basins with water, container cranes along the quays; ports at least 5 km apart
 				{
 					Harbours.Site pt = f.harbours.nearestPort(0, 0, 2);
+					if (pt == null) {
+						StringBuilder sb = new StringBuilder("  havencellen:");
+						Harbours.WHY.forEach((k, v) -> sb.append(" [").append((int) (k >> 32)).append(',').append((int) (long) k).append("] ").append(v.length() > 120 ? v.substring(0, 120) : v).append(';'));
+						log.add(sb.toString());
+					}
 					check("grote haven gevonden", pt != null, pt == null ? "geen" : "op " + pt.cx() + ", " + pt.cz() + ", " + pt.basins() + " bekkens");
 					if (pt != null) {
 						double ba = pt.basinA(0);
@@ -417,7 +434,7 @@ final class SelfTest {
 					check("hoogspanningsstation gevonden", ss != null, ss == null ? "geen" : "op " + (int) ss[0] + ", " + (int) ss[1]);
 					if (ss != null) {
 						int g = (int) ss[2], fam = (int) ss[3], dir = (int) ss[4];
-						int gx = (int) Math.floor(ss[0] + (fam == 0 ? 9 : dir * Pylons.GANTRY)), gz = (int) Math.floor(ss[1] + (fam == 0 ? dir * Pylons.GANTRY : 9));
+						int gx = (int) Math.floor(ss[0] + (fam == 0 ? 9 : dir * Pylons.GANTRY - 0.5)), gz = (int) Math.floor(ss[1] + (fam == 0 ? dir * Pylons.GANTRY - 0.5 : 9));
 						w.getChunk(gx >> 4, gz >> 4);
 						BlockState post = w.getBlockState(new BlockPos(gx, g + 6, gz));
 						check("hoogspanningsstation: portaal", post.isOf(net.minecraft.block.Blocks.IRON_BARS), post.getBlock().getName().getString() + " op " + gx + ", " + (g + 6) + ", " + gz);

@@ -256,52 +256,72 @@ public final class Metros {
 		return Math.hypot(x - b.cx, z - b.cz) <= b.radius + m ? b : null;
 	}
 
+	/** Why a square got no metropolis or big town (for the tests). */
+	public static final ConcurrentHashMap<Long, String> WHY = new ConcurrentHashMap<>();
+
 	private Metro makeBig(int i, int j) {
 		long h = Harbours.mix(seed * 131 + Harbours.mix(i * 0x632BE59BD9B4E019L + j * 0x2545F4914F6CDD1DL + 0xB16));
 		int roll = (int) Math.floorMod(h, 8L);
 		int type = roll < 3 ? MEGA : roll < 5 ? LOW : -1;
-		if (type < 0) return NONE;
-		double cx0 = f.infra.offset(0) + (i + 0.5) * Infra.MW, cz0 = f.infra.offset(1) + (j + 0.5) * Infra.MW;
-		cx0 += ((h >>> 8) & 1023) - 512;
-		cz0 += ((h >>> 18) & 1023) - 512;
-		int px = (int) (Math.floorDiv((int) cx0, Villages.PU) * Villages.PU + Villages.STREET);
-		int pz = (int) (Math.floorDiv((int) cz0, Villages.PW) * Villages.PW + Villages.STREET);
-		double rot = ((h >>> 28) & 0xffff) / 65536.0 * 2 * Math.PI;
-		double max = type == MEGA ? 2500 + Math.floorMod(h >>> 44, 2500L) : 1500 + Math.floorMod(h >>> 44, 1000L);
-		double min = type == MEGA ? 2500 : 1500;
-		// room to the motorways all round
-		for (int a = 0; a < 64; a++) {
-			double ang = a * Math.PI / 32;
-			for (double rr = 800; rr <= max + RING + 700; rr += 100) {
-				double x = px + Math.cos(ang) * rr, z = pz + Math.sin(ang) * rr;
-				if (f.infra.motorwayDistance(x, z) < Junctions.REACH + 80) {
-					max = Math.min(max, rr - RING - 700);
-					break;
-				}
-			}
+		long wk = ((long) i << 32) ^ (j & 0xffffffffL);
+		if (type < 0) {
+			WHY.put(wk, "none");
+			return NONE;
 		}
-		// on land: shrink until all of it is dry land
-		for (double R = max; R >= min; R *= 0.88) {
-			boolean ok = true;
-			for (int a = 0; a < 48 && ok; a++) {
-				double ang = a * Math.PI / 24;
-				for (double rr : new double[]{0, R * 0.25, R * 0.5, R * 0.75, R, R + RING + 60}) {
-					int x = (int) (px + Math.cos(ang) * rr), z = (int) (pz + Math.sin(ang) * rr);
-					if (f.continentalness(x, z) < Lowlands.COAST + 0.1) {
-						ok = false;
+		double rot = ((h >>> 28) & 0xffff) / 65536.0 * 2 * Math.PI;
+		double want = type == MEGA ? 2500 + Math.floorMod(h >>> 44, 2500L) : 1500 + Math.floorMod(h >>> 44, 1000L);
+		double min = type == MEGA ? 2500 : 1500;
+		String why = "";
+		// a few places in the square, from the middle outwards
+		for (int attempt = 0; attempt < 6; attempt++) {
+			long ha = Harbours.mix(h + attempt * 977L);
+			double spread = attempt == 0 ? 512 : 1600;
+			double cx0 = f.infra.offset(0) + (i + 0.5) * Infra.MW + Math.floorMod(ha, (long) (2 * spread)) - spread;
+			double cz0 = f.infra.offset(1) + (j + 0.5) * Infra.MW + Math.floorMod(ha >>> 24, (long) (2 * spread)) - spread;
+			int px = Math.floorDiv((int) cx0, Villages.PU) * Villages.PU + Villages.STREET;
+			int pz = Math.floorDiv((int) cz0, Villages.PW) * Villages.PW + Villages.STREET;
+			double max = want;
+			// room to the motorways all round
+			for (int a = 0; a < 64; a++) {
+				double ang = a * Math.PI / 32;
+				for (double rr = 300; rr <= max + RING + 700; rr += 100) {
+					double x = px + Math.cos(ang) * rr, z = pz + Math.sin(ang) * rr;
+					if (f.infra.motorwayDistance(x, z) < Junctions.REACH + 80) {
+						max = Math.min(max, rr - RING - 700);
 						break;
 					}
 				}
 			}
-			if (!ok) continue;
-			boolean river = false;
-			for (int a = 0; a < 48 && !river; a++) {
-				double ang = a * Math.PI / 24;
-				for (double rr = 0; rr <= R && !river; rr += 150)
-					if (f.great.distance(px + Math.cos(ang) * rr, pz + Math.sin(ang) * rr) < f.great.halfWidth(px, pz) + 20) river = true;
+			if (max < min) {
+				why += " motorways(" + (int) max + ")";
+				continue;
 			}
-			return new Metro(px, pz, R, h, river, rot, type);
+			// on land: shrink until all of it is dry land
+			for (double R = max; R >= min - 1; R = R > min ? Math.max(min, R * 0.9) : min - 2) {
+				boolean ok = true;
+				for (int a = 0; a < 48 && ok; a++) {
+					double ang = a * Math.PI / 24;
+					for (double rr : new double[]{0, R * 0.25, R * 0.5, R * 0.75, R, R + RING + 60}) {
+						int x = (int) (px + Math.cos(ang) * rr), z = (int) (pz + Math.sin(ang) * rr);
+						if (f.continentalness(x, z) < Lowlands.COAST + 0.06) {
+							ok = false;
+							break;
+						}
+					}
+				}
+				if (!ok) continue;
+				boolean river = false;
+				for (int a = 0; a < 48 && !river; a++) {
+					double ang = a * Math.PI / 24;
+					for (double rr = 0; rr <= R && !river; rr += 150)
+						if (f.great.distance(px + Math.cos(ang) * rr, pz + Math.sin(ang) * rr) < f.great.halfWidth(px, pz) + 20) river = true;
+				}
+				WHY.put(wk, "ok");
+				return new Metro(px, pz, R, h, river, rot, type);
+			}
+			why += " sea";
 		}
+		WHY.put(wk, (type == MEGA ? "mega:" : "low:") + why);
 		return NONE;
 	}
 

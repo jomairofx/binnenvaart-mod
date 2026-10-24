@@ -79,6 +79,7 @@ public final class Roads {
 			double qx = x0 + (x1 - x0) * s / len, qz = z0 + (z1 - z0) * s / len;
 			int ix = (int) Math.floor(qx), iz = (int) Math.floor(qz);
 			if (k.distance(qx, qz) - k.halfWidth(qx, qz) < 14) return null;                 // never across the river
+			if (inDike(f, ix, iz, qx, qz)) return null;                                      // nor through a dike
 			if (f.infra.motorwayDistance(qx, qz) < Infra.EDGE + OUTER + 4) return null;     // nor across a motorway
 			if (f.harbours.siteAt(ix, iz) != null) return null;
 			if (f.coastal(ix, iz) < Lowlands.COAST + 0.07) return null;
@@ -297,5 +298,17 @@ public final class Roads {
 			}
 		}
 		return a < OUTER;
+	}
+
+	/**
+	 * Would a road here cut through the river dike (or run on the foreland)? Not inside a river town or a city,
+	 * where the land is level with the quays anyway.
+	 */
+	static boolean inDike(RiverField f, int ix, int iz, double qx, double qz) {
+		RiverField.Kind k = f.great;
+		if (k.distance(qx, qz) - k.halfWidth(qx, qz) >= Lowlands.foreland(k) + 40) return false;
+		Villages.Town t = f.villages.site(ix, iz);
+		if (t != null && !t.dike()) return false;
+		return f.metros.site(ix, iz) == null;
 	}
 }

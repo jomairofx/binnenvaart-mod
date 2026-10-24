@@ -131,19 +131,33 @@ public final class Harbours {
 		return port(Math.floorDiv(x, PORT_CELL), Math.floorDiv(z, PORT_CELL));
 	}
 
+	/** Why a cell got no big port (for the tests). */
+	public static final ConcurrentHashMap<Long, String> WHY = new ConcurrentHashMap<>();
+
 	private Site makePort(int i, int j) {
 		long h = mix(seed * 7 ^ mix(i * 0x632BE59BD9B4E019L + j * 0x9E3779B97F4A7C15L + 0x9087));
-		if (Math.floorMod(h, 3L) == 0) return NONE;          // two in three cells
+		long wk = ((long) i << 32) ^ (j & 0xffffffffL);
+		if (Math.floorMod(h, 3L) == 0) {
+			WHY.put(wk, "none");
+			return NONE;          // two in three cells
+		}
 		int lo = PORT_CELL / 4, hi = PORT_CELL * 3 / 4;
-		for (int attempt = 0; attempt < 10; attempt++) {
+		StringBuilder why = new StringBuilder();
+		for (int attempt = 0; attempt < 16; attempt++) {
 			long a = mix(h + attempt * 101);
 			int px = i * PORT_CELL + lo + (int) Math.floorMod(a, (long) (hi - lo));
 			int pz = j * PORT_CELL + lo + (int) Math.floorMod(a >>> 24, (long) (hi - lo));
 			RiverField.Kind k = field.great;
 			int[] c = GreatRivers.nearest(k, px, pz, 2500);
-			if (c == null) continue;
+			if (c == null) {
+				why.append(" noriver");
+				continue;
+			}
 			int x = c[0], z = c[1];
-			if (x < i * PORT_CELL + lo || x > i * PORT_CELL + hi || z < j * PORT_CELL + lo || z > j * PORT_CELL + hi) continue;
+			if (x < i * PORT_CELL + lo || x > i * PORT_CELL + hi || z < j * PORT_CELL + lo || z > j * PORT_CELL + hi) {
+				why.append(" outside");
+				continue;
+			}
 			double[] nrm = k.normal(x, z);
 			double gx = nrm[0], gz = nrm[1];
 			if (((a >>> 50) & 1) == 0) {
@@ -152,26 +166,39 @@ public final class Harbours {
 			}
 			double tx = -gz, tz = gx;
 			double hw = k.halfWidth(x, z);
-			if (hw < 45) continue;                             // only on the wide rivers
+			if (hw < 45) {
+				why.append(" narrow");
+				continue;                             // only on the wide rivers
+			}
 			Site s = new Site(x, z, tx, tz, gx, gz, hw, k.name(), PORT, "port", P_BW / 2, P_BL, P_BACK, P_PW);
 			double along = s.alongExtent(), inland = s.inland();
 			boolean ok = true;
 			// a straight reach in front of it
 			for (double sa = -along; sa <= along && ok; sa += 20)
-				if (k.distance(x + tx * sa, z + tz * sa) > hw * 0.25 + 8) ok = false;
+				if (k.distance(x + tx * sa, z + tz * sa) > hw * 0.6 + 20) ok = false;
+			if (!ok) why.append(" bend");
 			// all of it on dry land, away from the motorways, railways, canals and cities
 			for (double sa = -along - 60; sa <= along + 60 && ok; sa += 40)
-				for (double v = hw + 10; v <= hw + inland + 60 && ok; v += 40) {
+				for (double v = hw + 30; v <= hw + inland + 60 && ok; v += 40) {
 					int qx = (int) (x + tx * sa + gx * v), qz = (int) (z + tz * sa + gz * v);
-					if (field.continentalness(qx, qz) < Lowlands.COAST + 0.06) ok = false;
-					else if (k.distance(qx, qz) < k.halfWidth(qx, qz) + 30) ok = false;      // the river bends back
-					else if (field.low.canalDistance(qx, qz) < Lowlands.CANAL_HALF + 30) ok = false;
-					else if (field.infra.motorwayDistance(qx, qz) < Infra.EDGE + 80) ok = false;
-					else if (field.metros.near(qx, qz, 60)) ok = false;
-					else if (field.rails.distance(qx, qz) < 90) ok = false;
+					String r = null;
+					if (field.continentalness(qx, qz) < Lowlands.COAST + 0.06) r = " sea";
+					else if (k.distance(qx, qz) < k.halfWidth(qx, qz) + 10) r = " river";      // the river bends back
+					else if (field.low.canalDistance(qx, qz) < Lowlands.CANAL_HALF + 30) r = " canal";
+					else if (field.infra.motorwayDistance(qx, qz) < Infra.EDGE + 80) r = " motorway";
+					else if (field.metros.near(qx, qz, 60)) r = " city";
+					else if (field.rails.distance(qx, qz) < 90) r = " rail";
+					if (r != null) {
+						ok = false;
+						why.append(r);
+					}
 				}
-			if (ok) return s;
+			if (ok) {
+				WHY.put(wk, "ok");
+				return s;
+			}
 		}
+		WHY.put(wk, why.toString());
 		return NONE;
 	}
 

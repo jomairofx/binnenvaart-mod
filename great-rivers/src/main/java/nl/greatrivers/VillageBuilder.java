@@ -104,7 +104,22 @@ final class VillageBuilder {
 		}
 		double zone = Math.hypot(t.cx() + bx * Villages.PU + Villages.PU / 2.0 - t.cx(), t.cz() + bz * Villages.PW + Villages.PW / 2.0 - t.cz()) / t.radius();
 		long bh = hash(t.seed(), bx * 31L + bz, 99);
-		if (t.city()) {
+		if (t.dike() && t.city()) {
+			// a town behind the dike: apartment towers and flats along the dike, with a view over the river
+			double e = Villages.dikeBank(t, bx, bz) - Lowlands.foreland(f.great) - Villages.DIKE_KEEP;
+			if (e < 60 && (bh & 3) != 0) {
+				tower(w, m, x, z, bu, bw, bh, 0.55 + e / 120);
+				return true;
+			}
+			if (e < 130 && (bh & 3) != 0) {
+				flats(w, m, x, z, bu, bw, bh);
+				return true;
+			}
+			if ((bh & 15) == 1) {
+				park(w, m, x, z, bu, bw);
+				return true;
+			}
+		} else if (t.city()) {
 			double tall = t.river() ? 0.62 : 0.3, flats = t.river() ? 0.8 : 0.62;
 			if (zone < tall && (bh & 7) != 0) {
 				tower(w, m, x, z, bu, bw, bh, t.river() ? Math.max(0, zone - 0.3) / 0.32 : zone / tall);
@@ -241,6 +256,7 @@ final class VillageBuilder {
 			Countryside.dikeRoad(w, m, f, x, z);
 			return true;
 		}
+		if ((int) Math.floor(f.dutchHeight(x, z)) != G) return false;      // on the dike slope: no hedge
 		int k = 0;
 		for (int d = 1; d <= 3 && k == 0; d++)
 			if (Villages.street(t, x + d, z) || Villages.street(t, x - d, z) || Villages.street(t, x, z + d) || Villages.street(t, x, z - d)) k = d;

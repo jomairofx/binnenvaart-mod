@@ -110,7 +110,7 @@ public final class ClientSelfTest {
 					add("rivierstad_boven", rc.cx() - 150, 170, rc.cz() - 150, rc.cx(), 70, rc.cz());
 				}
 				// the big cities
-				nl.greatrivers.Metros.Metro mt = f.metros.nearest(0, 0, 4);
+				nl.greatrivers.Metros.Metro mt = f.metros.nearestNormal(0, 0, 4);
 				if (mt != null) {
 					add("grote_stad_boven", mt.cx() - 130, 210, mt.cz() - 130, mt.cx(), 64, mt.cz());
 					add("grote_stad_centrum", mt.cx() + 120, 110, mt.cz() + 140, mt.cx(), 70, mt.cz());
@@ -195,6 +195,21 @@ public final class ClientSelfTest {
 					int[] sp = nl.greatrivers.VillageBuilderAccess.special(vt, 2);
 					double sx = vt.cx() + sp[0] * nl.greatrivers.Villages.PU + 19, sz = vt.cz() + sp[1] * nl.greatrivers.Villages.PW + 15;
 					add("voetbalveld", sx - 30, 85, sz - 30, sx, 64, sz);
+				}
+				// the metropolis: skyline from afar, the central station, a big low-rise town, a town behind the dike
+				nl.greatrivers.Metros.Metro mg = f.metros.nearestBig(0, 0, nl.greatrivers.Metros.MEGA, 3);
+				if (mg != null) {
+					add("metropool_skyline", mg.cx() - 900, 160, mg.cz() - 900, mg.cx(), 90, mg.cz());
+					add("metropool_straat", mg.cx() + 700, 70, mg.cz() + 15.5, mg.cx(), 80, mg.cz() + 15.5);
+				}
+				double[] cs = f.rails.findCentralStation(0, 0);
+				if (cs != null) add("centraal_station", cs[0] + 45, cs[2] + 12, cs[1] + 45, cs[0], cs[2] + 4, cs[1]);
+				nl.greatrivers.Metros.Metro lw = f.metros.nearestBig(0, 0, nl.greatrivers.Metros.LOW, 3);
+				if (lw != null) add("groot_dorp", lw.cx() - 300, 140, lw.cz() - 300, lw.cx(), 64, lw.cz());
+				nl.greatrivers.Villages.Town dt = GreatRivers.findDikeTown(f, 0, 0, 12, null);
+				if (dt != null) {
+					int[] c = GreatRivers.nearest(f.great, dt.cx(), dt.cz(), 900);
+					if (c != null) add("dijkwijk", c[0], 90, c[1], dt.cx(), 66, dt.cz());
 				}
 				// a high-voltage substation at the end of a line
 				double[] ss = GreatRivers.substation(f, srvWorld.getSeed(), 0, 0);

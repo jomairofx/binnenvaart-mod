@@ -315,7 +315,15 @@ public final class RiverField {
 			double d = Math.hypot(x - tw.cx(), z - tw.cz()), flatR = tw.radius() + 16;
 			double g = d <= flatR ? 1 : 1 - Lowlands.smooth((d - flatR) / Villages.RING);
 			boolean water = tw.river() && dg - hwg < 0;
-			if (!water && g > 0) t = t * (1 - g) + (Villages.GROUND + 0.3) * g;
+			if (tw.dike()) {
+				// a town behind the dike: the dike and the foreland stay, the town fills the land behind it
+				double e = dg - hwg, fl = Lowlands.foreland(great);
+				if (e > fl + 20) {
+					double h = Lowlands.dike(e, fl);
+					t = t * (1 - g) + (Villages.GROUND + 0.3) * g;
+					if (!Double.isNaN(h)) t = Math.max(t, h);
+				}
+			} else if (!water && g > 0) t = t * (1 - g) + (Villages.GROUND + 0.3) * g;
 		}
 		// the big cities: level ground at street height, the river stays, canals in the old centre
 		Metros.Metro mt = metros.site(x, z);

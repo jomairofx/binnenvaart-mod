@@ -24,6 +24,9 @@ public final class Rails {
 	public static final double VIA_RAMP = 270;          // 1 in 30 over a motorway
 	public static final int VIA_CLEAR = 8;
 	public static final int ROAD = 0, RAMPK = 1, BRIDGE = 2, VIADUCT = 3;
+	public static final int CITY_Y = 73;                // on a viaduct through a metropolis: 8 clear over the streets
+	public static final double CITY_RAMP = 330;         // 1 in 30 from the polder up to the city viaduct
+	public static final double STATION_HALF = 90;       // half length of a central station
 
 	private final RiverField f;
 	private final Infra infra;
@@ -129,6 +132,9 @@ public final class Rails {
 		public double c, u, cx, cz, e, base;
 		public double dm;        // over a motorway: distance to its middle
 		public int underY;
+		/** On the viaduct through a metropolis (no embankment, piers down to the street). */
+		public boolean elev;
+		public Metros.Metro city;
 	}
 
 	public Hit prof(int fam, long k, double u) {
@@ -148,6 +154,16 @@ public final class Rails {
 		h.cx = c[0];
 		h.cz = c[1];
 		double base = BASE_Y + rise;
+		// through a metropolis on a viaduct, up a long ramp outside it
+		Metros.Metro mt = f.metros.big(h.cx, h.cz, Metros.RING + 30 + CITY_RAMP);
+		if (mt != null && mt.mega()) {
+			double dm = Math.hypot(h.cx - mt.cx(), h.cz - mt.cz()) - mt.radius() - 30 - Metros.RING;
+			if (dm < 0) {
+				base = CITY_Y;
+				h.elev = true;
+				h.city = mt;
+			} else base = base + (CITY_Y - base) * (1 - dm / CITY_RAMP);
+		}
 		h.base = base;
 		double H = base;
 		int kind = ROAD;
@@ -203,7 +219,7 @@ public final class Rails {
 	public double shape(int x, int z, double t) {
 		for (int fam = 0; fam < 2; fam++) {
 			Hit h = hit(fam, x + 0.5, z + 0.5, HALF + 45);
-			if (h == null) continue;
+			if (h == null || h.elev) continue;
 			double a = Math.abs(h.c);
 			if (h.kind == BRIDGE) {
 				double dEnd = Infra.BR_END - h.e;
@@ -301,9 +317,10 @@ public final class Rails {
 		int y = h.y;
 		boolean ns = h.fam == 0;
 		long al = (long) Math.floor(h.u);
-		boolean deck = h.kind == BRIDGE || h.kind == VIADUCT;
+		boolean deck = h.kind == BRIDGE || h.kind == VIADUCT || h.elev;
+		if (h.elev && a <= HALF + 7 && centralStation(w, m, f, h, x, z, a)) return 1;
 		// a small station where a road crosses: platforms, shelter, bike racks
-		Object[] road = f.roads.hit(x + 0.5, z + 0.5, 60);
+		Object[] road = h.elev ? null : f.roads.hit(x + 0.5, z + 0.5, 60);
 		if (a > HALF) {
 			if (!deck && h.kind == ROAD) return station(w, m, f, h, x, z, a);
 			return 0;
@@ -371,11 +388,82 @@ public final class Rails {
 			}
 			if (h.e > Infra.BR_END - 2.5) for (int yy = ground(w, m, x, y - 3, z); yy <= y - 3; yy++) set(w, m, x, yy, z, CONCRETE);
 		}
+		// the city viaduct: concrete piers every 24 down to the street, never on a street or boulevard
+		if (h.elev && h.kind != BRIDGE && (ic == -4 || ic == 4) && Math.floorMod(al, 24L) < 2 && !MetroBuilder.openGround(h.city, x, z)) {
+			for (int yy = Villages.GROUND + 1; yy <= y - 3; yy++) set(w, m, x, yy, z, CONCRETE);
+		}
 		if (h.kind == VIADUCT) {
 			if (h.dm > 13.5) for (int yy = h.underY - 1; yy <= y - 3; yy++) set(w, m, x, yy, z, CONCRETE);
 			else if (h.dm < 1 && a < 4) for (int yy = h.underY + 1; yy <= y - 3; yy++) set(w, m, x, yy, z, CONCRETE);
 		}
 		return deck ? 1 : 2;
+	}
+
+	/**
+	 * The central station of a metropolis, on the viaduct near the city centre: wide platforms on both sides of
+	 * the tracks under a long arched roof of glass on steel ribs, the yellow and blue signs, lamps.
+	 */
+	private static boolean centralStation(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Hit h, int x, int z, double a) {
+		Metros.Metro mt = h.city;
+		double uc = h.fam == 0 ? mt.cz() : mt.cx();
+		double du = h.u - uc;
+		if (Math.abs(du) > STATION_HALF) return false;
+		// not on the bridge or its ramp
+		Hit h0 = f.rails.prof(h.fam, h.k, uc), h1 = f.rails.prof(h.fam, h.k, uc - STATION_HALF), h2 = f.rails.prof(h.fam, h.k, uc + STATION_HALF);
+		if (h0 == null || h1 == null || h2 == null || h0.kind != ROAD || h1.kind != ROAD || h2.kind != ROAD) return false;
+		int y = h.y;
+		boolean ns = h.fam == 0;
+		long al = (long) Math.floor(h.u);
+		double W = HALF + 7;
+		// the deck under the platforms
+		set(w, m, x, y - 1, z, CONCRETE);
+		set(w, m, x, y - 2, z, Blocks.SMOOTH_STONE.getDefaultState());
+		if (a > HALF) {
+			// platform: one up from the ballast, white edge along the track
+			set(w, m, x, y, z, CONCRETE);
+			set(w, m, x, y + 1, z, a < HALF + 1 ? Blocks.WHITE_CONCRETE.getDefaultState() : Blocks.SMOOTH_STONE.getDefaultState());
+			for (int yy = y + 2; yy <= y + 8; yy++) set(w, m, x, yy, z, Blocks.AIR.getDefaultState());
+			if (a > W - 1) {
+				// glass side wall
+				for (int yy = y + 2; yy <= y + 6; yy++) set(w, m, x, yy, z, ns ? VillageBuilder.paneNS(Blocks.GLASS_PANE) : VillageBuilder.paneEW(Blocks.GLASS_PANE));
+			} else if (Math.floorMod(al, 30L) == 15 && a > HALF + 3 && a < HALF + 4) {
+				// station sign, benches
+				for (int yy = y + 2; yy <= y + 3; yy++) set(w, m, x, yy, z, Blocks.IRON_BARS.getDefaultState());
+				set(w, m, x, y + 4, z, Blocks.YELLOW_CONCRETE.getDefaultState());
+				set(w, m, x, y + 5, z, Blocks.BLUE_CONCRETE.getDefaultState());
+			} else if (Math.floorMod(al, 30L) == 5 && a > HALF + 4 && a < HALF + 5) {
+				set(w, m, x, y + 2, z, VillageBuilder.stairs(Blocks.SPRUCE_STAIRS, ns ? (h.c > 0 ? Direction.EAST : Direction.WEST) : (h.c > 0 ? Direction.SOUTH : Direction.NORTH)));
+			}
+			// piers under the wide platforms
+			if (Math.floorMod(al, 24L) < 2 && a > W - 2 && !MetroBuilder.openGround(mt, x, z))
+				for (int yy = Villages.GROUND + 1; yy <= y - 3; yy++) set(w, m, x, yy, z, CONCRETE);
+		}
+		// the arched roof: glass between steel ribs every 8, open at the ends
+		if (Math.abs(du) < STATION_HALF - 4) {
+			double t = a / W;
+			int ry = y + 10 + (int) Math.round(4 * (1 - t * t));
+			boolean rib = Math.floorMod(al, 8L) == 0;
+			set(w, m, x, ry, z, rib ? STEEL : Blocks.LIGHT_BLUE_STAINED_GLASS.getDefaultState());
+			if (rib && a > W - 1) for (int yy = y + 7; yy < ry; yy++) set(w, m, x, yy, z, STEEL);
+			if (!rib && Math.floorMod(al, 8L) == 4 && Math.abs(a - HALF - 3) < 0.6) set(w, m, x, ry - 1, z, Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true));
+		}
+		return a > HALF;
+	}
+
+	/** The central station of the metropolis on this line nearest to (x, z): {x, z, y} of its middle, or null. For the tests. */
+	public double[] findCentralStation(int x, int z) {
+		Metros.Metro mt = f.metros.nearestBig(x, z, Metros.MEGA, 2);
+		if (mt == null) return null;
+		for (int fam = 0; fam < 2; fam++) {
+			double[] nl = nearest(fam, mt.cx(), mt.cz());
+			if (Math.abs(nl[1]) > mt.radius() * 0.8) continue;
+			double uc = fam == 0 ? mt.cz() : mt.cx();
+			Hit h = prof(fam, (long) nl[0], uc);
+			if (h == null || !h.elev || h.kind != ROAD) continue;
+			double[] c = centre(fam, (long) nl[0], uc);
+			return new double[]{c[0], c[1], h.y};
+		}
+		return null;
 	}
 
 	/**

@@ -173,7 +173,7 @@ final class SelfTest {
 				}
 				// a big city: districts, boulevards, and (on the river) high bridges
 				{
-					Metros.Metro mt = f.metros.nearest(0, 0, 4);
+					Metros.Metro mt = f.metros.nearestNormal(0, 0, 4);
 					check("grote stad gevonden", mt != null, mt == null ? "geen" : "op " + mt.cx() + ", " + mt.cz() + ", " + (int) (mt.radius() * 2) + " breed" + (mt.river() ? ", aan de rivier" : ""));
 					if (mt != null) {
 						int[] count = new int[Metros.DISTRICT.length];
@@ -299,6 +299,78 @@ final class SelfTest {
 							check("afrit: viaduct over de snelweg", dk.isOf(net.minecraft.block.Blocks.LIGHT_GRAY_CONCRETE) && !under.isOf(net.minecraft.block.Blocks.DIRT),
 									"dek " + dk.getBlock().getName().getString() + ", onder: " + under.getBlock().getName().getString());
 						} else check("afrit: viaduct over de snelweg", false, "geen afrit op dat punt");
+					}
+				}
+				// a metropolis of 5 to 10 km: districts, towers in the centres, the railway viaduct and the central station
+				{
+					Metros.Metro mg = f.metros.nearestBig(0, 0, Metros.MEGA, 3);
+					check("metropool gevonden", mg != null, mg == null ? "geen" : "op " + mg.cx() + ", " + mg.cz() + ", " + (int) (mg.radius() * 2) + " breed");
+					if (mg != null) {
+						check("metropool: 5 tot 10 km", mg.radius() * 2 >= 4999 && mg.radius() * 2 <= 10001, (int) (mg.radius() * 2) + " blokken");
+						int[] count = new int[Metros.DISTRICT.length];
+						for (int bx = -160; bx <= 160; bx += 2)
+							for (int bz = -200; bz <= 200; bz += 2) {
+								if (Math.hypot(bx * Villages.PU, bz * Villages.PW) > mg.radius()) continue;
+								count[mg.district(bx, bz)]++;
+							}
+						int kinds = 0;
+						for (int c : count) if (c > 0) kinds++;
+						check("metropool: alle soorten wijken", kinds >= 8, kinds + " soorten");
+						int tall = 0;
+						for (int bx = -12; bx <= 12 && tall < 3; bx++)
+							for (int bz = -16; bz <= 16 && tall < 3; bz++) {
+								if (mg.district(bx, bz) != Metros.CBD || MetroBuilder.railBlock(f, mg, bx, bz)) continue;
+								int qx = mg.cx() + bx * Villages.PU + Villages.STREET + 3, qz = mg.cz() + bz * Villages.PW + Villages.STREET + 10;
+								double[] rv = f.riverAt(qx, qz, true);
+								if (rv[0] - rv[1] < 60) continue;
+								w.getChunk(qx >> 4, qz >> 4);
+								if (!w.getBlockState(new BlockPos(qx, VillageBuilder.Y0 + 40, qz)).isAir()) tall++;
+							}
+						check("metropool: hoogbouw in het centrum", tall >= 3, tall + " torens hoger dan 40");
+					}
+					double[] cs = f.rails.findCentralStation(0, 0);
+					log.add(cs == null ? "  (geen centraal station: geen spoorlijn door de metropool)" : "  centraal station op " + (int) cs[0] + ", " + (int) cs[1]);
+					if (cs != null) {
+						int qx = (int) Math.floor(cs[0]), qz = (int) Math.floor(cs[1]);
+						w.getChunk(qx >> 4, qz >> 4);
+						int y = (int) cs[2];
+						BlockState deck = w.getBlockState(new BlockPos(qx, y - 1, qz));
+						int open = 0;
+						for (int yy = Villages.GROUND + 1; yy <= y - 3; yy++) if (w.getBlockState(new BlockPos(qx, yy, qz)).isAir()) open++;
+						check("centraal station: op het viaduct", deck.isOf(net.minecraft.block.Blocks.LIGHT_GRAY_CONCRETE) && open >= 5,
+								deck.getBlock().getName().getString() + " op y " + (y - 1) + ", " + open + " vrij eronder");
+					}
+					Metros.Metro lw = f.metros.nearestBig(0, 0, Metros.LOW, 3);
+					check("groot laagbouwdorp gevonden", lw != null, lw == null ? "geen" : "op " + lw.cx() + ", " + lw.cz() + ", " + (int) (lw.radius() * 2) + " breed");
+					if (lw != null) {
+						int towers = 0;
+						for (int bx = -60; bx <= 60; bx += 3)
+							for (int bz = -80; bz <= 80; bz += 3) {
+								if (Math.hypot(bx * Villages.PU, bz * Villages.PW) > lw.radius()) continue;
+								int d = lw.district(bx, bz);
+								if (d == Metros.CBD || d == Metros.FLATS || d == Metros.MIXED) towers++;
+							}
+						check("groot laagbouwdorp: geen hoogbouw", towers == 0, towers + " blokken met hoogbouw");
+					}
+				}
+				// a town right behind the dike: the dike stays, the houses stand behind it
+				{
+					Villages.Town dt = GreatRivers.findDikeTown(f, 0, 0, 12, null);
+					check("dijkwijk gevonden", dt != null, dt == null ? "geen" : dt.kind() + " op " + dt.cx() + ", " + dt.cz());
+					if (dt != null) {
+						int[] c = GreatRivers.nearest(f.great, dt.cx(), dt.cz(), 900);
+						if (c != null) {
+							double[] n = f.great.normal(c[0], c[1]);
+							double side = (dt.cx() - c[0]) * n[0] + (dt.cz() - c[1]) * n[1] >= 0 ? 1 : -1;
+							double hw = f.great.halfWidth(c[0], c[1]), fl = Lowlands.foreland(f.great);
+							int top = -1;
+							for (double v = hw + fl + 10; v <= hw + fl + 26; v += 1) {
+								int qx = (int) Math.floor(c[0] + n[0] * side * v), qz = (int) Math.floor(c[1] + n[1] * side * v);
+								w.getChunk(qx >> 4, qz >> 4);
+								top = Math.max(top, w.getTopY(net.minecraft.world.Heightmap.Type.OCEAN_FLOOR_WG, qx, qz) - 1);
+							}
+							check("dijkwijk: dijk staat er nog", top >= (int) Lowlands.DIKE_TOP - 1, "dijk tot y " + top);
+						}
 					}
 				}
 				// high-voltage lines: unbroken chains of towers from substation to substation

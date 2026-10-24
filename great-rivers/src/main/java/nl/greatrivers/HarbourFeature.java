@@ -87,8 +87,11 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 	private boolean dress(StructureWorldAccess w, BlockPos.Mutable m, RiverField field, int x, int z) {
 		boolean any = false;
 		Metros.Metro metro = field.metros.at(x, z);
-		if (metro != null && MetroBuilder.column(w, m, field, metro, x, z)) {
-			return true;
+		if (metro != null) {
+			boolean b = MetroBuilder.column(w, m, field, metro, x, z);
+			// the railway viaduct through a metropolis
+			if (metro.mega() && field.rails.near(x, z, 16) && Rails.build(w, m, field, x, z) > 0) b = true;
+			if (b) return true;
 		}
 		Villages.Town town = field.villages.at(x, z);
 		if (town != null && VillageBuilder.column(w, m, field, town, x, z)) {

@@ -45,6 +45,7 @@ final class MetroBuilder {
 
 	/** Is this column water of a canal in the old centre? */
 	static boolean canalWater(Metros.Metro mt, int x, int z) {
+		if (mt.low()) return false;
 		int bx = Math.floorDiv(x - mt.cx(), Villages.PU), bz = Math.floorDiv(z - mt.cz(), Villages.PW);
 		if (Math.floorMod(bz, 2) != 1 || Metros.Metro.avenueZ(bz) || Metros.Metro.avenueX(bx)) return false;
 		if (mt.district(bx, bz) != Metros.OLD) return false;
@@ -105,6 +106,11 @@ final class MetroBuilder {
 			street(w, m, mt, x, z, u, wv, district);
 			return true;
 		}
+		// under the railway viaduct through a metropolis: a long square with bike parking, the station on top
+		if (mt.mega() && railBlock(f, mt, bx, bz)) {
+			railSquare(w, m, f, x, z, bu, bw);
+			return true;
+		}
 		if (mt.river() && nearWater(f, mt, t, bx, bz)) {
 			plaza(w, m, x, z, bu, bw);
 			return true;
@@ -113,13 +119,18 @@ final class MetroBuilder {
 		double zone = Math.hypot(bx * Villages.PU, bz * Villages.PW) / mt.radius();
 		switch (district) {
 			case Metros.OLD -> {
-				if (Math.floorMod(bz, 2) == 1) canal(w, m, x, z, bu, bw, bh);
+				if (mt.low()) {
+					// the old village centre of a big low-rise town: church, brick houses with shops
+					if (bx == 0 && bz == 0) VillageBuilder.church(w, m, t, x, z, bu, bw);
+					else if ((bh & 7) == 5) VillageBuilder.park(w, m, x, z, bu, bw);
+					else shopHouses(w, m, t, x, z, bu, bw, bx, bz);
+				} else if (Math.floorMod(bz, 2) == 1) canal(w, m, x, z, bu, bw, bh);
 				else if (bx == 0 && bz == 0) VillageBuilder.church(w, m, t, x, z, bu, bw);
 				else canalHouses(w, m, x, z, bu, bw, bh);
 			}
 			case Metros.CBD -> {
 				if ((bh & 7) == 0) plaza(w, m, x, z, bu, bw);
-				else VillageBuilder.tower(w, m, x, z, bu, bw, bh, Math.max(-0.6, (zone - 0.15) / 0.17 - 1.0));
+				else VillageBuilder.tower(w, m, x, z, bu, bw, bh, mt.mega() ? megaZone(mt, bx, bz) : Math.max(-0.6, (zone - 0.15) / 0.17 - 1.0));
 			}
 			case Metros.MIXED -> {
 				int r = (int) Math.floorMod(bh >>> 3, 20L);
@@ -139,6 +150,10 @@ final class MetroBuilder {
 			}
 			case Metros.ROWS -> {
 				int r = (int) Math.floorMod(bh >>> 3, 20L);
+				if (Math.floorMod(bh >>> 13, 71L) == 3) {
+					VillageBuilder.church(w, m, t, x, z, bu, bw);      // a neighbourhood church
+					return true;
+				}
 				if (r < 1) supermarket(w, m, x, z, bu, bw, bh);
 				else if (r < 2) school(w, m, x, z, bu, bw, bh);
 				else if (r < 3) VillageBuilder.park(w, m, x, z, bu, bw);
@@ -164,6 +179,64 @@ final class MetroBuilder {
 			default -> houses(w, m, t, x, z, bu, bw, bx, bz);
 		}
 		return true;
+	}
+
+	/** How tall the towers of a business district of a metropolis are (lower = taller): the main centre and the second centres. */
+	private static double megaZone(Metros.Metro mt, int bx, int bz) {
+		double mx = bx * Villages.PU + Villages.PU / 2.0, mz = bz * Villages.PW + Villages.PW / 2.0;
+		double z = -0.6 + Math.max(0, Math.hypot(mx, mz) - 420) / 700;
+		for (double[] c : mt.subCentres()) z = Math.min(z, -0.4 + Math.hypot(mx - c[0], mz - c[1]) / 420);
+		return Math.min(1.2, z);
+	}
+
+	/** Is the block (bx, bz) of a metropolis under or beside the railway viaduct? */
+	static boolean railBlock(RiverField f, Metros.Metro mt, int bx, int bz) {
+		double mx = mt.cx() + bx * Villages.PU + Villages.PU / 2.0, mz = mt.cz() + bz * Villages.PW + Villages.PW / 2.0;
+		return f.rails.distance(mx, mz) < Rails.HALF + 10 + 21.5;
+	}
+
+	/** Is this column of a metropolis a street or a boulevard (no piers there)? */
+	static boolean openGround(Metros.Metro mt, int x, int z) {
+		int bx = Math.floorDiv(x - mt.cx(), Villages.PU), bz = Math.floorDiv(z - mt.cz(), Villages.PW);
+		if (Metros.Metro.avenueX(bx) || Metros.Metro.avenueZ(bz)) return true;
+		return Villages.street(mt.asTown(), x, z);
+	}
+
+	/** The square under the railway viaduct: paving, rows of bike racks, trees along the sides. */
+	private static void railSquare(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, int x, int z, int bu, int bw) {
+		set(w, m, x, G, z, ((bu + bw) & 3) == 0 ? WALK2 : WALK);
+		double d = f.rails.distance(x + 0.5, z + 0.5);
+		if (d < Rails.HALF + 7) {
+			// bike parking under the tracks
+			boolean ns = Math.abs(f.rails.nearest(0, x + 0.5, z + 0.5)[1]) < Math.abs(f.rails.nearest(1, x + 0.5, z + 0.5)[1]);
+			int across = (int) Math.floor(d);
+			if (across % 3 == 1 && Math.floorMod(ns ? z : x, 40) > 2) {
+				set(w, m, x, G + 1, z, Blocks.IRON_BARS.getDefaultState());
+				if ((hash(x, z, 77) & 3) != 0) set(w, m, x, G + 1, z, Blocks.IRON_BARS.getDefaultState());
+			}
+			return;
+		}
+		long h = hash(x, z, 5);
+		if (d > Rails.HALF + 12 && (h % 37) == 0) Countryside.tree(w, m, x, G + 1, z, h >>> 8);
+		else if ((h % 53) == 0) set(w, m, x, G + 1, z, VillageBuilder.stairs(Blocks.SPRUCE_STAIRS, Direction.NORTH));
+	}
+
+	/** Old village centre of a big low-rise town: brick houses, shops downstairs. */
+	private static void shopHouses(StructureWorldAccess w, BlockPos.Mutable m, Villages.Town t, int x, int z, int bu, int bw, int bx, int bz) {
+		if (bu >= 28) {
+			set(w, m, x, G, z, Blocks.DIRT_PATH.getDefaultState());
+			return;
+		}
+		boolean front = bw <= 9;
+		if (bw == 10) {
+			set(w, m, x, G + 1, z, Blocks.OAK_FENCE.getDefaultState());
+			return;
+		}
+		int hx = bu % 7, house = bu / 7;
+		int pw = front ? bw : 20 - bw;
+		long hh = hash(t.seed(), bx * 31L + bz, house * 2L + (front ? 0 : 1));
+		VillageBuilder.house(w, m, t, x, z, hx, pw, front, hh, false);
+		VillageBuilder.shopFront(w, m, x, z, hx, pw, front, hh);
 	}
 
 	// ------------------------------------------------------------------ streets and boulevards

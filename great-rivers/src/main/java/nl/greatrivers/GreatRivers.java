@@ -129,6 +129,10 @@ public class GreatRivers implements ModInitializer {
 							.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Click to teleport"))));
 			src.sendFeedback(() -> Text.literal("Nearest " + t.kind() + ": ").append(coords).append(Text.literal(", " + dist + " blocks away")), false);
 		}
+		for (int c = 0; c <= 1; c++) {
+			Villages.Town t = findDikeTown(field, x, z, 10, c == 1);
+			if (t != null) report(src, "Nearest " + t.kind(), t.cx(), 80, t.cz(), x, z);
+		}
 		for (int size = 0; size <= 2; size++) {
 		Harbours.Site h = findHarbour(field, x, z, 14, size);
 		if (h == null) continue;
@@ -143,9 +147,17 @@ public class GreatRivers implements ModInitializer {
 					.append(Text.literal(", " + dist + " blocks away")), false);
 		}
 		}
-		Metros.Metro big = field.metros.nearest(x, z, 3);
+		Metros.Metro big = field.metros.nearestNormal(x, z, 3);
 		if (big != null) report(src, "Nearest big city (" + (int) Math.round(big.radius() * 2) + " blocks across" + (big.river() ? ", on the river" : "") + ")",
 				big.cx(), 95, big.cz(), x, z);
+		Metros.Metro mega = field.metros.nearestBig(x, z, Metros.MEGA, 3);
+		if (mega != null) report(src, "Nearest metropolis (" + Math.round(mega.radius() * 2 / 100) / 10.0 + " km across" + (mega.river() ? ", on the river" : "") + ")",
+				mega.cx(), 130, mega.cz(), x, z);
+		Metros.Metro low = field.metros.nearestBig(x, z, Metros.LOW, 3);
+		if (low != null) report(src, "Nearest big low-rise town (" + Math.round(low.radius() * 2 / 100) / 10.0 + " km across)",
+				low.cx(), 90, low.cz(), x, z);
+		double[] cs = field.rails.findCentralStation(x, z);
+		if (cs != null) report(src, "Nearest central station", (int) cs[0] + 10, (int) cs[2] + 2, (int) cs[1], x, z);
 		int[] sea = findSea(field, x, z);
 		if (sea != null) report(src, "Nearest open sea (big water)", sea[0], 64, sea[1], x, z);
 		double[] br = field.infra.findBridge(x, z, 40000);
@@ -248,7 +260,7 @@ public class GreatRivers implements ModInitializer {
 				for (int j = -r; j <= r; j++) {
 					if (Math.max(Math.abs(i), Math.abs(j)) != r) continue;
 					Villages.Town t = field.villages.town(cx + i, cz + j);
-					if (t == null || t.city() != city || (river != null && t.river() != river)) continue;
+					if (t == null || t.dike() || t.city() != city || (river != null && t.river() != river)) continue;
 					double d = Math.hypot(t.cx() - x, t.cz() - z);
 					if (d < bd) {
 						bd = d;
@@ -257,6 +269,24 @@ public class GreatRivers implements ModInitializer {
 				}
 			if (best != null && bd < r * Villages.CELL) return best;
 		}
+		return best;
+	}
+
+	/** Nearest village or town right behind the river dike. */
+	public static Villages.Town findDikeTown(RiverField field, int x, int z, int cells, Boolean city) {
+		int cx = Math.floorDiv(x, Villages.CELL), cz = Math.floorDiv(z, Villages.CELL);
+		Villages.Town best = null;
+		double bd = Double.MAX_VALUE;
+		for (int i = -cells; i <= cells; i++)
+			for (int j = -cells; j <= cells; j++) {
+				Villages.Town t = field.villages.town(cx + i, cz + j);
+				if (t == null || !t.dike() || (city != null && t.city() != city)) continue;
+				double d = Math.hypot(t.cx() - x, t.cz() - z);
+				if (d < bd) {
+					bd = d;
+					best = t;
+				}
+			}
 		return best;
 	}
 

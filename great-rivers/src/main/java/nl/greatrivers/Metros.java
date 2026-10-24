@@ -21,20 +21,41 @@ public final class Metros {
 	public static final String[] DISTRICT = {"old centre", "business district", "inner city", "flats", "row houses",
 			"new estate", "villas", "industrial estate", "city park"};
 
-	public record Metro(int cx, int cz, double radius, long seed, boolean river, double rot) {
+	public static final int NORMAL = 0, MEGA = 1, LOW = 2;
+
+	/**
+	 * A city. type NORMAL: 1.3-2.2 km; MEGA: a metropolis of 5 to 10 km with several centres and the railway on
+	 * a viaduct through it; LOW: a big low-rise town of 3 to 5 km (old village centre, row houses, new estates,
+	 * villas, no tall buildings).
+	 */
+	public record Metro(int cx, int cz, double radius, long seed, boolean river, double rot, int type) {
 		/** The same city seen as a town (for the house builders). */
 		public Villages.Town asTown() {
-			return new Villages.Town(cx, cz, radius, true, seed, river);
+			return new Villages.Town(cx, cz, radius, true, seed, river, false);
+		}
+
+		public boolean mega() {
+			return type == MEGA;
+		}
+
+		public boolean low() {
+			return type == LOW;
+		}
+
+		public String kindName() {
+			return type == MEGA ? "metropolis" : type == LOW ? "big town (low-rise)" : "big city";
 		}
 
 		/** District of the block (bx, bz) of the street grid. */
 		public int district(int bx, int bz) {
 			double mx = bx * Villages.PU + Villages.PU / 2.0, mz = bz * Villages.PW + Villages.PW / 2.0;
+			long h = Harbours.mix(seed + bx * 0x9E3779B97F4A7C15L + bz * 0x632BE59BD9B4E019L);
+			if (type == MEGA) return megaDistrict(mx, mz, h);
+			if (type == LOW) return lowDistrict(mx, mz, h);
 			double r = Math.hypot(mx, mz) / radius;
 			double ang = Math.atan2(mz, mx) + rot;
 			int sector = (int) Math.floor(Math.floorMod((long) Math.floor(ang / (2 * Math.PI) * 600), 600L) / 100.0);   // 0..5
 			// a little irregularity at the borders between districts
-			long h = Harbours.mix(seed + bx * 0x9E3779B97F4A7C15L + bz * 0x632BE59BD9B4E019L);
 			r += ((h & 15) - 7.5) * 0.004;
 			if (r < (river ? 0.24 : 0.15)) return OLD;
 			if (r < (river ? 0.38 : 0.32)) return sector == 0 || sector == 1 ? CBD : MIXED;
@@ -51,6 +72,71 @@ public final class Metros {
 			};
 		}
 
+		/** Second business centres of a metropolis ("Zuidas"): {x, z} relative to the centre. */
+		public double[][] subCentres() {
+			int n = 3;
+			double[][] out = new double[n][];
+			for (int i = 0; i < n; i++) {
+				double a = rot + i * 2 * Math.PI / n + 0.7;
+				double d = radius * (0.45 + 0.15 * ((seed >>> (i * 4)) & 3) / 3.0);
+				out[i] = new double[]{Math.cos(a) * d, Math.sin(a) * d};
+			}
+			return out;
+		}
+
+		private int megaDistrict(double mx, double mz, long h) {
+			double d = Math.hypot(mx, mz) + ((h & 15) - 7.5) * 6;
+			double r = d / radius;
+			if (d < 420) return OLD;
+			double ang = Math.atan2(mz, mx) + rot;
+			// a sector pattern that changes with the distance, so every part of the city looks different
+			int ring = (int) Math.floor(r * 6);
+			int sector = (int) Math.floorMod((long) Math.floor((ang / (2 * Math.PI) + ring * 0.37) * 12), 12L);
+			if (d < 1000) return sector % 3 == 0 ? MIXED : CBD;
+			for (double[] c : subCentres()) {
+				double dc = Math.hypot(mx - c[0], mz - c[1]);
+				if (dc < 330) return CBD;
+				if (dc < 520) return sector % 2 == 0 ? FLATS : MIXED;
+			}
+			if (d < 1700) return switch (sector % 4) {
+				case 0 -> FLATS;
+				case 1 -> MIXED;
+				default -> ROWS;
+			};
+			if (r < 0.62) return switch (sector) {
+				case 0, 5 -> FLATS;
+				case 3 -> PARK;
+				case 8 -> INDUSTRY;
+				case 10 -> MIXED;
+				default -> ROWS;
+			};
+			return switch (sector) {
+				case 0, 4, 9 -> SUBURB;
+				case 1, 6 -> INDUSTRY;
+				case 2, 11 -> VILLAS;
+				case 7 -> PARK;
+				case 3 -> FLATS;
+				default -> SUBURB;
+			};
+		}
+
+		private int lowDistrict(double mx, double mz, long h) {
+			double d = Math.hypot(mx, mz) + ((h & 15) - 7.5) * 5;
+			double r = d / radius;
+			if (d < 230) return OLD;
+			double ang = Math.atan2(mz, mx) + rot;
+			int ring = (int) Math.floor(r * 4);
+			int sector = (int) Math.floorMod((long) Math.floor((ang / (2 * Math.PI) + ring * 0.29) * 8), 8L);
+			if (r < 0.4) return sector == 5 ? PARK : ROWS;
+			return switch (sector) {
+				case 0, 3, 6 -> SUBURB;
+				case 1 -> r > 0.7 ? INDUSTRY : ROWS;
+				case 2, 7 -> VILLAS;
+				case 4 -> PARK;
+				default -> ROWS;
+			};
+		}
+
 		/** Is block column bx a boulevard running north-south / block row bz one running east-west? */
 		public static boolean avenueX(int bx) {
 			return Math.floorMod(bx, 6) == 3;
@@ -61,7 +147,7 @@ public final class Metros {
 		}
 	}
 
-	private static final Metro NONE = new Metro(0, 0, 0, 0, false, 0);
+	private static final Metro NONE = new Metro(0, 0, 0, 0, false, 0, NORMAL);
 	private final RiverField f;
 	private final long seed;
 	private final ConcurrentHashMap<Long, Metro> metros = new ConcurrentHashMap<>();
@@ -101,7 +187,7 @@ public final class Metros {
 			}
 			px = Math.floorDiv(px, Villages.PU) * Villages.PU + Villages.STREET;
 			pz = Math.floorDiv(pz, Villages.PW) * Villages.PW + Villages.STREET;
-			if (ok(px, pz, R, river)) return new Metro(px, pz, R, h, river || k.distance(px, pz) < R * 0.8, rot);
+			if (ok(px, pz, R, river)) return new Metro(px, pz, R, h, river || k.distance(px, pz) < R * 0.8, rot, NORMAL);
 		}
 		return NONE;
 	}
@@ -112,6 +198,7 @@ public final class Metros {
 			double ang = i * Math.PI / 12;
 			for (double rr : new double[]{0, R * 0.5, R, R + RING + 40}) {
 				int x = (int) (px + Math.cos(ang) * rr), z = (int) (pz + Math.sin(ang) * rr);
+				if (big(x, z, 400) != null) return false;
 				if (f.continentalness(x, z) < Lowlands.COAST + 0.1) return false;
 				if (f.infra.motorwayDistance(x, z) < Infra.EDGE + 60) return false;
 				if (f.rails.distance(x, z) < Rails.HALF + 60) return false;
@@ -123,6 +210,8 @@ public final class Metros {
 
 	/** The city whose buildings and streets cover this column (within its edge), or null. */
 	public Metro at(int x, int z) {
+		Metro b = big(x, z, 30);
+		if (b != null) return b;
 		Metro m = metro(Math.floorDiv(x, CELL), Math.floorDiv(z, CELL));
 		if (m == null) return null;
 		return Math.hypot(x - m.cx, z - m.cz) <= m.radius + 30 ? m : null;
@@ -130,6 +219,8 @@ public final class Metros {
 
 	/** The city whose site (with the slope around it) covers this column, or null. */
 	public Metro site(int x, int z) {
+		Metro b = big(x, z, 30 + RING);
+		if (b != null) return b;
 		Metro m = metro(Math.floorDiv(x, CELL), Math.floorDiv(z, CELL));
 		if (m == null) return null;
 		return Math.hypot(x - m.cx, z - m.cz) <= m.radius + 30 + RING ? m : null;
@@ -137,13 +228,115 @@ public final class Metros {
 
 	/** Is a city within r of its edge from this point? */
 	public boolean near(int x, int z, double r) {
+		if (big(x, z, 30 + RING + r) != null) return true;
 		Metro m = metro(Math.floorDiv(x, CELL), Math.floorDiv(z, CELL));
 		if (m == null) return false;
 		return Math.hypot(x - m.cx, z - m.cz) <= m.radius + 30 + RING + r;
 	}
 
-	/** Nearest city to a point. */
+	// ------------------------------------------------------------------ the metropolises and the big low-rise towns
+
+	private final ConcurrentHashMap<Long, Metro> bigs = new ConcurrentHashMap<>();
+
+	/**
+	 * One per square between the motorways (13 x 13 km), in the middle of it, so the motorways run round it like
+	 * ring roads: three in eight squares get a metropolis, two in eight a big low-rise town.
+	 */
+	public Metro big(int i, int j) {
+		long key = ((long) i << 32) ^ (j & 0xffffffffL);
+		Metro m = bigs.computeIfAbsent(key, k -> makeBig(i, j));
+		return m == NONE ? null : m;
+	}
+
+	/** The metropolis or big town within m of its edge around this point, or null. */
+	public Metro big(double x, double z, double m) {
+		int i = (int) Math.floor((x - f.infra.offset(0)) / Infra.MW), j = (int) Math.floor((z - f.infra.offset(1)) / Infra.MW);
+		Metro b = big(i, j);
+		if (b == null) return null;
+		return Math.hypot(x - b.cx, z - b.cz) <= b.radius + m ? b : null;
+	}
+
+	private Metro makeBig(int i, int j) {
+		long h = Harbours.mix(seed * 131 + Harbours.mix(i * 0x632BE59BD9B4E019L + j * 0x2545F4914F6CDD1DL + 0xB16));
+		int roll = (int) Math.floorMod(h, 8L);
+		int type = roll < 3 ? MEGA : roll < 5 ? LOW : -1;
+		if (type < 0) return NONE;
+		double cx0 = f.infra.offset(0) + (i + 0.5) * Infra.MW, cz0 = f.infra.offset(1) + (j + 0.5) * Infra.MW;
+		cx0 += ((h >>> 8) & 1023) - 512;
+		cz0 += ((h >>> 18) & 1023) - 512;
+		int px = (int) (Math.floorDiv((int) cx0, Villages.PU) * Villages.PU + Villages.STREET);
+		int pz = (int) (Math.floorDiv((int) cz0, Villages.PW) * Villages.PW + Villages.STREET);
+		double rot = ((h >>> 28) & 0xffff) / 65536.0 * 2 * Math.PI;
+		double max = type == MEGA ? 2500 + Math.floorMod(h >>> 44, 2500L) : 1500 + Math.floorMod(h >>> 44, 1000L);
+		double min = type == MEGA ? 2500 : 1500;
+		// room to the motorways all round
+		for (int a = 0; a < 64; a++) {
+			double ang = a * Math.PI / 32;
+			for (double rr = 800; rr <= max + RING + 700; rr += 100) {
+				double x = px + Math.cos(ang) * rr, z = pz + Math.sin(ang) * rr;
+				if (f.infra.motorwayDistance(x, z) < Junctions.REACH + 80) {
+					max = Math.min(max, rr - RING - 700);
+					break;
+				}
+			}
+		}
+		// on land: shrink until all of it is dry land
+		for (double R = max; R >= min; R *= 0.88) {
+			boolean ok = true;
+			for (int a = 0; a < 48 && ok; a++) {
+				double ang = a * Math.PI / 24;
+				for (double rr : new double[]{0, R * 0.25, R * 0.5, R * 0.75, R, R + RING + 60}) {
+					int x = (int) (px + Math.cos(ang) * rr), z = (int) (pz + Math.sin(ang) * rr);
+					if (f.continentalness(x, z) < Lowlands.COAST + 0.1) {
+						ok = false;
+						break;
+					}
+				}
+			}
+			if (!ok) continue;
+			boolean river = false;
+			for (int a = 0; a < 48 && !river; a++) {
+				double ang = a * Math.PI / 24;
+				for (double rr = 0; rr <= R && !river; rr += 150)
+					if (f.great.distance(px + Math.cos(ang) * rr, pz + Math.sin(ang) * rr) < f.great.halfWidth(px, pz) + 20) river = true;
+			}
+			return new Metro(px, pz, R, h, river, rot, type);
+		}
+		return NONE;
+	}
+
+	/** Nearest city to a point (of the normal cities within `cells` cells, and the metropolises and big towns). */
 	public Metro nearest(int x, int z, int cells) {
+		int cx = Math.floorDiv(x, CELL), cz = Math.floorDiv(z, CELL);
+		Metro best = null;
+		double bd = Double.MAX_VALUE;
+		int bi = (int) Math.floor((x - f.infra.offset(0)) / Infra.MW), bj = (int) Math.floor((z - f.infra.offset(1)) / Infra.MW);
+		int bc = Math.max(1, cells * CELL / Infra.MW);
+		for (int i = -bc; i <= bc; i++)
+			for (int j = -bc; j <= bc; j++) {
+				Metro m = big(bi + i, bj + j);
+				if (m == null) continue;
+				double d = Math.hypot(m.cx - x, m.cz - z) - m.radius;
+				if (d < bd) {
+					bd = d;
+					best = m;
+				}
+			}
+		for (int i = -cells; i <= cells; i++)
+			for (int j = -cells; j <= cells; j++) {
+				Metro m = metro(cx + i, cz + j);
+				if (m == null) continue;
+				double d = Math.hypot(m.cx - x, m.cz - z) - m.radius;
+				if (d < bd) {
+					bd = d;
+					best = m;
+				}
+			}
+		return best;
+	}
+
+	/** Nearest normal big city (not a metropolis or a big low-rise town), for the tests. */
+	public Metro nearestNormal(int x, int z, int cells) {
 		int cx = Math.floorDiv(x, CELL), cz = Math.floorDiv(z, CELL);
 		Metro best = null;
 		double bd = Double.MAX_VALUE;
@@ -151,6 +344,24 @@ public final class Metros {
 			for (int j = -cells; j <= cells; j++) {
 				Metro m = metro(cx + i, cz + j);
 				if (m == null) continue;
+				double d = Math.hypot(m.cx - x, m.cz - z);
+				if (d < bd) {
+					bd = d;
+					best = m;
+				}
+			}
+		return best;
+	}
+
+	/** Nearest metropolis (type MEGA) or big low-rise town (LOW) to a point, within `squares` motorway squares. */
+	public Metro nearestBig(int x, int z, int type, int squares) {
+		int bi = (int) Math.floor((x - f.infra.offset(0)) / Infra.MW), bj = (int) Math.floor((z - f.infra.offset(1)) / Infra.MW);
+		Metro best = null;
+		double bd = Double.MAX_VALUE;
+		for (int i = -squares; i <= squares; i++)
+			for (int j = -squares; j <= squares; j++) {
+				Metro m = big(bi + i, bj + j);
+				if (m == null || m.type != type) continue;
 				double d = Math.hypot(m.cx - x, m.cz - z);
 				if (d < bd) {
 					bd = d;

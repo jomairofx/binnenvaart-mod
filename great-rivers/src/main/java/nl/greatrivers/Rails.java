@@ -11,13 +11,13 @@ import net.minecraft.world.StructureWorldAccess;
 
 /**
  * Railways: double track main lines across the country, dead straight (family 0 runs north-south at a fixed x,
- * family 1 east-west at a fixed z), about 14.5 km apart. Ballast on a low embankment, overhead wire on masts.
+ * family 1 east-west at a fixed z), about 18 km apart. Ballast on a low embankment, overhead wire on masts.
  * They climb gently (1 in 30) to steel truss bridges over the river, as high as the motorway bridges, and go over
  * the motorways on viaducts. Where a provincial road crosses there is a level crossing with barriers and lights,
  * and a small station ("halte") with platforms, a shelter and bike racks. At open sea the line ends at buffers.
  */
 public final class Rails {
-	public static final int RS = 14500;
+	public static final int RS = 18000;
 	public static final int BASE_Y = 63;                // ballast top in the polder
 	public static final double HALF = 6.5;              // ballast, masts, embankment top
 	public static final double RAMP = 750;              // 1 in 30 up to a river bridge

@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * nearest village or town on that side of the river.
  */
 public final class Locks {
-	public static final int CELL = 3300;
+	public static final int CELL = 2200;
 	public static final int CH = 24, OW = 6, MWL = 8;
 	public static final int WALL_L = 132, GATE0 = 116, GATE1 = 130, GUIDE = 110;
 	public static final int WALL_TOP = 64, WEIR_A = 7, WEIR_DECK = 72, PIER_EVERY = 30;
@@ -115,18 +115,18 @@ public final class Locks {
 		int m = 420;
 		if (x < cellX * CELL + m || x > (cellX + 1) * CELL - m || z < cellZ * CELL + m || z > (cellZ + 1) * CELL - m) return NONE;
 		double hw = k.halfWidth(x, z);
-		if (hw < 55) return NONE;   // a narrow river needs no weir
+		if (hw < 45) return NONE;   // a narrow river needs no weir
 		double[] nrm = k.normal(x, z);
 		double gx = nrm[0], gz = nrm[1], tx = -gz, tz = gx;
 		// a straight reach of even width
 		for (double s = -340; s <= 340; s += 20) {
 			double qx = x + tx * s, qz = z + tz * s;
-			if (k.distance(qx, qz) > hw * 0.15 + 5) return NONE;
-			if (Math.abs(k.halfWidth(qx, qz) - hw) > 7) return NONE;
+			if (k.distance(qx, qz) > hw * 0.25 + 8) return NONE;
+			if (Math.abs(k.halfWidth(qx, qz) - hw) > 12) return NONE;
 		}
 		int side = ((h >>> 40) & 1) == 0 ? 1 : -1;
 		// on land on both sides, no motorway bridge, no harbour, no village nearby
-		for (double s = -800; s <= 800; s += 40) {
+		for (double s = -450; s <= 450; s += 40) {
 			double qx = x + tx * s, qz = z + tz * s;
 			if (infra.motorwayDistance(qx, qz) < 90) return NONE;
 			if (f.rails.distance(qx, qz) < 90) return NONE;

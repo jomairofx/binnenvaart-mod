@@ -1,9 +1,11 @@
 package nl.greatrivers;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.StructureWorldAccess;
 
@@ -126,7 +128,12 @@ final class Countryside {
 
 	// ------------------------------------------------------------------ farmhouses
 
-	/** Now and then a Dutch farmhouse (brick, steep dark roof, green shutters) with a few trees and hay. */
+	/**
+	 * Now and then a house or farm on its own in the countryside, in many kinds: the brick farmhouse with a steep
+	 * dark roof, the "stolpboerderij" under a pyramid of thatch, the "langgevelboerderij" (house and barn under one
+	 * long roof), a modern white house with a flat roof, a bungalow with a hipped roof, a villa with a thatched roof,
+	 * a little white cottage with a red roof.
+	 */
 	static void farm(StructureWorldAccess w, BlockPos.Mutable m, RiverField field, int x0, int z0) {
 		int cell = 288;
 		int cx = Math.floorDiv(x0 + 8, cell), cz = Math.floorDiv(z0 + 8, cell);
@@ -135,67 +142,144 @@ final class Countryside {
 		int fx = cx * cell + 40 + (int) ((h >>> 8 & 0xffff) % (cell - 80));
 		int fz = cz * cell + 40 + (int) ((h >>> 24 & 0xffff) % (cell - 80));
 		if (fx < x0 || fx >= x0 + 16 || fz < z0 || fz >= z0 + 16) return;
-		int bx = x0 + 3, bz = z0 + 1;            // footprint 9 x 15 inside the area this chunk may build in
+		int type = (int) Math.floorMod(h >>> 44, 7L);
+		int[][] dims = {{15, 9, 3}, {13, 13, 2}, {15, 8, 3}, {10, 8, 6}, {12, 9, 3}, {11, 9, 3}, {9, 7, 3}};
+		int len = dims[type][0], wid = dims[type][1], walls = dims[type][2];
 		boolean alongX = ((h >>> 40) & 1) == 0;
-		int lx = alongX ? 15 : 9, lz = alongX ? 9 : 15;
+		int lx = alongX ? len : wid, lz = alongX ? wid : len;
+		int bx = x0 + 3, bz = z0 + 1;            // inside the area this chunk may build in
 		if (field.polderWeight(bx + lx / 2, bz + lz / 2) < 0.95 || field.harbours.siteAt(bx, bz) != null || field.villages.at(bx, bz) != null) return;
+		if (field.metros.near(bx, bz, 20)) return;
 		if (field.low.canalDistance(bx, bz) < 50 || field.infra.near(bx + lx / 2, bz + lz / 2, 30)) return;
-		for (int dx = 0; dx < lx; dx += 4)
-			for (int dz = 0; dz < lz; dz += 4) {
+		for (int dx = 0; dx < lx; dx += 3)
+			for (int dz = 0; dz < lz; dz += 3) {
 				int t = w.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, bx + dx, bz + dz) - 1;
 				if (t != 62 || !w.getBlockState(m.set(bx + dx, t, bz + dz)).isOf(Blocks.GRASS_BLOCK)) return;
 				if (field.low.ditch(bx + dx, bz + dz)) return;
 			}
-		BlockState brick = Blocks.BRICKS.getDefaultState(), white = Blocks.WHITE_CONCRETE.getDefaultState();
-		BlockState glassI = alongX ? VillageBuilder.paneEW(Blocks.WHITE_STAINED_GLASS_PANE) : VillageBuilder.paneNS(Blocks.WHITE_STAINED_GLASS_PANE);
-		BlockState glassJ = alongX ? VillageBuilder.paneNS(Blocks.WHITE_STAINED_GLASS_PANE) : VillageBuilder.paneEW(Blocks.WHITE_STAINED_GLASS_PANE);
-		int base = 63, wallTop = base + 3;
-		int len = alongX ? lx : lz, wid = alongX ? lz : lx;
+		Direction pI = alongX ? Direction.EAST : Direction.SOUTH, pJ = alongX ? Direction.SOUTH : Direction.EAST;
+		BlockState wall = switch (type) {
+			case 3 -> Blocks.WHITE_CONCRETE.getDefaultState();
+			case 4 -> Blocks.MUD_BRICKS.getDefaultState();
+			case 6 -> Blocks.WHITE_TERRACOTTA.getDefaultState();
+			default -> Blocks.BRICKS.getDefaultState();
+		};
+		BlockState trim = type == 3 ? Blocks.BLACK_CONCRETE.getDefaultState() : Blocks.WHITE_CONCRETE.getDefaultState();
+		int base = 63, wallTop = base + walls;
 		for (int i = 0; i < len; i++)
 			for (int j = 0; j < wid; j++) {
 				int x = bx + (alongX ? i : j), z = bz + (alongX ? j : i);
 				boolean edge = i == 0 || i == len - 1 || j == 0 || j == wid - 1;
+				boolean sideJ = j == 0 || j == wid - 1;     // a long wall
+				BlockState glass = (sideJ == alongX) ? VillageBuilder.paneEW(Blocks.WHITE_STAINED_GLASS_PANE) : VillageBuilder.paneNS(Blocks.WHITE_STAINED_GLASS_PANE);
 				set(w, m, x, base - 1, z, Blocks.SPRUCE_PLANKS.getDefaultState());
+				boolean barn = type == 2 && i >= 7;          // the barn half of the langgevel farm
 				for (int y = base; y <= wallTop; y++) {
+					int rel = y - base;
 					BlockState st = AIR;
 					if (edge) {
-						st = brick;
-						boolean window = y == base + 1 && ((i % 3 == 1 && (j == 0 || j == wid - 1)) || (j % 3 == 1 && (i == 0 || i == len - 1)));
-						if (window) st = (j == 0 || j == wid - 1) ? glassI : glassJ;
-						if (y == wallTop) st = Blocks.WHITE_CONCRETE.getDefaultState();
-					}
+						st = barn ? Blocks.DARK_OAK_PLANKS.getDefaultState() : wall;
+						int along = sideJ ? i : j;
+						boolean win;
+						if (type == 3) win = rel % 3 != 0 && along % 4 != 0;                         // big windows
+						else win = rel == 1 && along % 3 == 1 && !barn;
+						if (win && !(sideJ && (i == 0 || i == len - 1))) st = glass;
+						if (rel == walls && type != 3) st = barn ? Blocks.DARK_OAK_PLANKS.getDefaultState() : trim;
+						if (type == 3 && rel == 3) st = trim;
+						if (barn && sideJ && j == 0 && i >= 9 && i <= 12 && rel <= 2) st = Blocks.SPRUCE_PLANKS.getDefaultState();   // barn doors
+					} else if (type == 3 && rel == 3) st = Blocks.BIRCH_PLANKS.getDefaultState();          // upper floor
+					else if (rel == walls - 1 && !barn && i % 4 == 2 && j == wid / 2) st = Blocks.LANTERN.getDefaultState().with(Properties.HANGING, true);
 					set(w, m, x, y, z, st);
 				}
-				// steep gable roof along the long side, dark tiles
-				int k = Math.min(j, wid - 1 - j);   // distance from the eaves
-				for (int r = 0; r <= k; r++) {
-					int y = wallTop + 1 + r;
-					BlockState roof;
-					if (r == k) {
-						if (wid % 2 == 1 && j == wid / 2) roof = Blocks.DEEPSLATE_TILE_SLAB.getDefaultState();
-						else {
-							net.minecraft.util.math.Direction f = alongX ? (j < wid / 2 ? net.minecraft.util.math.Direction.SOUTH : net.minecraft.util.math.Direction.NORTH)
-									: (j < wid / 2 ? net.minecraft.util.math.Direction.EAST : net.minecraft.util.math.Direction.WEST);
-							roof = Blocks.DEEPSLATE_TILE_STAIRS.getDefaultState().with(Properties.HORIZONTAL_FACING, f);
-						}
-					} else roof = (i == 0 || i == len - 1) ? brick : AIR;
-					set(w, m, x, y, z, roof);
-				}
+				roof(w, m, type, x, z, i, j, len, wid, wallTop, pI, pJ, wall, barn);
 			}
-		// front door with green shutters beside the windows
-		int dx = alongX ? len / 2 : 0, dz = alongX ? 0 : len / 2;
-		int doorX = bx + (alongX ? dx : 0), doorZ = bz + (alongX ? 0 : dz);
+		// the front door in the middle of the long side
+		int di = len / 2 - (type == 2 ? 4 : 0);
+		int doorX = bx + (alongX ? di : 0), doorZ = bz + (alongX ? 0 : di);
 		set(w, m, doorX, base, doorZ, AIR);
 		set(w, m, doorX, base + 1, doorZ, AIR);
-		// a barrel, hay bales and a fence by the farm
-		int sx = bx + (alongX ? -2 : lx + 1), sz = bz + (alongX ? 2 : 2);
-		set(w, m, sx, base, sz, Blocks.HAY_BLOCK.getDefaultState());
-		set(w, m, sx, base, sz + 1, Blocks.HAY_BLOCK.getDefaultState());
-		set(w, m, sx, base + 1, sz, Blocks.HAY_BLOCK.getDefaultState());
-		set(w, m, sx, base, sz + 3, Blocks.BARREL.getDefaultState());
+		// around it
+		if (type == 3 || type == 4) {
+			// a hedge along the front, a car on the drive
+			for (int i = -1; i <= len; i++) {
+				int x = bx + (alongX ? i : -3), z = bz + (alongX ? -3 : i);
+				if (Math.abs(i - di) <= 1 || Math.abs(i - di - 3) <= 1) continue;
+				set(w, m, x, base, z, Blocks.OAK_LEAVES.getDefaultState().with(Properties.PERSISTENT, true));
+			}
+			int cxp = bx + (alongX ? di + 3 : -2), czp = bz + (alongX ? -2 : di + 3);
+			BlockState car = new BlockState[]{Blocks.BLACK_CONCRETE.getDefaultState(), Blocks.BLUE_CONCRETE.getDefaultState(), Blocks.WHITE_CONCRETE.getDefaultState()}[(int) ((h >>> 50) % 3)];
+			set(w, m, cxp, base, czp, car);
+			set(w, m, cxp, base + 1, czp, Blocks.BLACK_STAINED_GLASS.getDefaultState());
+		} else {
+			int sx = bx + (alongX ? -2 : lx + 1), sz = bz + 2;
+			set(w, m, sx, base, sz, Blocks.HAY_BLOCK.getDefaultState());
+			set(w, m, sx, base, sz + 1, Blocks.HAY_BLOCK.getDefaultState());
+			set(w, m, sx, base + 1, sz, Blocks.HAY_BLOCK.getDefaultState());
+			set(w, m, sx, base, sz + 3, Blocks.BARREL.getDefaultState());
+		}
 		for (int t = 0; t < 2; t++) {
-			int tx = bx + (alongX ? 3 + t * 8 : lx + 3), tz = bz + (alongX ? lz + 3 : 3 + t * 8);
+			int tx = bx + (alongX ? 2 + t * (len - 4) : lx + 3), tz = bz + (alongX ? lz + 3 : 2 + t * (len - 4));
 			tree(w, m, tx, base, tz, h >>> (t * 7));
+		}
+	}
+
+	/** The roof of a country house, by type. */
+	private static void roof(StructureWorldAccess w, BlockPos.Mutable m, int type, int x, int z, int i, int j, int len, int wid, int wallTop,
+							 Direction pI, Direction pJ, BlockState wall, boolean barn) {
+		BlockState thatch = Blocks.HAY_BLOCK.getDefaultState();
+		if (type == 3) {
+			// flat roof with a black edge and solar panels
+			boolean edge = i == 0 || i == len - 1 || j == 0 || j == wid - 1;
+			set(w, m, x, wallTop + 1, z, edge ? Blocks.BLACK_CONCRETE.getDefaultState() : Blocks.GRAY_CONCRETE.getDefaultState());
+			if (!edge && i % 2 == 1 && j > 1 && j < wid - 2) set(w, m, x, wallTop + 2, z, Blocks.DAYLIGHT_DETECTOR.getDefaultState());
+			return;
+		}
+		int ki = Math.min(i, len - 1 - i), kj = Math.min(j, wid - 1 - j);
+		if (type == 1 || type == 4) {
+			// pyramid of thatch (stolp) or a hipped roof of dark tiles (bungalow)
+			int k = Math.min(ki, kj);
+			int top = type == 1 ? 6 : 3;
+			for (int r = 0; r <= Math.min(k, top); r++) {
+				int y = wallTop + 1 + r;
+				BlockState st = AIR;
+				if (r == Math.min(k, top)) {
+					if (type == 1) st = thatch;
+					else if (r == top) st = Blocks.DEEPSLATE_TILES.getDefaultState();
+					else {
+						Direction d = ki < kj ? (i < len / 2 ? pI : pI.getOpposite()) : (j < wid / 2 ? pJ : pJ.getOpposite());
+						st = Blocks.DEEPSLATE_TILE_STAIRS.getDefaultState().with(Properties.HORIZONTAL_FACING, d);
+					}
+				}
+				set(w, m, x, y, z, st);
+			}
+			if (type == 1 && ki == len / 2 && kj == wid / 2) set(w, m, x, wallTop + 8, z, Blocks.BRICKS.getDefaultState());   // chimney on top
+			return;
+		}
+		// gable roofs, ridge along the length
+		BlockState full, slab;
+		Block stairs;
+		if (type == 5) {
+			full = thatch;
+			slab = thatch;
+			stairs = null;
+		} else if (type == 6 || barn) {
+			full = Blocks.POLISHED_GRANITE.getDefaultState();
+			slab = Blocks.POLISHED_GRANITE_SLAB.getDefaultState();
+			stairs = Blocks.POLISHED_GRANITE_STAIRS;
+		} else {
+			full = Blocks.DEEPSLATE_TILES.getDefaultState();
+			slab = Blocks.DEEPSLATE_TILE_SLAB.getDefaultState();
+			stairs = Blocks.DEEPSLATE_TILE_STAIRS;
+		}
+		for (int r = 0; r <= kj; r++) {
+			int y = wallTop + 1 + r;
+			BlockState st;
+			if (r == kj) {
+				if (wid % 2 == 1 && j == wid / 2) st = slab;
+				else if (stairs == null) st = full;
+				else st = stairs.getDefaultState().with(Properties.HORIZONTAL_FACING, j < wid / 2 ? pJ : pJ.getOpposite());
+			} else st = (i == 0 || i == len - 1) ? wall : AIR;
+			set(w, m, x, y, z, st);
 		}
 	}
 

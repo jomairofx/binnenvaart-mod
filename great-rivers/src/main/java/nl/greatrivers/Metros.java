@@ -244,7 +244,7 @@ public final class Metros {
 	private final ConcurrentHashMap<Long, Metro> bigs = new ConcurrentHashMap<>();
 
 	/**
-	 * One per square between the motorways (17 x 17 km), in the middle of it, so the motorways run round it like
+	 * One per square between the motorways (21 x 21 km), in the middle of it, so the motorways run round it like
 	 * ring roads: three in eight squares get a metropolis, two in eight a big low-rise town.
 	 */
 	public Metro big(int i, int j) {

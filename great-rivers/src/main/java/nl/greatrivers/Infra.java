@@ -1,7 +1,7 @@
 package nl.greatrivers;
 
 /**
- * Motorways ("snelwegen") across the whole land: two families of long, gently curving roads about 17 km apart,
+ * Motorways ("snelwegen") across the whole land: two families of long, gently curving roads about 21 km apart,
  * one running roughly north-south and one roughly east-west. 2 x 2 lanes with hard shoulders and a central
  * reservation, on a low embankment in the polder and graded through the rises.
  * - Where a motorway meets the river it climbs on an earth ramp to a high bridge: steel arch over the fairway,
@@ -13,7 +13,7 @@ package nl.greatrivers;
  * Everything is a pure function of the seed and the position, so every chunk agrees on the roads.
  */
 public final class Infra {
-	public static final int MW = 17000;              // distance between the motorways of one family
+	public static final int MW = 21000;              // distance between the motorways of one family
 	public static final int ROAD_Y = 63;             // road surface block in the polder (one above the land)
 	public static final int DECK = 88;               // road surface block on the river bridges: underside at 86
 	public static final double HALF = 12.5;          // half width of the paved road

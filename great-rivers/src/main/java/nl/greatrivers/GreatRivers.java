@@ -180,7 +180,7 @@ public class GreatRivers implements ModInitializer {
 		if (br != null) report(src, "Nearest river bridge (motorway)", (int) br[0], Infra.DECK + 1, (int) br[1], x, z);
 		double[] vd = field.infra.findViaduct(x, z, 3);
 		if (vd != null) report(src, "Nearest viaduct", (int) vd[0], 80, (int) vd[1], x, z);
-		Locks.Site lk = field.infra.locks.nearest(x, z, 6);
+		Locks.Site lk = field.infra.locks.nearest(x, z, 12);
 		if (lk != null) {
 			double la = 0, lw = lk.hw() + Locks.LAND - 4;
 			report(src, "Nearest lock and weir" + (lk.hasRoad() ? " (road to a " + lk.town() + ")" : ""),

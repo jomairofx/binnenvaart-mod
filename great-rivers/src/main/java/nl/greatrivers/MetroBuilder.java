@@ -558,7 +558,7 @@ final class MetroBuilder {
 			long hk = Harbours.mix(mt.seed() + index * 131L);
 			// only every few boulevards gets a bridge: about 800 m apart in a city, 1.4 km in a metropolis
 			int ord = ns0 ? Math.floorDiv(index - 3, 6) : Math.floorDiv(index - 3, 7);
-			int every = mt.mega() ? 7 : 4;
+			int every = mt.mega() ? 10 : 6;
 			if (Math.floorMod(ord + (int) Math.floorMod(mt.seed() >>> 5, (long) every), every) != 0) return 0;
 			int i = (int) Math.floorMod(hk >>> 8, 5L);          // arch, cable-stayed, suspension, lift bridge, truss
 			boolean ns = ns0;

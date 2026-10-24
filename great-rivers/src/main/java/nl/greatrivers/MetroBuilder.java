@@ -257,6 +257,7 @@ final class MetroBuilder {
 		else st = old ? BRICK : ASPHALT;
 		set(w, m, x, G, z, st);
 		int along = alongX ? x : z;
+		if (Math.floorMod(along, 16) != 0) VillageBuilder.streetLife(w, m, x, z, across, along, alongX);
 		if (across == 0 && Math.floorMod(along, 16) == 0) {
 			if (old) {
 				for (int y = G + 1; y <= G + 3; y++) set(w, m, x, y, z, Blocks.DARK_OAK_FENCE.getDefaultState());

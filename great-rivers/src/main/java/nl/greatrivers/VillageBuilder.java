@@ -683,9 +683,34 @@ final class VillageBuilder {
 			for (int y = G + 1; y <= G + 3; y++) set(w, m, x, y, z, Blocks.DARK_OAK_FENCE.getDefaultState());
 			set(w, m, x, G + 4, z, Blocks.LANTERN.getDefaultState());
 		}
-		// lime trees along the main streets of a town
-		if (false) {   // no trees on the streets
-			Countryside.tree(w, m, x, G + 1, z, hash(x, z, 5));
+		streetLife(w, m, x, z, across, along, alongX);
+	}
+
+	private static final Block[] CAR_PAINT = {Blocks.WHITE_CONCRETE, Blocks.BLACK_CONCRETE, Blocks.GRAY_CONCRETE, Blocks.BLUE_CONCRETE,
+			Blocks.RED_CONCRETE, Blocks.LIGHT_GRAY_CONCRETE, Blocks.GREEN_CONCRETE};
+
+	/**
+	 * The small things on a street: green litter bins and bike racks on the pavement, a parked car now and then
+	 * along one side, a post box. across = 0..STREET-1 across the street, along = coordinate along it.
+	 */
+	static void streetLife(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int across, int along, boolean alongX) {
+		if (across < 0) return;
+		if (across == 0 && (Math.floorMod(along, 12) == 0 || Math.floorMod(along, 16) == 0)) return;     // the street lamps
+		long seg = Math.floorDiv(along, 31);
+		int ph = Math.floorMod(along, 31);
+		long h = hash(seg, alongX ? z : x, alongX ? 1 : 2);
+		if (across == 0) {
+			if (ph == 17 && (h & 3) == 0) set(w, m, x, G + 1, z, Blocks.GREEN_TERRACOTTA.getDefaultState());           // litter bin
+			else if (ph >= 20 && ph <= 23 && (h & 12) == 4) set(w, m, x, G + 1, z, Blocks.IRON_BARS.getDefaultState());  // bike rack
+			else if (ph == 26 && (h & 63) == 9) {
+				set(w, m, x, G + 1, z, Blocks.ORANGE_CONCRETE.getDefaultState());                                         // post box
+				set(w, m, x, G + 2, z, Blocks.ORANGE_TERRACOTTA.getDefaultState());
+			}
+		} else if (across == Villages.STREET - 2 && ph >= 3 && ph <= 6 && (h & 3) == 1) {
+			// a parked car along the kerb
+			BlockState body = CAR_PAINT[(int) Math.floorMod(h >>> 8, (long) CAR_PAINT.length)].getDefaultState();
+			set(w, m, x, G + 1, z, body);
+			if (ph == 4 || ph == 5) set(w, m, x, G + 2, z, Blocks.BLACK_STAINED_GLASS.getDefaultState());
 		}
 	}
 

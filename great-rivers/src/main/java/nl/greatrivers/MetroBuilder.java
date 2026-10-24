@@ -330,8 +330,9 @@ final class MetroBuilder {
 		if (KINDS.size() > 50000) KINDS.clear();
 		long key = mt.seed() ^ (index * 0x9E3779B97F4A7C15L) ^ 0xB81D6EL;
 		return KINDS.computeIfAbsent(key, k -> {
-			int i = Math.floorMod((int) (Harbours.mix(mt.seed() + index * 131L) % 3), 3);
-			if (i == 2) return 0;
+			long hk = Harbours.mix(mt.seed() + index * 131L);
+			if (Math.floorMod(hk, 3L) == 2) return 0;
+			int i = (int) Math.floorMod(hk >>> 8, 5L);          // arch, cable-stayed, suspension, lift bridge, truss
 			boolean ns = riverAlongX(f, mt);
 			double end = VillageBuilder.QUAY + 6 + RAMP;
 			double sWet0 = Double.NaN, sWet1 = Double.NaN;
@@ -514,6 +515,24 @@ final class MetroBuilder {
 				} else if (q == 3 && Math.floorMod(along, 6L) == 3 && hc > 3) {
 					for (int yy = y + 1; yy < yc; yy++) set(w, m, x, yy, z, Blocks.CHAIN.getDefaultState());
 				} else if (hc > ah * 0.7 && Math.floorMod(along, 14L) == 0) set(w, m, x, yc, z, Blocks.WAXED_OXIDIZED_CUT_COPPER.getDefaultState());
+			} else if (kind == 3) {
+				suspension(w, m, f, x, z, y, q, p, mid, W, dc, hw, cxl, czl, along, ns);
+			} else if (kind == 4) {
+				liftBridge(w, m, x, z, y, q, p, mid, W, dc, hw, cxl, czl, f, along);
+			} else if (kind == 5) {
+				// a steel truss over the whole river, on two piers
+				if (q == 2 && dc < hw + 4) {
+					int ph = (int) Math.floorMod(along, 12L);
+					boolean end = dc > hw + 3;
+					for (int yy = y + 2; yy <= y + 11; yy++) {
+						int rel = yy - y;
+						boolean chord = rel == 11 || rel == 2;
+						boolean diag = rel == 2 + ph * 9 / 12 || rel == 11 - ph * 9 / 12;
+						if (chord || ph == 0 || end || diag) set(w, m, x, yy, z, Blocks.WAXED_OXIDIZED_CUT_COPPER.getDefaultState());
+					}
+				} else if (q > 2 && dc < hw + 4 && Math.floorMod(along, 12L) == 0) set(w, m, x, y + 11, z, Blocks.WAXED_OXIDIZED_CUT_COPPER.getDefaultState());
+				if (dc > hw * 0.78 && dc < hw - 4 && Math.floorMod(along, 40L) < 3 && q >= 4 && q <= 6)
+					for (int yy = Math.max(30, groundY(w, m, x, z)); yy <= y - 3; yy++) set(w, m, x, yy, z, CONCRETE);
 			} else {
 				// cable-stayed: one white pylon at the middle of the river side of the near bank, cables in a fan
 				double pyl = hw - 4;                      // the pylon stands just inside the water line, out of the fairway
@@ -543,6 +562,78 @@ final class MetroBuilder {
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Suspension bridge: two grey towers just inside the water line on both banks, two main cables hanging between
+	 * them and down to the ramps behind them, hangers every 5 blocks down to the deck edges.
+	 */
+	private static void suspension(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, int x, int z, int y, int q, int p, int mid, int W,
+								   double dc, double hw, double cxl, double czl, long along, boolean ns) {
+		double tw = hw - 4;                         // the towers
+		int top = y + 46;
+		double off = dc - tw;
+		BlockState tower = Blocks.POLISHED_ANDESITE.getDefaultState();
+		if (Math.abs(off) < 2) {
+			if (q == 2) for (int yy = Math.max(30, groundY(w, m, x, z)); yy <= top; yy++) set(w, m, x, yy, z, tower);
+			else if (Math.abs(off) < 1) {
+				set(w, m, x, top, z, tower);
+				set(w, m, x, y + 24, z, tower);
+				set(w, m, x, y - 3, z, CONCRETE);
+			}
+			if (q == 2 && Math.abs(off) < 0.6) set(w, m, x, top + 1, z, Blocks.REDSTONE_LAMP.getDefaultState());
+			return;
+		}
+		if (q != 2) return;
+		// the main cable: a parabola between the towers, straight backstays behind them
+		double yc;
+		if (dc < tw) yc = y + 4 + (top - 1 - (y + 4)) * (dc / tw) * (dc / tw);
+		else if (off < 70) yc = top - 1 - (top - 1 - (y + 1)) * (off / 70);
+		else return;
+		double dn = dc + 1;
+		double yn = dn < tw ? y + 4 + (top - 1 - (y + 4)) * (dn / tw) * (dn / tw) : top - 1 - (top - 1 - (y + 1)) * Math.min(1, (dn - tw) / 70);
+		for (int yy = (int) Math.floor(Math.min(yc, yn)); yy <= (int) Math.floor(Math.max(yc, yn)); yy++)
+			if (yy > y + 1) set(w, m, x, yy, z, Blocks.IRON_BLOCK.getDefaultState());
+		if (dc < tw && Math.floorMod(along, 5L) == 0)
+			for (int yy = y + 1; yy < (int) Math.floor(yc); yy++) set(w, m, x, yy, z, Blocks.CHAIN.getDefaultState());
+	}
+
+	/**
+	 * Lift bridge ("hefbrug"), kept in the raised position: two steel lattice towers on both sides of the fairway
+	 * with the counterweights at the top, the lifting span between them with truss sides.
+	 */
+	private static void liftBridge(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int y, int q, int p, int mid, int W,
+								   double dc, double hw, double cxl, double czl, RiverField f, long along) {
+		BlockState steel = Blocks.WAXED_OXIDIZED_CUT_COPPER.getDefaultState();
+		double tp = Math.min(hw - 4, Math.max(30, hw * 0.8));      // towers at both ends of the lifting span, outside the fairway
+		double off = dc - tp;
+		int top = y + 30;
+		if (Math.abs(off) < 3 && q == 2) {
+			boolean leg = Math.abs(Math.abs(off) - 2) < 0.6;
+			for (int yy = Math.max(30, groundY(w, m, x, z)); yy <= top; yy++) {
+				int rel = yy - y;
+				if (leg || rel % 6 == 0 || yy == top) set(w, m, x, yy, z, steel);
+			}
+			if (q == 2 && Math.abs(off) < 1) {
+				for (int yy = top - 7; yy <= top - 3; yy++) set(w, m, x, yy, z, CONCRETE);      // counterweight
+				set(w, m, x, top + 1, z, Blocks.REDSTONE_LAMP.getDefaultState());
+			}
+			return;
+		}
+		if (Math.abs(off) < 1 && q > 3) {
+			set(w, m, x, top, z, steel);                       // the beam across between the towers
+			set(w, m, x, y - 3, z, CONCRETE);
+			if (q == 4) for (int yy = Math.max(30, groundY(w, m, x, z)); yy <= y - 3; yy++) set(w, m, x, yy, z, CONCRETE);
+			return;
+		}
+		if (dc < tp - 3 && q == 2) {
+			// truss sides of the lifting span
+			int ph = (int) Math.floorMod(along, 8L);
+			for (int yy = y + 2; yy <= y + 7; yy++) {
+				int rel = yy - y;
+				if (rel == 2 || rel == 7 || ph == 0 || rel == 2 + ph * 5 / 8) set(w, m, x, yy, z, steel);
+			}
+		}
 	}
 
 	private static int groundY(StructureWorldAccess w, BlockPos.Mutable m, int x, int z) {

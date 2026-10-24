@@ -224,7 +224,7 @@ final class SelfTest {
 					log.add(rm == null ? "  (geen grote stad aan de rivier in de buurt)" : "  grote stad aan de rivier op " + rm.cx() + ", " + rm.cz());
 					if (rm != null) {
 						double[] cb = MetroBuilder.findBridge(f, rm);
-						check("grote stad: brug over de rivier", true, cb == null ? "(geen brug: de opritten zouden buiten de stad uitkomen)" : "op " + (int) cb[0] + ", " + (int) cb[1] + (cb[2] == 1 ? " (boogbrug)" : " (tuibrug)"));
+						check("grote stad: brug over de rivier", true, cb == null ? "(geen brug: de opritten zouden buiten de stad uitkomen)" : "op " + (int) cb[0] + ", " + (int) cb[1] + (" (" + new String[]{"", "boogbrug", "tuibrug", "hangbrug", "hefbrug", "vakwerkbrug"}[(int) cb[2]] + ")"));
 						if (cb != null) {
 							int qx = (int) Math.floor(cb[0]), qz = (int) Math.floor(cb[1]);
 							w.getChunk(qx >> 4, qz >> 4);

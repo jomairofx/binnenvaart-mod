@@ -196,15 +196,49 @@ final class InfraBuilder {
 		for (int yy = g - 1; yy <= top; yy++) set(w, m, x, yy, z, yy < RiverField.WATER_TOP - 1 ? CONCRETE_DARK : CONCRETE);
 	}
 
+	public static final int ARCH = 0, CABLE = 1, TRUSS = 2;
+	private static final java.util.concurrent.ConcurrentHashMap<Long, Double> CROSSING = new java.util.concurrent.ConcurrentHashMap<>();
+
+	/** Where along the motorway it crosses the middle of the river (cached in steps of 16). */
+	private static double crossing(RiverField f, Infra.Hit h) {
+		if (CROSSING.size() > 50000) CROSSING.clear();
+		long key = ((long) h.fam << 60) ^ ((long) (h.k & 0xfffff) << 36) ^ (Math.floorDiv((long) Math.floor(h.u), 16L) & 0xfffffffffL);
+		return CROSSING.computeIfAbsent(key, kk -> {
+			double best = h.u, bd = Double.MAX_VALUE;
+			for (double v = h.u - 420; v <= h.u + 420; v += 3) {
+				double[] c = f.infra.centre(h.fam, h.k, v);
+				double d = f.great.distance(c[0], c[1]);
+				if (d < bd) {
+					bd = d;
+					best = v;
+				}
+			}
+			return (double) Math.round(best / 8) * 8;
+		});
+	}
+
+	/** Which kind of bridge carries the motorway over the river here: steel arch, cable-stayed or truss. */
+	static int bridgeType(RiverField f, Infra.Hit h) {
+		double uc = crossing(f, h);
+		return (int) Math.floorMod(Harbours.mix(h.fam * 7919L + h.k * 104729L + Math.round(uc / 64)), 3L);
+	}
+
 	private static boolean bridge(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, Infra.Hit h, int x, int z) {
 		double a = Math.abs(h.c);
-		if (a >= Infra.EDGE) return false;
+		if (a >= Infra.EDGE + 1.5) return false;
 		int y = Infra.DECK;
-		deck(w, m, h, x, y, z);
 		long along = Math.round(h.u);
 		double hw = f.great.halfWidth(h.cx, h.cz);
 		double dc = f.great.distance(h.cx, h.cz);
-		double clear = Math.max(40, Math.min(75, hw * 0.6));     // the fairway: one free span, the arch over it
+		double clear = Math.max(40, Math.min(75, hw * 0.6));     // the fairway: one free span over it
+		int type = bridgeType(f, h);
+		double sd = h.u - crossing(f, h);                         // along the bridge from the middle of the river
+		if (a >= Infra.EDGE) {
+			// outside the parapet: only the legs and cables of a cable-stayed bridge
+			if (type != CABLE) return false;
+			return cablePlane(w, m, x, z, y, sd, clear);
+		}
+		deck(w, m, h, x, y, z);
 		// abutment at the end of the bridge
 		if (h.e > Infra.BR_END - 2.5) {
 			for (int yy = ground(w, m, x, y - 3, z); yy <= y - 3; yy++) set(w, m, x, yy, z, CONCRETE);
@@ -212,6 +246,31 @@ final class InfraBuilder {
 			// piers: two columns under the deck, with a cross beam
 			if ((a >= 3.5 && a < 8.5)) pier(w, m, x, y - 3, z);
 			else set(w, m, x, y - 3, z, CONCRETE);
+		}
+		if (type == CABLE) {
+			// the pylons stand on both sides of the fairway, a cross beam under the deck
+			if (Math.abs(Math.abs(sd) - clear) < 2 && a < Infra.HALF) set(w, m, x, y - 3, z, CONCRETE);
+			if (Math.abs(Math.abs(sd) - clear) < 2 && a < 2 && Math.abs(Math.abs(sd) - clear) < 1) pier(w, m, x, y - 3, z);
+			return true;
+		}
+		if (type == TRUSS) {
+			// a steel truss over the fairway span: chords, posts and diagonals along both edges, cross girders on top
+			if (Math.abs(sd) < clear + 6) {
+				int TH = 14;
+				if (a >= Infra.HALF) {
+					int ph = (int) Math.floorMod(along, 14L);
+					boolean end = Math.abs(Math.abs(sd) - (clear + 5.5)) < 0.6;
+					for (int yy = y + 2; yy <= y + TH; yy++) {
+						int rel = yy - y;
+						boolean chord = rel == TH || rel == 2;
+						boolean post = ph == 0 || end;
+						boolean diag = rel == 2 + ph * (TH - 2) / 14 || rel == TH - ph * (TH - 2) / 14;
+						if (chord || post || diag) set(w, m, x, yy, z, STEEL);
+					}
+				} else if (Math.floorMod(along, 14L) == 0) set(w, m, x, y + 14, z, STEEL);
+				else if (a < 1 && Math.floorMod(along, 28L) == 7) set(w, m, x, y + 14, z, STEEL);    // wind bracing
+			}
+			return true;
 		}
 		if (dc < clear) {
 			// bowstring arch over the fairway, steel painted green-blue, hung from it with chains
@@ -233,6 +292,43 @@ final class InfraBuilder {
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * The column just outside the parapet of a cable-stayed motorway bridge: the white pylon legs on both sides of
+	 * the fairway, from the river bed to 46 above the deck, and the fans of stay cables down to the deck edge.
+	 */
+	private static boolean cablePlane(StructureWorldAccess w, BlockPos.Mutable m, int x, int z, int y, double sd, double clear) {
+		double off = Math.abs(sd) - clear;          // from the pylon, + away from the middle of the river
+		int top = y + 46;
+		boolean built = false;
+		if (Math.abs(off) < 1.5) {
+			int g = ground(w, m, x, y, z);
+			for (int yy = g - 1; yy <= top; yy++) set(w, m, x, yy, z, yy < RiverField.WATER_TOP - 1 ? CONCRETE_DARK : TOWER);
+			if (Math.abs(off) < 0.5) set(w, m, x, top + 1, z, Blocks.REDSTONE_LAMP.getDefaultState());
+			return true;
+		}
+		// the cables: eight on each side of the pylon, from the top of the pylon out along the deck
+		double ao = Math.abs(off);
+		if (off < 0 && ao > clear - 2) return false;          // the two fans meet in the middle
+		for (int k = 1; k <= 8; k++) {
+			double anchor = 11.0 * k;
+			if (ao > anchor) continue;
+			double yk = top - 3.0 * k;
+			double yc = yk - (yk - (y + 1)) * (ao / anchor);
+			double yc1 = yk - (yk - (y + 1)) * (Math.min(anchor, ao + 1) / anchor);
+			for (int yy = (int) Math.floor(Math.min(yc, yc1)); yy <= (int) Math.floor(Math.max(yc, yc1)); yy++)
+				if (yy > y + 1) {
+					set(w, m, x, yy, z, Blocks.IRON_BARS.getDefaultState());
+					built = true;
+				}
+		}
+		if (ao < 90) {
+			set(w, m, x, y - 1, z, CONCRETE);           // the edge beam where the cables are anchored
+			set(w, m, x, y, z, CONCRETE);
+			built = true;
+		}
+		return built;
 	}
 
 	private static boolean viaduct(StructureWorldAccess w, BlockPos.Mutable m, Infra.Hit h, int x, int z) {

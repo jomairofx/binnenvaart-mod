@@ -234,6 +234,10 @@ public final class ClientSelfTest {
 				for (int[] fs : GreatRivers.farmSpots(f, srvWorld.getSeed(), 0, 0, 7)) {
 					add("landhuis_" + (qn++) + "_type" + fs[2], fs[0] - 14, 72, fs[1] - 14, fs[0] + 6, 65, fs[1] + 6);
 				}
+				int[] qBp = GreatRivers.park(f, 0, 0, -1);
+				if (qBp != null) add("bedrijventerrein", qBp[0] - 150, 120, qBp[1] - 150, qBp[0], 64, qBp[1]);
+				int[] qDc = GreatRivers.park(f, 0, 0, 1);
+				if (qDc != null) add("datacentrum", qDc[0] - 90, 95, qDc[1] - 90, qDc[0], 70, qDc[1]);
 				// a high-voltage substation at the end of a line
 				double[] qSs = GreatRivers.substation(f, srvWorld.getSeed(), 0, 0);
 				if (qSs != null) {

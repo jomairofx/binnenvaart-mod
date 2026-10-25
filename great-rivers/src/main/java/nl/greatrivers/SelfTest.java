@@ -419,6 +419,20 @@ final class SelfTest {
 						check("grote havens: minstens 5 km uit elkaar", md >= 5000, md == Double.MAX_VALUE ? "geen andere in de buurt" : (int) md + " blokken naar de volgende");
 					}
 				}
+				// business parks beside the provincial roads, data centres
+				{
+					int[] bp = f.roads.nearestPark(0, 0, 12, -1);
+					check("bedrijventerrein gevonden", bp != null, bp == null ? "geen" : "op " + bp[0] + ", " + bp[1]);
+					int[] dc = f.roads.nearestPark(0, 0, 16, 1);
+					log.add(dc == null ? "  (geen datacentrum-campus in de buurt)" : "  datacentrum op " + dc[0] + ", " + dc[1]);
+					if (bp != null) {
+						Roads.Park pk = f.roads.parkAt(bp[0], bp[1], 0);
+						int lx = pk.alongX() ? bp[0] + 20 : bp[0], lz = pk.alongX() ? bp[1] : bp[1] + 20;
+						w.getChunk(lx >> 4, lz >> 4);
+						BlockState st = w.getBlockState(new BlockPos(lx, BusinessParks.G, lz));
+						check("bedrijventerrein: straat", st.isOf(net.minecraft.block.Blocks.GRAY_CONCRETE) || st.isOf(net.minecraft.block.Blocks.WHITE_CONCRETE), st.getBlock().getName().getString() + " op " + lx + ", " + lz);
+					}
+				}
 				// high-voltage lines: unbroken chains of towers from substation to substation
 				{
 					long sd = w.getSeed();

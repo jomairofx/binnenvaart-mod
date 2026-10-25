@@ -304,7 +304,7 @@ public final class RiverField {
 			double u = dc / Lowlands.CANAL_HALF, u2 = u * u;
 			t = Math.min(t, WATER_TOP + 0.3 - Lowlands.CANAL_DEPTH * (1 - u2 * u2 * u2));
 		} else if (dc < Lowlands.CANAL_HALF + 2) t = Math.min(t, WATER_TOP + 1.3);                 // the canal bank
-		else if (!nearRiver && dc > Lowlands.CANAL_HALF + 12 && lowl > 0.75 && cont > Lowlands.COAST + 0.06 && villages.site(x, z) == null && metros.site(x, z) == null) {
+		else if (!nearRiver && dc > Lowlands.CANAL_HALF + 12 && lowl > 0.75 && cont > Lowlands.COAST + 0.06 && villages.site(x, z) == null && metros.site(x, z) == null && roads.parkAt(x, z, 6) == null) {
 			if (low.lake(x, z)) t = Math.min(t, WATER_TOP - 3.7);                                       // a small lake
 			else if (low.ditch(x, z)) t = Math.min(t, WATER_TOP - 1.7);                                 // ditch: two deep
 		}
@@ -333,6 +333,13 @@ public final class RiverField {
 			boolean water = dg - hwg < 0;
 			if (!water && g > 0) t = t * (1 - g) + (Villages.GROUND + 0.3) * g;
 			if (!water && d <= mt.radius() + 30 && MetroBuilder.canalWater(mt, x, z)) t = Math.min(t, RiverField.WATER_TOP - 3.7);
+		}
+		// business parks: level ground a block above the polder, sloping back to it
+		Roads.Park pk = roads.parkAt(x, z, 14);
+		if (pk != null && cont > Lowlands.COAST + 0.06) {
+			double o = pk.outside(x + 0.5, z + 0.5);
+			double g = o <= 0 ? 1 : 1 - Lowlands.smooth(o / 14);
+			t = t * (1 - g) + (BusinessParks.G + 0.3) * g;
 		}
 		// motorways, bridge ramps, viaducts, locks and the roads to them
 		return infra.shape(x, z, t);

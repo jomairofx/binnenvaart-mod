@@ -114,6 +114,11 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 		int inf = InfraBuilder.column(w, m, field, x, z);
 		if (inf > 0) any = true;
 		if (inf == 2) return any;
+		Roads.Park pk = field.roads.parkAt(x + 0.5, z + 0.5, 0);
+		if (pk != null) {
+			BusinessParks.column(w, m, field, pk, x, z);
+			return true;
+		}
 		if (Countryside.riverBank(w, m, field, x, z)) any = true;
 		if (Landscape.column(w, m, field, x, z)) any = true;
 		if (Forest.column(w, m, field, x, z)) any = true;

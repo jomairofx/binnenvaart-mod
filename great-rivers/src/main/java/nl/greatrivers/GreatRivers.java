@@ -189,6 +189,10 @@ public class GreatRivers implements ModInitializer {
 			report(src, "Nearest lock and weir" + (lk.hasRoad() ? " (road to a " + lk.town() + ")" : ""),
 					(int) Math.floor(lk.wx(la, lw)), Locks.WALL_TOP + 1, (int) Math.floor(lk.wz(la, lw)), x, z);
 		}
+		int[] bp = field.roads.nearestPark(x, z, 8, -1);
+		if (bp != null) report(src, "Nearest business park", bp[0], BusinessParks.Y0 + 1, bp[1], x, z);
+		int[] dc = field.roads.nearestPark(x, z, 12, 1);
+		if (dc != null) report(src, "Nearest data centre campus", dc[0], BusinessParks.Y0 + 1, dc[1], x, z);
 		double[] ss = Pylons.findSubstation(field, src.getWorld().getSeed(), x, z);
 		if (ss != null) report(src, "Nearest high-voltage substation", (int) ss[0], (int) ss[2] + 1, (int) ss[1], x, z);
 		return 1;
@@ -202,6 +206,11 @@ public class GreatRivers implements ModInitializer {
 	/** Places of country houses (for the client test). */
 	public static java.util.List<int[]> farmSpots(RiverField f, long seed, int x, int z, int n) {
 		return Countryside.farmSpots(f, seed, x, z, n);
+	}
+
+	/** Nearest business park {x, z, type} (type -1: any, 1: data centre campus), for the tests. */
+	public static int[] park(RiverField f, int x, int z, int type) {
+		return f.roads.nearestPark(x, z, 12, type);
 	}
 
 	/** Nearest high-voltage substation {x, z, ground, fam, dir} (for the tests). */

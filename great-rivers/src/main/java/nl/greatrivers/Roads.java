@@ -60,7 +60,129 @@ public final class Roads {
 			Seg s = link(a, mt.asTown(), mt.radius() - 12, mt);
 			if (s != null) out.add(s);
 		}
+		// business parks beside the roads, each with its own access road
+		List<Park> ps = new ArrayList<>(2);
+		int n = out.size();
+		for (int i = 0; i < n; i++) {
+			Park p = park(out.get(i), out, a.seed() + i * 7919L);
+			if (p != null) {
+				ps.add(p);
+				out.add(p.access());
+			}
+		}
+		parks.put(((long) cellX << 32) ^ (cellZ & 0xffffffffL), ps);
 		return out;
+	}
+
+	// ------------------------------------------------------------------ business parks ("bedrijventerreinen")
+
+	/**
+	 * A business park beside a provincial road: an axis-aligned rectangle (x0..x1, z0..z1) with its main street
+	 * along the long side, reached by its own access road. type 0 = mixed companies, 1 = a data centre campus.
+	 */
+	public record Park(int x0, int z0, int x1, int z1, boolean alongX, long seed, int type, Seg access) {
+		public boolean contains(double x, double z, double g) {
+			return x >= x0 - g && x <= x1 + g && z >= z0 - g && z <= z1 + g;
+		}
+
+		public double outside(double x, double z) {
+			double dx = Math.max(0, Math.max(x0 - x, x - x1)), dz = Math.max(0, Math.max(z0 - z, z - z1));
+			return Math.hypot(dx, dz);
+		}
+	}
+
+	private final ConcurrentHashMap<Long, List<Park>> parks = new ConcurrentHashMap<>();
+
+	private Park park(Seg s, List<Seg> others, long seed) {
+		long h = Harbours.mix(seed ^ 0xB051E55L);
+		if (Math.floorMod(h, 100L) >= 40) return null;               // two in five roads
+		double len = Math.hypot(s.x1() - s.x0(), s.z1() - s.z0());
+		if (len < 700) return null;
+		double ux = (s.x1() - s.x0()) / len, uz = (s.z1() - s.z0()) / len;
+		double nx = uz, nz = -ux;                                      // normal (same sign as Seg.at's c)
+		int side = ((h >>> 8) & 1) == 0 ? 1 : -1;
+		int type = Math.floorMod(h >>> 12, 4L) == 0 ? 1 : 0;
+		int L = type == 1 ? 260 + (int) Math.floorMod(h >>> 20, 120L) : 220 + (int) Math.floorMod(h >>> 20, 160L);
+		int D = type == 1 ? 180 : 150 + (int) Math.floorMod(h >>> 30, 40L);
+		boolean alongX = Math.abs(ux) >= Math.abs(uz);
+		int lx = alongX ? L : D, lz = alongX ? D : L;
+		double t = len * (0.35 + 0.3 * ((h >>> 40) & 1023) / 1023.0);
+		double px = s.x0() + ux * t, pz = s.z0() + uz * t;
+		// push the rectangle off the road until all of it is beside it
+		double off = 20;
+		for (int it = 0; it < 40; it++) {
+			double cx = px + nx * side * (off + Math.max(lx, lz) / 2.0), cz = pz + nz * side * (off + Math.max(lx, lz) / 2.0);
+			int x0 = (int) Math.floor(cx - lx / 2.0), z0 = (int) Math.floor(cz - lz / 2.0);
+			double minC = Double.MAX_VALUE;
+			for (int[] c : new int[][]{{x0, z0}, {x0 + lx, z0}, {x0, z0 + lz}, {x0 + lx, z0 + lz}}) {
+				double[] at = s.at(c[0], c[1]);
+				double cc = at == null ? 1e9 : at[0] * side;
+				minC = Math.min(minC, cc);
+			}
+			if (minC < OUTER + 8) {
+				off += 8;
+				continue;
+			}
+			// the land under it: polder, no river or dike, no town, harbour, motorway, railway, lock or other road
+			RiverField.Kind k = f.great;
+			for (int ix = x0 - 20; ix <= x0 + lx + 20; ix += 20)
+				for (int iz = z0 - 20; iz <= z0 + lz + 20; iz += 20) {
+					if (k.distance(ix, iz) - k.halfWidth(ix, iz) < Lowlands.foreland(k) + 90) return null;
+					if (f.coastal(ix, iz) < Lowlands.COAST + 0.08) return null;
+					if (f.villages.site(ix, iz) != null || f.metros.near(ix, iz, 60) || f.harbours.siteNear(ix, iz, 40) != null) return null;
+					if (f.infra.motorwayDistance(ix, iz) < Infra.EDGE + 60 || f.rails.distance(ix, iz) < Rails.HALF + 40) return null;
+					if (f.infra.locks.near(ix, iz, 40)) return null;
+					for (Seg o : others) {
+						if (o == s) continue;
+						double[] at = o.at(ix, iz);
+						if (at != null && Math.abs(at[0]) < OUTER + 20) return null;
+					}
+				}
+			// the access road: from the provincial road straight to the middle of the park's main street
+			double mx = alongX ? x0 + lx / 2.0 : x0 + lx / 2.0, mz = alongX ? z0 + lz / 2.0 : z0 + lz / 2.0;
+			double[] foot = s.at(mx, mz);
+			if (foot == null) return null;
+			double fx = s.x0() + ux * foot[1], fz = s.z0() + uz * foot[1];
+			Seg acc = new Seg(fx + (mx - fx) * 0.0, fz + (mz - fz) * 0.0, mx, mz, -s.bike());
+			return new Park(x0, z0, x0 + lx, z0 + lz, alongX, h, type, acc);
+		}
+		return null;
+	}
+
+	/** The business park covering this point (grown by g), or null. */
+	public Park parkAt(double x, double z, double g) {
+		int cx = Math.floorDiv((int) Math.floor(x), Villages.CELL), cz = Math.floorDiv((int) Math.floor(z), Villages.CELL);
+		for (int i = -2; i <= 2; i++)
+			for (int j = -2; j <= 2; j++) {
+				from(cx + i, cz + j);
+				List<Park> ps = parks.get(((long) (cx + i) << 32) ^ ((cz + j) & 0xffffffffL));
+				if (ps == null) continue;
+				for (Park p : ps) if (p.contains(x, z, g)) return p;
+			}
+		return null;
+	}
+
+	/** Nearest business park to a point (for /findriver and the tests): {x, z, type}, or null. */
+	public int[] nearestPark(int x, int z, int cells, int type) {
+		int cx = Math.floorDiv(x, Villages.CELL), cz = Math.floorDiv(z, Villages.CELL);
+		int[] best = null;
+		double bd = Double.MAX_VALUE;
+		for (int i = -cells; i <= cells; i++)
+			for (int j = -cells; j <= cells; j++) {
+				from(cx + i, cz + j);
+				List<Park> ps = parks.get(((long) (cx + i) << 32) ^ ((cz + j) & 0xffffffffL));
+				if (ps == null) continue;
+				for (Park p : ps) {
+					if (type >= 0 && p.type() != type) continue;
+					int px = (p.x0() + p.x1()) / 2, pz = (p.z0() + p.z1()) / 2;
+					double d = Math.hypot(px - x, pz - z);
+					if (d < bd) {
+						bd = d;
+						best = new int[]{px, pz, p.type()};
+					}
+				}
+			}
+		return best;
 	}
 
 	private Seg link(Villages.Town a, Villages.Town b) {
@@ -134,7 +256,7 @@ public final class Roads {
 	}
 
 	public boolean near(int x, int z, double r) {
-		return hit(x + 0.5, z + 0.5, OUTER + 17 + r) != null;
+		return hit(x + 0.5, z + 0.5, OUTER + 17 + r) != null || parkAt(x + 0.5, z + 0.5, r + 6) != null;
 	}
 
 	/** No ditches or lakes under the road and the cycle path. */

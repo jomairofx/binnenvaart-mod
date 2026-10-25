@@ -116,11 +116,17 @@ public final class ClientSelfTest {
 		}
 		// the swim ladder at the transom, out of the water
 		if (t == t0 + 60) tp(srv, ship, new double[]{-1.75, -0.9 + 1.62, 3.5}, new double[]{2, -0.2, 3.5});
-		if (t == t0 + 80) mc.options.forwardKey.setPressed(true);
+		if (t == t0 + 80) {
+			mc.options.forwardKey.setPressed(true);
+			mc.options.jumpKey.setPressed(true);      // swim up, as a player does
+		}
 		if (t > t0 + 80 && t < t0 + 180) {
 			double ly = ship.toLocal(mc.player.getPos()).y;
 			if (ly > ladderMax) ladderMax = ly;
-			if (ly >= 0.98) mc.options.forwardKey.setPressed(false);
+			if (ly >= 0.98) {
+				mc.options.forwardKey.setPressed(false);
+				mc.options.jumpKey.setPressed(false);
+			}
 		}
 		if (t > t0 + 70 && t < t0 + 180 && t % 10 == 0) {
 			Vec3d l = ship.toLocal(mc.player.getPos());
@@ -129,6 +135,7 @@ public final class ClientSelfTest {
 		}
 		if (t == t0 + 180) {
 			mc.options.forwardKey.setPressed(false);
+			mc.options.jumpKey.setPressed(false);
 			check("swim ladder", ladderMax >= 0.95, String.format("climbed out of the water to local y=%.2f (transom 1.0)", ladderMax));
 			tp(srv, ship, new double[]{7.5, 1.62, 1.5}, new double[]{6.5, 1.0, 1.5});
 		}

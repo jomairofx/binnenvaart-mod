@@ -117,6 +117,7 @@ for z in (1, 2):
     S(-1, 1, z, "polished_blackstone_slab[type=bottom]")
     S(-2, -2, z, "lightning_rod[facing=west]")                # propeller hub
 # swim ladder at the starboard corner of the transom
+S(-1, -2, 3, "ladder[facing=west]")
 S(-1, -1, 3, "ladder[facing=west]")
 S(-1, 0, 3, "ladder[facing=west]")
 

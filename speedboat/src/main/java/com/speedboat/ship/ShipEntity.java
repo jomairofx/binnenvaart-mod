@@ -1617,9 +1617,10 @@ public class ShipEntity extends Entity {
 					double out = (sd == 0 ? -1 : 1) * (0.12 + 0.3 * f);
 					Vec3d p = toWorld(sprayX + r.nextDouble() * 2.5, 0, tz);
 					Vec3d vel = dirToWorld(new Vec3d(-0.05 * f, 0, out));
-					world.addParticle(ParticleTypes.SNOWFLAKE, p.x, wy + 0.15, p.z, vel.x, 0.12 + 0.28 * f * r.nextDouble(), vel.z);
-					if (r.nextInt(2) == 0) world.addParticle(ParticleTypes.SPLASH, p.x, wy + 0.05, p.z, vel.x * 0.5, 0, vel.z * 0.5);
-					if (f > 0.4 && r.nextInt(4) == 0) world.addParticle(ParticleTypes.CLOUD, p.x, wy + 0.4, p.z, vel.x * 0.3, 0.02, vel.z * 0.3);
+					// splash droplets thrown sideways (a splash only takes a sideways push when it gets no upward one)
+					world.addParticle(ParticleTypes.SPLASH, p.x, wy + 0.1, p.z, vel.x, 0, vel.z);
+					world.addParticle(ParticleTypes.SPLASH, p.x, wy + 0.3, p.z, vel.x * 0.6, 0, vel.z * 0.6);
+					if (f > 0.3 && r.nextInt(3) == 0) world.addParticle(ParticleTypes.CLOUD, p.x, wy + 0.3, p.z, vel.x * 0.4, 0.03 + 0.04 * f, vel.z * 0.4);
 				}
 			}
 		}
@@ -1633,7 +1634,10 @@ public class ShipEntity extends Entity {
 				if (r.nextInt(2) == 0) world.addParticle(ParticleTypes.BUBBLE, p.x, wy - 0.5, p.z, 0, 0.02, 0);
 				if (f > 0.45 && spd > 0) {
 					Vec3d back = dirToWorld(new Vec3d(-0.25 * f, 0, (r.nextDouble() - 0.5) * 0.12));
-					world.addParticle(ParticleTypes.SNOWFLAKE, p.x, wy + 0.2, p.z, back.x, 0.3 + 0.35 * f * r.nextDouble(), back.z);
+					// the rooster tail: a plume of white water and mist thrown up behind the props
+					if (r.nextInt(2) == 0) world.addParticle(ParticleTypes.CLOUD, p.x, wy + 0.3, p.z, back.x * 0.6, 0.08 + 0.12 * f * r.nextDouble(), back.z * 0.6);
+					world.addParticle(ParticleTypes.SPLASH, p.x, wy + 0.4 + r.nextDouble() * f, p.z, back.x, 0, back.z);
+					if (r.nextInt(3) == 0) world.addParticle(ParticleTypes.FALLING_WATER, p.x, wy + 0.8 + r.nextDouble() * 1.2 * f, p.z, 0, 0, 0);
 				}
 			}
 			if (f > 0.6 && r.nextInt(3) == 0) {

@@ -136,10 +136,22 @@ def build(cfg):
     S(6, 2, cz0, "end_rod[facing=east]"); S(6, 2, cz1, "end_rod[facing=east]")
     S(1, 2, cz0, "red_candle[candles=1,lit=false]"); S(1, 2, cz1, "red_candle[candles=1,lit=false]")
     S(4, 3, cz0 - 1, "lever[face=wall,facing=north,powered=false]"); S(4, 3, cz1 + 1, "lever[face=wall,facing=south,powered=false]")
+    # the car crane: a slim folding (knuckle-boom) crane on a pedestal by the rail, white with the ship's colour,
+    # the main boom raised towards the stern, the jib folded over the car, a hook with slings down to its roof
     crz = W - 3
-    for y in R(2, 6): S(6, y, crz, "yellow_concrete")
-    for (x, z) in [(5, crz - 1), (4, cz1), (3, cz1)]: S(x, 6, z, "yellow_concrete")
-    S(3, 5, cz1, "chain[axis=y]")
+    S(6, 2, crz, "iron_block")                                     # pedestal
+    S(6, 3, crz, "white_concrete")
+    S(6, 4, crz, ACC)                                              # slewing ring
+    S(6, 5, crz, "white_concrete")                                 # main boom, rising aft
+    S(5, 6, crz, "white_concrete")
+    S(6, 6, crz, "iron_bars")                                      # hydraulic ram
+    S(4, 7, crz, ACC)                                              # the knuckle
+    S(5, 7, crz, "iron_bars")
+    S(4, 7, cz1, "white_concrete")                                 # the jib, folded in over the car
+    S(3, 7, cz1, "white_concrete")
+    S(3, 7, cz0, "smooth_quartz_slab[type=top]")                   # jib tip
+    S(3, 6, cz0, "chain[axis=y]")                                  # hook and slings
+    S(3, 5, cz0, "iron_bars")
     # steering gear room hatch: ladder up through the deck, hatch on top
     S(4, 2, ZC - 1, "spruce_trapdoor[facing=north,half=bottom,open=false]")
     for y in R(-2, 1): S(4, y, ZC - 1, "ladder[facing=north]")

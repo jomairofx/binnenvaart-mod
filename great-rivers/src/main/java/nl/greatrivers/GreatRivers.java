@@ -64,6 +64,16 @@ public class GreatRivers implements ModInitializer {
 				RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.of(MOD_ID, "harbour")));
 		CommandRegistrationCallback.EVENT.register((dispatcher, access, env) ->
 				dispatcher.register(CommandManager.literal("findriver").executes(GreatRivers::findRiver)));
+		// /findharbour [goods]: the nearest harbours with cranes for these goods (containers by default)
+		CommandRegistrationCallback.EVENT.register((dispatcher, access, env) ->
+				dispatcher.register(CommandManager.literal("findharbour")
+						.executes(c -> findHarbour(c.getSource(), "containers"))
+						.then(CommandManager.argument("goods", com.mojang.brigadier.arguments.StringArgumentType.word())
+								.suggests((c, b) -> {
+									for (String g : Harbours.GOODS) b.suggest(g);
+									return b.buildFuture();
+								})
+								.executes(c -> findHarbour(c.getSource(), com.mojang.brigadier.arguments.StringArgumentType.getString(c, "goods"))))));
 		SelfTest.register();
 		LOGGER.info("Great Rivers loaded");
 	}
@@ -326,6 +336,36 @@ public class GreatRivers implements ModInitializer {
 				}
 			}
 		return best;
+	}
+
+	private static int findHarbour(ServerCommandSource src, String goods) {
+		RiverField field = RiverField.current;
+		if (field == null) {
+			src.sendError(Text.literal("This world has no Great Rivers terrain."));
+			return 0;
+		}
+		Vec3d p = src.getPosition();
+		int x = (int) Math.floor(p.x), z = (int) Math.floor(p.z);
+		int cx = Math.floorDiv(x, Harbours.CELL), cz = Math.floorDiv(z, Harbours.CELL);
+		java.util.List<Harbours.Site> found = new java.util.ArrayList<>();
+		for (int i = -24; i <= 24; i++)
+			for (int j = -24; j <= 24; j++) {
+				Harbours.Site s = field.harbours.site(cx + i, cz + j);
+				if (s != null && s.goods().equals(goods)) found.add(s);
+			}
+		found.sort((a, b) -> Double.compare(Math.hypot(a.cx() - x, a.cz() - z), Math.hypot(b.cx() - x, b.cz() - z)));
+		if (found.isEmpty()) {
+			src.sendFeedback(() -> Text.literal("No " + goods + " harbour within 34 km.").formatted(Formatting.GRAY), false);
+			return 0;
+		}
+		for (int k = 0; k < Math.min(3, found.size()); k++) {
+			Harbours.Site s = found.get(k);
+			// the first crane: moor the ship along the quay in front of it
+			java.util.List<int[]> cr = field.harbours.cranes(s);
+			int tx = cr.isEmpty() ? s.cx() : cr.get(0)[0], tz = cr.isEmpty() ? s.cz() : cr.get(0)[1];
+			report(src, "Harbour with " + goods.replace('_', ' ') + " (" + s.sizeName() + ", " + cr.size() + " cranes)", tx, Harbours.QUAY_Y + 2, tz, x, z);
+		}
+		return 1;
 	}
 
 	public static Harbours.Site nearestHarbour(RiverField field, int x, int z, int cells) {

@@ -93,7 +93,7 @@ def build(cfg):
             S(x, -2, z0, "red_concrete"); S(x, -2, z1, "red_concrete")       # boot-topping
     for x in R(2, L - 3):
         z0, z1 = zr(x)
-        if z0 > 0: continue
+        if z0 > 0 or not cfg.get("strakes", True): continue
         S(x, 0, -1, "blackstone_slab[type=top]"); S(x, 0, W, "blackstone_slab[type=top]")   # rubbing strakes
     for x in list(R(1, AFT_END)) + list(R(FORE_START, L - 2)):
         z0, z1 = zr(x)

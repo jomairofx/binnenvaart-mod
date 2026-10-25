@@ -628,9 +628,9 @@ public class ShipEntity extends Entity {
 		boolean still = !moved && !vertical;
 		double shift = Double.isNaN(dispX) ? 99 : Math.max(Math.hypot(dispX - getX(), dispZ - getZ()), Math.abs(dispYaw - shipYaw) * 50);
 		boolean fast = Math.abs(speed) > 0.12;
-		boolean due = Double.isNaN(dispX) || shift > (fast ? 1.8 : 0.9) || Math.abs(dispY - getY()) > 0.3
+		boolean due = Double.isNaN(dispX) || shift > (fast ? 1.0 : 0.6) || Math.abs(dispY - getY()) > 0.3
 				|| (still && (shift > 0.01 || Math.abs(dispY - getY()) > 0.01)) || age % 200 == 0;
-		if (due && age - lastDisplaceTick >= (fast ? 8 : 3)) {
+		if (due && age - lastDisplaceTick >= 2) {
 			updateDisplacement();
 			lastDisplaceTick = age;
 		}

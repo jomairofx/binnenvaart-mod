@@ -37,7 +37,7 @@ public final class ClientSelfTest {
 			new Shot("03_bow", new double[]{24, 3.5, 7}, new double[]{12, 1, 2}, false),
 			new Shot("04_stern_outboards", new double[]{-7, 2.5, -3}, new double[]{0, 0.5, 2}, false),
 			new Shot("05_cockpit", new double[]{0.5, 3.2, 2.0}, new double[]{6, 1.0, 2.0}, false),
-			new Shot("06_cabin", new double[]{7.3, 1.62, 1.5}, new double[]{12, 0.6, 2.0}, false),
+			new Shot("06_cabin", new double[]{8.3, 0.62, 1.5}, new double[]{12, -0.5, 2.0}, false),
 			new Shot("07_helm", new double[]{3.6, 2.4, 2.5}, new double[]{5.2, 1.3, 2.5}, false),
 			new Shot("08_underwater", new double[]{7.5, -2.5, 9}, new double[]{7.5, -0.5, 2}, false),
 	};
@@ -137,23 +137,23 @@ public final class ClientSelfTest {
 			mc.options.forwardKey.setPressed(false);
 			mc.options.jumpKey.setPressed(false);
 			check("swim ladder", ladderMax >= 0.95, String.format("climbed out of the water to local y=%.2f (transom 1.0)", ladderMax));
-			tp(srv, ship, new double[]{7.5, 1.62, 1.5}, new double[]{6.5, 1.0, 1.5});
+			tp(srv, ship, new double[]{5.5, 1.62, 1.5}, new double[]{7.5, 0.0, 1.5});
 		}
 		// cabin door and the chest
 		if (t == t0 + 200) {
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
-				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(6.5, 0.5, 1.5), false);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(7.5, -0.5, 1.5), false);
 			});
 		}
 		if (t == t0 + 220) {
-			var st = ship.structure.get(6, 0, 1);
+			var st = ship.structure.get(7, -1, 1);
 			boolean open = st.contains(net.minecraft.state.property.Properties.OPEN) && st.get(net.minecraft.state.property.Properties.OPEN);
 			check("cabin door", open, "door: " + st);
 			shot(mc, "10_cabin_door_open");
 			srv.execute(() -> {
 				ServerPlayerEntity sp = srv.getPlayerManager().getPlayerList().get(0);
-				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(9.5, 0.5, 2.5), false);
+				if (srv.getOverworld().getEntityById(ship.getId()) instanceof ShipEntity s) s.handleInteract(sp, new Vec3d(9.5, -0.5, 2.5), false);
 			});
 		}
 		if (t == t0 + 235) {

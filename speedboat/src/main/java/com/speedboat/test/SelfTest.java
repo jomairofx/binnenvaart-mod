@@ -68,8 +68,10 @@ public final class SelfTest {
 			if (tick == 70) {
 				check("registered", ShipHolder.of(w).contains(ship), "boat in the list");
 				check("displacement", ship.displacedCount() > 20, ship.displacedCount() + " water blocks displaced");
-				var chest = ship.structure.get(9, 0, 2);
+				var chest = ship.structure.get(9, -1, 2);
 				check("chest", chest.getBlock() instanceof net.minecraft.block.ChestBlock, "cabin: " + chest);
+				var inside = w.getBlockState(BlockPos.ofFloored(ship.toWorld(9.5, -0.5, 1.5)));
+				check("dry cabin", inside.isOf(Speedboat.DISPLACED_WATER) || inside.isAir(), "cabin floor: " + inside);
 				int beds = ship.bedHeads().size();
 				check("berth", beds == 2, beds + " beds in the V-berth");
 				Vec3d drop = ship.toWorld(3.5, 1.2, 1.5);

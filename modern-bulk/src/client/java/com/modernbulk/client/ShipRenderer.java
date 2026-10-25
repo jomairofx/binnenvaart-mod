@@ -136,6 +136,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		if (!shadow || cam.squaredDistanceTo(shipPos) < 48 * 48)
 			dc.sink.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
 		if (!shadow) renderName(ship, matrices, consumers, light);
+		if (!shadow || cam.squaredDistanceTo(shipPos) < 24 * 24) renderHelm(ship, tickDelta, matrices, consumers, light);
 		matrices.pop();
 		super.render(ship, yaw, tickDelta, matrices, consumers, light);
 	}
@@ -350,6 +351,99 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 	}
 
 	// ---------------------------------------------------------------- naam
+
+	private final Sink helmSink = new Sink();
+
+	/**
+	 * The helm in the wheelhouse: a real steering wheel that turns with the rudder, twin engine telegraph levers
+	 * that follow the telegraph, the bow thruster joystick, a radar screen and a row of lit buttons.
+	 */
+	private void renderHelm(ShipEntity ship, float tickDelta, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
+		double[] seat = ship.template.seatAft;
+		float sx = (float) seat[0], sy = (float) seat[1], sz = (float) seat[2];
+		float L = ship.template.inLift(MathHelper.floor(sx), MathHelper.floor(sy), MathHelper.floor(sz)) ? ship.liftLerp(tickDelta) : 0f;
+		Sink vc = helmSink;
+		vc.n = 0;
+		boolean classic = false;
+		Sprite rim = sprites((classic ? Blocks.DARK_OAK_PLANKS : Blocks.BLACK_CONCRETE).getDefaultState())[0];
+		Sprite steel = sprites(Blocks.IRON_BLOCK.getDefaultState())[0];
+		Sprite brass = sprites(Blocks.GOLD_BLOCK.getDefaultState())[0];
+		Sprite dark = sprites(Blocks.BLACK_CONCRETE.getDefaultState())[0];
+		Sprite red = sprites(Blocks.RED_CONCRETE.getDefaultState())[0];
+		float base = sy + 0.61f + L;          // top of the console
+		// ---- the wheel, on a pedestal in front of the helmsman ----
+		float cx = sx + 1.2f, cy = sy + 0.85f + L, cz = sz, rad = classic ? 0.36f : 0.3f, e = classic ? 0.04f : 0.035f;
+		double a = ship.syncedRudder() * Math.PI * 1.25;
+		box(vc, classic ? brass : steel, cx - 0.02f, cy - 0.04f, cz - 0.04f, sx + 1.5f, cy + 0.04f, cz + 0.04f, light, 0.9f);
+		box(vc, dark, cx + 0.12f, sy - 0.45f + L, cz - 0.08f, cx + 0.28f, cy - 0.05f, cz + 0.08f, light, 0.85f);   // pedestal
+		int seg = 20;
+		for (int k = 0; k < seg; k++) {
+			double t = a + k * Math.PI * 2 / seg;
+			float y = cy + (float) (Math.cos(t) * rad), z = cz + (float) (Math.sin(t) * rad);
+			box(vc, rim, cx - e, y - e, z - e, cx + e, y + e, z + e, light, 1f);
+		}
+		int spokes = classic ? 8 : 3;
+		for (int k = 0; k < spokes; k++) {
+			double t = a + k * Math.PI * 2 / spokes;
+			float end = classic ? rad + 0.13f : rad - 0.03f;
+			for (float rr = 0.07f; rr < end; rr += 0.045f) {
+				float y = cy + (float) (Math.cos(t) * rr), z = cz + (float) (Math.sin(t) * rr);
+				float h = rr > rad + 0.02f ? 0.028f : 0.02f;    // the handles of a spoked wheel stick out past the rim
+				box(vc, classic ? rim : steel, cx - h, y - h, z - h, cx + h, y + h, z + h, light, 0.95f);
+			}
+		}
+		box(vc, classic ? brass : steel, cx - 0.04f, cy - 0.06f, cz - 0.06f, cx + 0.04f, cy + 0.06f, cz + 0.06f, light, 1f);   // hub
+		// ---- twin engine telegraph levers, starboard of the wheel ----
+		int thr = ship.syncedThrottle();
+		float phi = (float) Math.toRadians(thr * 15f);
+		for (float lz : new float[]{sz + 0.55f, sz + 0.7f}) {
+			float px = sx + 1.75f;
+			box(vc, dark, px - 0.08f, base, lz - 0.05f, px + 0.08f, base + 0.05f, lz + 0.05f, light, 1f);
+			for (float l = 0.03f; l < 0.34f; l += 0.04f) {
+				float x = px + (float) Math.sin(phi) * l, y = base + (float) Math.cos(phi) * l;
+				box(vc, steel, x - 0.016f, y - 0.016f, lz - 0.016f, x + 0.016f, y + 0.016f, lz + 0.016f, light, 0.9f);
+			}
+			float x = px + (float) Math.sin(phi) * 0.34f, y = base + (float) Math.cos(phi) * 0.34f;
+			box(vc, red, x - 0.035f, y - 0.03f, lz - 0.04f, x + 0.035f, y + 0.03f, lz + 0.04f, light, 1f);
+		}
+		// ---- bow thruster joystick, port of the wheel ----
+		int th = ship.syncedThruster();
+		float jx = sx + 1.75f, jz = sz - 0.6f, tilt = th * 0.09f;
+		box(vc, dark, jx - 0.07f, base, jz - 0.07f, jx + 0.07f, base + 0.04f, jz + 0.07f, light, 1f);
+		for (float l = 0.04f; l < 0.2f; l += 0.035f)
+			box(vc, steel, jx - 0.014f, base + l - 0.014f, jz + tilt * l / 0.2f - 0.014f, jx + 0.014f, base + l + 0.014f, jz + tilt * l / 0.2f + 0.014f, light, 0.9f);
+		box(vc, dark, jx - 0.03f, base + 0.2f, jz + tilt - 0.03f, jx + 0.03f, base + 0.27f, jz + tilt + 0.03f, light, 1f);
+		// ---- radar / chart screen, standing on the console ----
+		Sprite glow = sprites((ship.engineOn() ? Blocks.LIGHT_BLUE_CONCRETE : Blocks.GRAY_CONCRETE).getDefaultState())[0];
+		Sprite blip = sprites(Blocks.LIME_CONCRETE.getDefaultState())[0];
+		float scx = sx + 2.15f;
+		box(vc, dark, scx, base, sz - 1.05f, scx + 0.12f, base + 0.42f, sz - 0.35f, light, 1f);
+		int bright = ship.engineOn() ? 0xF000F0 : light;
+		box(vc, glow, scx - 0.012f, base + 0.04f, sz - 1.0f, scx, base + 0.38f, sz - 0.4f, bright, 0.75f);
+		// radar sweep: a lime dot running round the screen
+		double sw = (ship.age + tickDelta) * 0.12;
+		if (ship.engineOn()) {
+			float by = base + 0.21f + (float) Math.cos(sw) * 0.12f, bz = sz - 0.7f + (float) Math.sin(sw) * 0.2f;
+			box(vc, blip, scx - 0.02f, by - 0.02f, bz - 0.02f, scx - 0.008f, by + 0.02f, bz + 0.02f, 0xF000F0, 1f);
+		}
+		// ---- a row of buttons, lit when what they switch is on ----
+		BlockState[] lamps = {
+				ship.engineOn() ? Blocks.LIME_CONCRETE.getDefaultState() : Blocks.GREEN_TERRACOTTA.getDefaultState(),
+				ship.lightsOn() ? Blocks.YELLOW_CONCRETE.getDefaultState() : Blocks.BROWN_TERRACOTTA.getDefaultState(),
+				th != 0 ? Blocks.ORANGE_CONCRETE.getDefaultState() : Blocks.BROWN_TERRACOTTA.getDefaultState(),
+				ship.isAground() ? Blocks.RED_CONCRETE.getDefaultState() : Blocks.RED_TERRACOTTA.getDefaultState(),
+				Blocks.LIGHT_BLUE_CONCRETE.getDefaultState()};
+		boolean[] on = {ship.engineOn(), ship.lightsOn(), th != 0, ship.isAground(), true};
+		for (int k = 0; k < lamps.length; k++) {
+			float bz = sz + 0.12f + k * 0.075f - 0.75f * 0;   // between the wheel and the levers
+			float bx = sx + 1.62f;
+			if (k >= 3) {
+				bz = sz - 0.32f + (k - 3) * 0.075f;
+			}
+			box(vc, sprites(lamps[k])[0], bx - 0.025f, base, bz - 0.025f, bx + 0.025f, base + 0.03f, bz + 0.025f, on[k] ? 0xF000F0 : light, 1f);
+		}
+		vc.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
+	}
 
 	private void renderName(ShipEntity ship, MatrixStack matrices, VertexConsumerProvider consumers, int light) {
 		TextRenderer tr = MinecraftClient.getInstance().textRenderer;

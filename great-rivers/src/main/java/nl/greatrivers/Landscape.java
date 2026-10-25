@@ -40,7 +40,7 @@ final class Landscape {
 		if (k != null) return k;
 		long h = Harbours.mix(id ^ 0x4C414E44L);
 		int roll = (int) Math.floorMod(h, 100L);
-		int kind = roll < 52 ? MEADOW : roll < 80 ? CROPS : roll < 93 ? ORCHARD : GLASS;
+		int kind = roll < 54 ? MEADOW : roll < 85 ? CROPS : roll < 99 ? ORCHARD : GLASS;      // glasshouses only now and then
 		if (kind != MEADOW) {
 			for (int i = 0; i <= 4 && kind != MEADOW; i++) {
 				int la = i == 4 ? 70 : (i & 1) * 139, lb = i == 4 ? 70 : (i >> 1) * 139;
@@ -64,6 +64,7 @@ final class Landscape {
 	/** One column of the countryside. Returns true if something was built. */
 	static boolean column(StructureWorldAccess w, BlockPos.Mutable m, RiverField f, int x, int z) {
 		boolean any = turbine(w, m, f, x, z);
+		if (f.low.wood(x, z, f.low.lowland(x, z)) > 0) return any;      // in the woods: no fields
 		long[] p = f.low.parcel(x, z);
 		int la = (int) p[1], lb = (int) p[2];
 		if (la < 4 || la > 135 || lb < 4 || lb > 135) return any;     // grass strips along the ditches

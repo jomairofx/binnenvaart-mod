@@ -43,6 +43,9 @@ public class GreatRivers implements ModInitializer {
 					// no icebergs, blue ice, ice spikes or frozen water anywhere: this is the Netherlands, not the arctic
 					for (String id : NO_ICE)
 						ctx.getGenerationSettings().removeFeature(RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.ofVanilla(id)));
+					// the woods are grown by the mod itself (trees at random, in thickets and clearings)
+					for (String id : new String[]{"trees_birch_and_oak", "birch_tall", "trees_old_growth_pine_taiga", "trees_old_growth_spruce_taiga", "trees_taiga", "trees_birch"})
+						ctx.getGenerationSettings().removeFeature(RegistryKey.of(RegistryKeys.PLACED_FEATURE, Identifier.ofVanilla(id)));
 				});
 		// far fewer animals: only cows and sheep in the meadows, and only now and then
 		BiomeModifications.create(Identifier.of(MOD_ID, "fewer_animals")).add(net.fabricmc.fabric.api.biome.v1.ModificationPhase.REMOVALS,

@@ -813,12 +813,12 @@ public class ShipEntity extends Entity {
 	/** Steken er containers boven het ruim uit (meer dan er onder de luiken passen)? */
 	public boolean containersStickOut() {
 		if (COVERS == 0) return false;
-		int fit = MathHelper.clamp((int) ((CV_Y - template.holdFloorY - 0.05) / 2.6), 0, 3);
+		int fit = MathHelper.clamp((int) ((CV_Y - template.holdFloorY - 0.05) / 2.6), 0, 4);
 		for (int h = 0; h < template.holds.length; h++) {
 			float f = fill(h);
 			if (f < 0.002f) continue;
 			float share = material(h) > 0 ? containerShare(h) : 1f;
-			if (f * share > fit / 3f + 0.005f) return true;
+			if (f * share > fit / 4f + 0.005f) return true;
 		}
 		return false;
 	}

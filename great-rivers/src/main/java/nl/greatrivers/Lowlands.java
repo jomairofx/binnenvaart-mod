@@ -49,6 +49,12 @@ public final class Lowlands {
 		return t > 0.35 ? 2 : 1;
 	}
 
+	/** How dense the wood is here, 0..1: thickets, ordinary wood and clearings, a few dozen blocks across. */
+	public double woodDensity(double x, double z) {
+		double n = 0.7 * wood2.sample((x + ox) / 48.0 + 31.7, (z + oz) / 48.0 - 12.9) + 0.3 * wood1.sample((x + ox) / 17.0 - 3.3, (z + oz) / 17.0 + 8.1);
+		return Math.max(0, Math.min(1, 0.5 + 0.75 * n));
+	}
+
 	/** Sea below this continentalness, land above it. Inland "oceans" of vanilla become land. */
 	public static final double COAST = -0.45;
 

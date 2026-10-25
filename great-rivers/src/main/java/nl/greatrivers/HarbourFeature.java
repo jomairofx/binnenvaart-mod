@@ -116,6 +116,7 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 		if (inf == 2) return any;
 		if (Countryside.riverBank(w, m, field, x, z)) any = true;
 		if (Landscape.column(w, m, field, x, z)) any = true;
+		if (Forest.column(w, m, field, x, z)) any = true;
 		double p = field.polderWeight(x, z);
 		if (p > 0.8 && field.dikeRoad(x, z)) {
 			any = true;
@@ -289,8 +290,9 @@ public final class HarbourFeature extends Feature<DefaultFeatureConfig> {
 			case "iron_ore" -> new Item[]{Items.RAW_IRON};
 			case "timber" -> new Item[]{Items.SPRUCE_LOG, Items.OAK_LOG};
 			case "clay" -> new Item[]{Items.CLAY_BALL};
-			default -> new Item[]{Items.IRON_INGOT, Items.BREAD, Items.PAPER, Items.LEATHER, Items.BOOK, Items.COPPER_INGOT,
-					Items.WHITE_WOOL, Items.BRICK, Items.GLASS_BOTTLE, Items.STRING};
+			// containers: food and weapons only (no wool or blocks: they would show as a heap of loose cargo)
+			default -> new Item[]{Items.BREAD, Items.COOKED_BEEF, Items.APPLE, Items.CARROT, Items.POTATO, Items.COOKED_CHICKEN,
+					Items.BAKED_POTATO, Items.COOKIE, Items.IRON_SWORD, Items.BOW, Items.CROSSBOW, Items.ARROW, Items.SHIELD};
 		};
 		for (int i = 0; i < inv.size(); i++) {
 			Item it = items[(int) Math.floorMod(Harbours.mix(h + i), (long) items.length)];

@@ -73,9 +73,11 @@ public class CraneBlock extends BlockWithEntity {
 			case "iron_ore" -> new net.minecraft.item.Item[]{net.minecraft.item.Items.RAW_IRON};
 			case "timber" -> new net.minecraft.item.Item[]{net.minecraft.item.Items.SPRUCE_LOG, net.minecraft.item.Items.OAK_LOG};
 			case "clay" -> new net.minecraft.item.Item[]{net.minecraft.item.Items.CLAY_BALL};
-			default -> new net.minecraft.item.Item[]{net.minecraft.item.Items.IRON_INGOT, net.minecraft.item.Items.BREAD, net.minecraft.item.Items.PAPER,
-					net.minecraft.item.Items.LEATHER, net.minecraft.item.Items.BOOK, net.minecraft.item.Items.COPPER_INGOT, net.minecraft.item.Items.WHITE_WOOL,
-					net.minecraft.item.Items.BRICK, net.minecraft.item.Items.GLASS_BOTTLE, net.minecraft.item.Items.STRING};
+			// containers: food and weapons only
+			default -> new net.minecraft.item.Item[]{net.minecraft.item.Items.BREAD, net.minecraft.item.Items.COOKED_BEEF, net.minecraft.item.Items.APPLE,
+					net.minecraft.item.Items.CARROT, net.minecraft.item.Items.POTATO, net.minecraft.item.Items.COOKED_CHICKEN, net.minecraft.item.Items.BAKED_POTATO,
+					net.minecraft.item.Items.COOKIE, net.minecraft.item.Items.IRON_SWORD, net.minecraft.item.Items.BOW, net.minecraft.item.Items.CROSSBOW,
+					net.minecraft.item.Items.ARROW, net.minecraft.item.Items.SHIELD};
 		};
 		for (int i = 0; i < inv.size(); i++) {
 			net.minecraft.item.Item it = items[r.nextInt(items.length)];

@@ -419,6 +419,21 @@ final class SelfTest {
 						check("grote havens: minstens 5 km uit elkaar", md >= 5000, md == Double.MAX_VALUE ? "geen andere in de buurt" : (int) md + " blokken naar de volgende");
 					}
 				}
+				// container harbours near the spawn (for /findharbour)
+				{
+					StringBuilder sb = new StringBuilder("  containerhavens:");
+					int n = 0;
+					for (int i = -12; i <= 12 && n < 6; i++)
+						for (int j = -12; j <= 12 && n < 6; j++) {
+							Harbours.Site hs = f.harbours.site(i, j);
+							if (hs == null || !hs.goods().equals("containers")) continue;
+							java.util.List<int[]> cr = f.harbours.cranes(hs);
+							int[] c0 = cr.isEmpty() ? new int[]{hs.cx(), hs.cz()} : cr.get(0);
+							sb.append(" [").append(c0[0]).append(", ").append(c0[1]).append(' ').append(hs.sizeName()).append(']');
+							n++;
+						}
+					log.add(sb.toString());
+				}
 				// business parks beside the provincial roads, data centres
 				{
 					int[] bp = f.roads.nearestPark(0, 0, 12, -1);

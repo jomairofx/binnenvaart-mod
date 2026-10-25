@@ -73,6 +73,7 @@ public class KempenaarClient implements ClientModInitializer {
 	}
 
 	private static boolean padSneak;
+	private static float padRudder;
 
 	private static void tick(MinecraftClient mc) {
 		if (mc.player == null || mc.world == null) return;
@@ -130,7 +131,10 @@ public class KempenaarClient implements ClientModInitializer {
 		int rudderOut = rudder * 100, thrusterOut = thruster * 100;
 		if (Gamepad.connected() && mc.currentScreen == null) {
 			float sx = Gamepad.stick(GLFW.GLFW_GAMEPAD_AXIS_LEFT_X);
-			if (rudder == 0 && sx != 0) rudderOut = (int) Math.round(Math.signum(sx) * Math.pow(Math.abs(sx), 1.3) * 100);   // a little softer round the middle
+			// a heavy ship: small stick movements give little rudder, and the helm follows the stick slowly
+			float target = rudder != 0 ? 0 : (float) (Math.signum(sx) * Math.pow(Math.abs(sx), 1.5) * 100);
+			padRudder += Math.max(-2.5f, Math.min(2.5f, target - padRudder));
+			if (rudder == 0 && Math.abs(padRudder) > 0.5f) rudderOut = Math.round(padRudder);
 			float tq = Gamepad.trigger(GLFW.GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) - Gamepad.trigger(GLFW.GLFW_GAMEPAD_AXIS_LEFT_TRIGGER);
 			if (thruster == 0 && tq != 0) thrusterOut = Math.round(tq * 100);
 			Gamepad.camera(mc);

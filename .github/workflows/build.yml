@@ -120,6 +120,28 @@ jobs:
           timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace > client_out.txt 2>&1 || true
           cp run/logs/latest.log run/client.log || true
           cat run/client_selftest.txt || echo "geen client_selftest.txt"
+      - name: Speedboat bouwen
+        continue-on-error: true
+        working-directory: speedboat
+        run: chmod +x gradlew && set -o pipefail && ./gradlew build --stacktrace 2>&1 | tee build_out.txt
+      - name: Speedboat servertest (met Binnenvaart samen)
+        working-directory: speedboat
+        run: |
+          mkdir -p run/mods && cp ../build/libs/binnenvaart-1.0.0.jar ../inland-barge/build/libs/inland-barge-1.0.0.jar run/mods/ && echo "eula=true" > run/eula.txt
+          cp ../run/server.properties run/server.properties
+          timeout 900 ./gradlew runTestServer --stacktrace > server_out.txt 2>&1 || true
+          cp run/logs/latest.log run/server.log || true
+          cat run/selftest.txt || echo "geen selftest.txt"
+      - name: Speedboat clienttest
+        working-directory: speedboat
+        run: |
+          rm -rf run/saves && mkdir -p run/saves && cp -r run/world run/saves/testwelt || true
+          cp ../run/options.txt run/options.txt
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export ALSOFT_DRIVERS=null
+          timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runTestClient --stacktrace > client_out.txt 2>&1 || true
+          cp run/logs/latest.log run/client.log || true
+          cat run/client_selftest.txt || echo "geen client_selftest.txt"
       - name: No Kelp bouwen
         continue-on-error: true
         working-directory: no-kelp
@@ -175,6 +197,10 @@ jobs:
           cp -r modern-bulk/run/screenshots /tmp/out/bulk/ 2>/dev/null || true
           cp modern-bulk/run/*.txt modern-bulk/run/*.log modern-bulk/server_out.txt modern-bulk/client_out.txt modern-bulk/build_out.txt /tmp/out/bulk/ 2>/dev/null || true
           cp modern-bulk/build/libs/modern-bulk-1.0.0.jar /tmp/out/ 2>/dev/null || true
+          mkdir -p /tmp/out/speedboat
+          cp -r speedboat/run/screenshots /tmp/out/speedboat/ 2>/dev/null || true
+          cp speedboat/run/*.txt speedboat/run/*.log speedboat/server_out.txt speedboat/client_out.txt speedboat/build_out.txt /tmp/out/speedboat/ 2>/dev/null || true
+          cp speedboat/build/libs/speedboat-1.0.0.jar /tmp/out/ 2>/dev/null || true
           mkdir -p /tmp/out/nokelp
           cp no-kelp/run/*.txt no-kelp/run/*.log no-kelp/server_out.txt no-kelp/build_out.txt /tmp/out/nokelp/ 2>/dev/null || true
           cp no-kelp/build/libs/no-kelp-1.0.0.jar /tmp/out/ 2>/dev/null || true
@@ -192,12 +218,13 @@ jobs:
           grep -q "RESULT PASS" inland-barge/run/selftest.txt && grep -q "RESULT PASS" inland-barge/run/client_selftest.txt
           grep -q "RESULT PASS" kempenaar/run/selftest.txt && grep -q "RESULT PASS" kempenaar/run/client_selftest.txt
           grep -q "RESULT PASS" no-kelp/run/selftest.txt
+          grep -q "RESULT PASS" speedboat/run/selftest.txt && grep -q "RESULT PASS" speedboat/run/client_selftest.txt
           grep -q "RESULT PASS" great-rivers/run/selftest.txt && grep -q "RESULT PASS" great-rivers/run/client_selftest.txt
           grep -q "RESULT PASS" modern-bulk/run/selftest.txt && grep -q "RESULT PASS" modern-bulk/run/client_selftest.txt
           # caught errors in ship code count as failures too
-          ! grep -l "Ship error in" run/*.log inland-barge/run/*.log kempenaar/run/*.log modern-bulk/run/*.log 2>/dev/null
+          ! grep -l "Ship error in" run/*.log inland-barge/run/*.log kempenaar/run/*.log modern-bulk/run/*.log speedboat/run/*.log 2>/dev/null
           # every block in the ship templates must exist
-          ! grep -h "Onbekend blok" run/logs/latest.log inland-barge/run/logs/latest.log kempenaar/run/logs/latest.log modern-bulk/run/logs/latest.log run/*.log inland-barge/run/*.log kempenaar/run/*.log modern-bulk/run/*.log 2>/dev/null | grep -v megatanker
+          ! grep -h "Onbekend blok" run/logs/latest.log inland-barge/run/logs/latest.log kempenaar/run/logs/latest.log modern-bulk/run/logs/latest.log speedboat/run/logs/latest.log run/*.log inland-barge/run/*.log kempenaar/run/*.log modern-bulk/run/*.log 2>/dev/null | grep -v megatanker
   quick:
     runs-on: ubuntu-latest
     steps:
@@ -210,7 +237,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew compileJava compileClientJava --stacktrace > /tmp/compile.txt 2>&1 && echo "COMPILE OK great-rivers" >> /tmp/compile.txt || echo "COMPILE FAILED great-rivers" >> /tmp/compile.txt
-          for d in .. ../inland-barge ../kempenaar ../modern-bulk; do (cd $d && chmod +x gradlew && ./gradlew compileJava compileClientJava --stacktrace > /tmp/c.txt 2>&1 && echo "COMPILE OK $d" >> /tmp/compile.txt || { grep -A3 "error:" /tmp/c.txt >> /tmp/compile.txt; echo "COMPILE FAILED $d" >> /tmp/compile.txt; }); done
+          for d in .. ../inland-barge ../kempenaar ../modern-bulk ../speedboat; do (cd $d && chmod +x gradlew && ./gradlew compileJava compileClientJava --stacktrace > /tmp/c.txt 2>&1 && echo "COMPILE OK $d" >> /tmp/compile.txt || { grep -A3 "error:" /tmp/c.txt >> /tmp/compile.txt; echo "COMPILE FAILED $d" >> /tmp/compile.txt; }); done
       - name: Naar branch
         if: always()
         run: |

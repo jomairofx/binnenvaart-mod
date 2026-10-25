@@ -1,0 +1,9 @@
+{
+  "item.speedboat.speedboat": "Speedboat",
+  "entity.speedboat.speedboat": "Speedboat",
+  "block.speedboat.displaced_water": "Displaced Water",
+  "category.speedboat": "Speedboat",
+  "key.speedboat.horn": "Speedboat horn",
+  "key.speedboat.lights": "Speedboat lights on/off",
+  "key.speedboat.engine": "Speedboat engines on/off"
+}

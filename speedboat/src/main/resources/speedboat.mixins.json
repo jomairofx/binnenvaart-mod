@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.speedboat.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "EntityInvoker",
+    "EntityMixin",
+    "LivingEntityMixin",
+    "PlayerEntityAccessor",
+    "PlayerPickupMixin",
+    "ServerPlayNetworkHandlerMixin",
+    "WorldMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

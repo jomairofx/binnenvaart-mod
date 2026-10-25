@@ -413,19 +413,11 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		for (float l = 0.04f; l < 0.2f; l += 0.035f)
 			box(vc, steel, jx - 0.014f, base + l - 0.014f, jz + tilt * l / 0.2f - 0.014f, jx + 0.014f, base + l + 0.014f, jz + tilt * l / 0.2f + 0.014f, light, 0.9f);
 		box(vc, dark, jx - 0.03f, base + 0.2f, jz + tilt - 0.03f, jx + 0.03f, base + 0.27f, jz + tilt + 0.03f, light, 1f);
-		// ---- radar / chart screen, standing on the console ----
-		Sprite glow = sprites((ship.engineOn() ? Blocks.LIGHT_BLUE_CONCRETE : Blocks.GRAY_CONCRETE).getDefaultState())[0];
-		Sprite blip = sprites(Blocks.LIME_CONCRETE.getDefaultState())[0];
+		// ---- chart plotter: a live map of the world round the ship ----
 		float scx = sx + 2.15f;
-		box(vc, dark, scx, base, sz - 1.05f, scx + 0.12f, base + 0.42f, sz - 0.35f, light, 1f);
-		int bright = ship.engineOn() ? 0xF000F0 : light;
-		box(vc, glow, scx - 0.012f, base + 0.04f, sz - 1.0f, scx, base + 0.38f, sz - 0.4f, bright, 0.75f);
-		// radar sweep: a lime dot running round the screen
-		double sw = (ship.age + tickDelta) * 0.12;
-		if (ship.engineOn()) {
-			float by = base + 0.21f + (float) Math.cos(sw) * 0.12f, bz = sz - 0.7f + (float) Math.sin(sw) * 0.2f;
-			box(vc, blip, scx - 0.02f, by - 0.02f, bz - 0.02f, scx - 0.008f, by + 0.02f, bz + 0.02f, 0xF000F0, 1f);
-		}
+		box(vc, dark, scx, base, sz - 1.05f, scx + 0.12f, base + 0.55f, sz - 0.35f, light, 1f);
+		if (ship.engineOn()) ChartPlotter.draw(ship, matrices, consumers, scx - 0.006f, base + 0.04f, base + 0.51f, sz - 1.0f, sz - 0.4f);
+		else box(vc, dark, scx - 0.006f, base + 0.04f, sz - 1.0f, scx, base + 0.51f, sz - 0.4f, light, 0.6f);
 		// ---- a row of buttons, lit when what they switch is on ----
 		BlockState[] lamps = {
 				ship.engineOn() ? Blocks.LIME_CONCRETE.getDefaultState() : Blocks.GREEN_TERRACOTTA.getDefaultState(),

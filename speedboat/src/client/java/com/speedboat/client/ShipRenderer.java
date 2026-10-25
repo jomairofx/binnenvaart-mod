@@ -413,10 +413,9 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 			box(vc, red, x - 0.03f, y - 0.03f, lz - 0.035f, x + 0.03f, y + 0.03f, lz + 0.035f, light, 1f);
 		}
 		// chart plotter screen on the console
-		Sprite screen = sprites(Blocks.LIGHT_BLUE_CONCRETE.getDefaultState())[0];
-		box(vc, black, 5.05f, 1.5f, 2.08f, 5.5f, 1.78f, 2.52f, light, 1f);
-		box(vc, screen, 5.04f, 1.53f, 2.11f, 5.06f, 1.75f, 2.49f, 0xF000F0, 0.8f);
+		box(vc, black, 5.05f, 1.5f, 2.06f, 5.5f, 1.86f, 2.54f, light, 1f);
 		vc.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
+		if (ship.engineOn()) ChartPlotter.draw(ship, matrices, consumers, 5.044f, 1.53f, 1.83f, 2.09f, 2.51f);
 	}
 
 	private static void draw(TextRenderer tr, String s, MatrixStack matrices, VertexConsumerProvider consumers, int light) {

@@ -177,10 +177,13 @@ final class MetroBuilder {
 			}
 			case Metros.VILLAS -> villas(w, m, x, z, bu, bw, bh);
 			case Metros.INDUSTRY -> {
-				int r = (int) Math.floorMod(bh >>> 3, 10L);
-				if (r < 5) warehouse(w, m, x, z, bu, bw, bh);
-				else if (r < 8) factory(w, m, x, z, bu, bw, bh);
-				else offices(w, m, x, z, bu, bw, bh);
+				// only a handful of industrial buildings per city; the rest of the district is an office park and homes
+				int site = industrySite(mt, in.x0, in.z0);
+				if (site == 1) factory(w, m, x, z, bu, bw, bh);
+				else if (site == 2) warehouse(w, m, x, z, bu, bw, bh);
+				else if ((bh >>> 3 & 3) == 0) offices(w, m, x, z, bu, bw, bh);
+				else if ((bh >>> 3 & 3) == 1) VillageBuilder.park(w, m, x, z, bu, bw);
+				else modernRows(w, m, x, z, bu, bw, bh);
 			}
 			case Metros.PARK -> cityPark(w, m, x, z, bu, bw, bh);
 			default -> houses(w, m, t, x, z, bu, bw, bx, bz);
@@ -378,6 +381,31 @@ final class MetroBuilder {
 			set(w, m, x, y, z, st);
 		}
 		if (pw == 0 && hx == 2) set(w, m, x + out.getOffsetX(), eave + 4, z + out.getOffsetZ(), Blocks.DARK_OAK_FENCE.getDefaultState());
+	}
+
+	private static final java.util.concurrent.ConcurrentHashMap<Long, double[][]> SITES = new java.util.concurrent.ConcurrentHashMap<>();
+
+	/**
+	 * The few industrial buildings of a city (at most 5 in a metropolis, 3 in a big city, 2 in a big town): points
+	 * in its industrial districts. 1 = a factory with its chimney, 2 = a warehouse, 0 = none at this block.
+	 */
+	private static int industrySite(Metros.Metro mt, int x0, int z0) {
+		if (SITES.size() > 2000) SITES.clear();
+		double[][] sites = SITES.computeIfAbsent(mt.seed(), k -> {
+			int max = mt.mega() ? 5 : mt.low() ? 2 : 3;
+			java.util.List<double[]> out = new java.util.ArrayList<>();
+			for (int i = 0; i < 600 && out.size() < max; i++) {
+				long h = Harbours.mix(mt.seed() * 13 + i * 0x9E3779B97F4A7C15L);
+				double a = (h >>> 11) * 0x1.0p-53 * 2 * Math.PI, r = Math.sqrt(((h >>> 3) & 0xffff) / 65536.0) * mt.radius();
+				double dx = Math.cos(a) * r, dz = Math.sin(a) * r;
+				if (mt.districtAt(dx, dz, h) != Metros.INDUSTRY) continue;
+				out.add(new double[]{mt.cx() + dx, mt.cz() + dz, out.size() % 2 == 0 ? 1 : 2});
+			}
+			return out.toArray(new double[0][]);
+		});
+		for (double[] st : sites)
+			if (st[0] >= x0 && st[0] < x0 + Villages.PU && st[1] >= z0 && st[1] < z0 + Villages.PW) return (int) st[2];
+		return 0;
 	}
 
 	/** How tall the towers of a business district of a metropolis are (lower = taller): the main centre and the second centres. */

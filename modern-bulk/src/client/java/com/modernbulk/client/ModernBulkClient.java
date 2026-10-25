@@ -122,7 +122,7 @@ public class ModernBulkClient implements ClientModInitializer {
 		int rudderOut = rudder * 100, thrusterOut = thruster * 100;
 		if (Gamepad.connected() && mc.currentScreen == null) {
 			float sx = Gamepad.stick(GLFW.GLFW_GAMEPAD_AXIS_LEFT_X);
-			if (rudder == 0 && sx != 0) rudderOut = Math.round(sx * 100);
+			if (rudder == 0 && sx != 0) rudderOut = (int) Math.round(Math.signum(sx) * Math.pow(Math.abs(sx), 1.3) * 100);   // a little softer round the middle
 			float tq = Gamepad.trigger(GLFW.GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) - Gamepad.trigger(GLFW.GLFW_GAMEPAD_AXIS_LEFT_TRIGGER);
 			if (thruster == 0 && tq != 0) thrusterOut = Math.round(tq * 100);
 			Gamepad.camera(mc);

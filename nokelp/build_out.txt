@@ -1,0 +1,24 @@
+
+> Configure project :
+Fabric Loom: 1.7.4
+:remapping 50 mods from modImplementation (java-api)
+
+> Task :compileJava
+> Task :processResources
+> Task :classes
+> Task :jar
+> Task :processIncludeJars
+> Task :compileTestJava NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :test NO-SOURCE
+> Task :validateAccessWidener NO-SOURCE
+> Task :check UP-TO-DATE
+> Task :remapJar
+> Task :remapSourcesJar SKIPPED
+> Task :assemble
+> Task :build
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_16-1793033575174.json
+
+BUILD SUCCESSFUL in 7s
+5 actionable tasks: 5 executed

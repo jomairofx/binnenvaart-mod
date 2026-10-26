@@ -1,0 +1,97 @@
+shot 01_overzicht
+shot 02_zijkant
+shot 03_boeg
+shot 04_achterkant
+shot 05_ruim
+shot 06_woonkamer
+shot 07_gang
+shot 07b_keuken
+shot 07c_zithoek
+shot 08_achterdek_trap
+shot 09_stuurhuis_binnen
+shot 10_luiken_bewegen
+shot 11_luiken_dicht
+PASS staan aan dek - speler op lokaal (30.50, 2.06, 0.50)
+PASS meevaren aan dek - speler op lokaal (30.50, 2.06, 0.50), schip snelheid 0.175
+shot 14_aan_dek_varen
+PASS trap naar het dak - speler na de trap op lokaal (11.51, 6.53, 5.52)
+ladder t=340 lokaal (18.50, -1.38, -0.62) climbing=true hcoll=false water=true fwd=0.00 vel=(0.0, -0.024711771010885265, 0.0)
+ladder t=350 lokaal (18.51, -0.40, -0.49) climbing=true hcoll=true water=true fwd=1.00 vel=(0.0, 0.30000001192092896, 0.0)
+ladder t=360 lokaal (18.51, 1.14, -0.49) climbing=true hcoll=true water=false fwd=1.00 vel=(0.0, 0.11760000228881837, 0.0)
+ladder t=370 lokaal (18.51, 2.08, -0.49) climbing=false hcoll=false water=false fwd=0.00 vel=(0.0, -0.11984318109609361, 0.0)
+ladder t=380 lokaal (18.51, 0.61, -0.49) climbing=true hcoll=false water=false fwd=0.00 vel=(0.0, -0.22540001022815717, 0.0)
+shot 16_ladder
+ladder t=390 lokaal (18.51, -1.01, -0.49) climbing=true hcoll=false water=true fwd=0.00 vel=(0.0, -0.12760481055078546, 0.0)
+ladder t=400 lokaal (18.51, -1.72, -0.49) climbing=true hcoll=false water=true fwd=0.00 vel=(0.0, -0.03601711061499073, 0.0)
+ladder t=410 lokaal (18.51, -2.01, -0.49) climbing=false hcoll=false water=true fwd=0.00 vel=(0.0, -0.026182954751084953, 0.0)
+ladder t=420 lokaal (18.51, -2.27, -0.49) climbing=false hcoll=true water=true fwd=0.00 vel=(0.0, -0.0251270201482574, 0.0)
+ladder t=430 lokaal (18.51, -2.52, -0.49) climbing=false hcoll=true water=true fwd=0.00 vel=(0.0, -0.025013640016715966, 0.0)
+PASS ladder - vanuit het water geklommen tot lokale y=2.12 (dek = 2.0)
+PASS deur - voordeur woning: Block{minecraft:dark_oak_door}[facing=east,half=lower,hinge=right,open=true,powered=false]
+shot 15_deur_open
+PASS laadruim openen - scherm: Hold 1 (0% full)
+shot 17_laadruim
+PASS aan het roer - speler zit aan het roer
+shot 12_aan_het_roer
+PASS varen vanaf het roer - snelheid 0.325 b/t
+shot 13_varen
+PASS roer (A-toets) - koers -7.5 graden veranderd, roer -0.78
+PASS boegschroef (pijltje rechts) - boegschroef draait 4.4 graden/s naar stuurboord (koers -2.9), boegschroef 1
+shot 18_derde_persoon
+PASS doorvaren zonder roerganger - telegraaf 2, snelheid 0.205, speler aan het roer: false
+PASS slapen in bed - slaapt=true op lokaal (7.50, 1.56, 2.50), scherm SleepingChatScreen
+shot 19_slapen
+PASS nacht overgeslagen - tijd 58, slaapt false
+PASS opgestaan naast het bed - speler op lokaal (9.50, 1.00, 2.50)
+shot 20_wakker
+shot 21_kraan
+shot 22_kraan_storten
+shot 22b_kraan_bunkers
+PASS luik boegschroefruimte - luik: Block{minecraft:spruce_trapdoor}[facing=south,half=bottom,open=true,powered=false,waterlogged=false]
+shot 24_luik_voorpiek
+PASS laadkraan - 128 zand in ruim 1
+shot 23_kraan_ruim
+sprong t=25 lokaal (30.50, 3.31, -0.81) water=false
+sprong t=30 lokaal (30.50, 2.57, -1.51) water=false
+sprong t=35 lokaal (30.50, 0.02, -1.95) water=false
+sprong t=40 lokaal (30.46, -3.02, -2.05) water=true
+sprong t=45 lokaal (30.44, -4.18, -2.05) water=true
+sprong t=50 lokaal (30.44, -4.64, -2.05) water=true
+shot 30_sprong_water
+sprong t=55 lokaal (30.44, -4.88, -2.05) water=true
+sprong t=60 lokaal (30.44, -5.04, -2.05) water=true
+sprong t=65 lokaal (30.44, -5.18, -2.05) water=true
+sprong t=70 lokaal (30.44, -5.31, -2.05) water=true
+sprong t=75 lokaal (30.44, -5.43, -2.05) water=true
+sprong t=80 lokaal (30.44, -5.56, -2.05) water=true
+sprong t=85 lokaal (30.44, -5.69, -2.05) water=true
+sprong t=90 lokaal (30.44, -5.81, -2.05) water=true
+sprong t=95 lokaal (30.44, -5.94, -2.05) water=true
+sprong t=100 lokaal (30.44, -6.06, -2.05) water=true
+sprong t=105 lokaal (30.44, -6.19, -2.05) water=true
+PASS in het water springen - speler op lokaal (30.44, -6.81, -2.05), water true
+PASS stuurhut omhoog - stuurhut 2.00 omhoog
+shot 31_stuurhut_omhoog
+shot 31b_onder_de_stuurhut
+stuurhutladder t=5 lokaal (11.19, 5.00, 5.49)
+stuurhutladder t=10 lokaal (11.51, 5.24, 5.44)
+stuurhutladder t=15 lokaal (11.51, 5.82, 5.44)
+stuurhutladder t=20 lokaal (11.51, 6.41, 5.44)
+stuurhutladder t=25 lokaal (11.51, 7.00, 5.44)
+stuurhutladder t=30 lokaal (11.51, 7.59, 5.44)
+stuurhutladder t=35 lokaal (11.57, 8.09, 5.44)
+stuurhutladder t=40 lokaal (12.24, 8.00, 5.44)
+stuurhutladder t=45 lokaal (12.72, 8.00, 5.44)
+stuurhutladder t=50 lokaal (13.59, 8.00, 5.44)
+stuurhutladder t=55 lokaal (14.66, 7.92, 5.44)
+stuurhutladder t=60 lokaal (15.55, 7.50, 5.44)
+stuurhutladder t=65 lokaal (15.70, 7.50, 5.44)
+stuurhutladder t=70 lokaal (15.70, 7.50, 5.44)
+stuurhutladder t=75 lokaal (15.70, 7.50, 5.44)
+stuurhutladder t=80 lokaal (15.70, 7.50, 5.44)
+stuurhutladder t=85 lokaal (15.70, 7.50, 5.44)
+stuurhutladder t=90 lokaal (15.70, 7.50, 5.44)
+stuurhutladder t=95 lokaal (15.70, 7.50, 5.44)
+PASS ladder naar opgeheven stuurhut - speler op lokaal (15.70, 7.50, 5.44), vloer stuurhut op 7.50
+shot 32_in_opgeheven_stuurhut
+RESULT PASS

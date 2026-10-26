@@ -1,0 +1,33 @@
+
+> Configure project :
+Fabric Loom: 1.7.4
+:remapping 50 mods from modImplementation (java-api)
+
+> Task :compileJava
+/home/runner/work/binnenvaart-mod/binnenvaart-mod/great-rivers/src/main/java/nl/greatrivers/mixin/AquiferMixin.java:16: warning: Mixin target net.minecraft.world.gen.chunk.AquiferSampler$Impl is public and should be specified in value
+@Mixin(targets = "net.minecraft.world.gen.chunk.AquiferSampler$Impl")
+^
+Note: /home/runner/work/binnenvaart-mod/binnenvaart-mod/great-rivers/src/main/java/nl/greatrivers/SelfTest.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+1 warning
+
+> Task :processResources
+> Task :classes
+> Task :compileClientJava
+> Task :processClientResources NO-SOURCE
+> Task :jar
+> Task :processIncludeJars
+> Task :compileTestJava NO-SOURCE
+> Task :processTestResources NO-SOURCE
+> Task :testClasses UP-TO-DATE
+> Task :test NO-SOURCE
+> Task :validateAccessWidener NO-SOURCE
+> Task :check UP-TO-DATE
+> Task :remapJar
+> Task :remapSourcesJar SKIPPED
+> Task :assemble
+> Task :build
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_18-1793033607691.json
+
+BUILD SUCCESSFUL in 10s
+6 actionable tasks: 6 executed

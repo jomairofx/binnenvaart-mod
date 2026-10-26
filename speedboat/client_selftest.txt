@@ -1,0 +1,34 @@
+shot 01_overview
+shot 02_side
+shot 03_bow
+shot 04_stern_outboards
+shot 05_cockpit
+shot 06_cabin
+shot 07_helm
+shot 08_underwater
+PASS standing in the cockpit - player at local (3.50, 0.00, 1.50)
+ladder t=80 local (-1.75, -1.28, 3.50) climbing=false water=true
+ladder t=90 local (-1.08, -0.24, 3.59) climbing=false water=true
+ladder t=100 local (-0.49, 0.98, 3.66) climbing=true water=false
+ladder t=110 local (-0.49, 0.07, 3.66) climbing=true water=false
+shot 09_swim_ladder
+ladder t=120 local (-0.49, 0.82, 3.65) climbing=true water=false
+ladder t=130 local (-0.49, 0.19, 3.64) climbing=true water=false
+ladder t=140 local (-0.49, -0.37, 3.64) climbing=true water=true
+ladder t=150 local (-0.49, 0.05, 3.63) climbing=true water=false
+ladder t=160 local (-0.49, 0.80, 3.62) climbing=true water=false
+ladder t=170 local (-0.49, 0.17, 3.61) climbing=true water=true
+PASS swim ladder - climbed out of the water to local y=1.14 (transom 1.0)
+PASS cabin door - door: Block{minecraft:dark_oak_door}[facing=east,half=lower,hinge=left,open=true,powered=false]
+shot 10_cabin_door_open
+PASS chest - screen: Ship's chest
+shot 11_chest
+PASS at the wheel - player in the driver's seat
+shot 12_accelerating
+PASS full speed from the wheel - 120 km/h
+shot 13_full_speed
+shot 14_full_speed_spray
+shot 15_banking_turn
+PASS steering (A key) - heading changed -43.3 degrees, wheel -1.00
+PASS neutral - speed 0.000
+RESULT PASS

@@ -1,0 +1,19 @@
+PASS water - wateroppervlak op y=-52
+PASS ruimte - romp vrij bij plaatsen
+PASS geregistreerd - schip in lijst
+PASS waterverplaatsing - 3331 waterblokken verplaatst
+PASS droog ruim - onder in het ruim: Block{inlandbarge:displaced_water}
+PASS botsing ruimvloer - voorwerp ligt op lokale y=-2.000 (vloer -2)
+PASS varen - schip voer 72.2 blokken in 15 s (snelheid 0.360 b/t)
+PASS meenemen - voorwerp op lokaal (40.50, -2.00, 5.50)
+PASS draaien - koers 49.1 graden veranderd
+PASS vulling - ruim 1: 1.0 materiaal 496
+PASS containers - ruim 3 materiaal -1
+PASS diepgang - schip zakte 0.92 blok door lading
+PASS boegschroef - koers nu 118
+PASS stilstand - snelheid 0.0000
+PASS stuurhut omhoog - stuurhut staat 3.00 blok omhoog
+PASS licht uit - lamp nu Block{minecraft:white_concrete}
+PASS licht aan - lamp weer Block{minecraft:sea_lantern}
+Schip ligt op 172, -51, 2 koers 128.01031699638662
+RESULT PASS

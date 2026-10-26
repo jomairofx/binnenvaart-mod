@@ -1,0 +1,170 @@
+[16:53:40] [main/INFO] (FabricLoader/GameProvider) Loading Minecraft 1.21.1 with Fabric Loader 0.16.5
+[16:53:40] [main/INFO] (FabricLoader) Loading 44 mods:
+	- fabric-api 0.116.4+1.21.1
+	- fabric-api-base 0.4.42+6573ed8c19
+	- fabric-api-lookup-api-v1 1.6.71+b559734419
+	- fabric-biome-api-v1 13.0.31+d527f9fd19
+	- fabric-block-api-v1 1.1.0+0bc3503219
+	- fabric-block-view-api-v2 1.0.11+ebb2264e19
+	- fabric-command-api-v1 1.2.49+f71b366f19
+	- fabric-command-api-v2 2.2.28+6ced4dd919
+	- fabric-commands-v0 0.2.66+df3654b319
+	- fabric-content-registries-v0 8.0.19+b559734419
+	- fabric-convention-tags-v1 2.1.5+7f945d5b19
+	- fabric-convention-tags-v2 2.11.1+a406e79519
+	- fabric-crash-report-info-v1 0.2.29+0af3f5a719
+	- fabric-data-attachment-api-v1 1.4.5+6116a37819
+	- fabric-data-generation-api-v1 20.2.32+5b9dea2e19
+	- fabric-dimensions-v1 4.0.0+6fc22b9919
+	- fabric-entity-events-v1 1.8.0+2b27e0a419
+	- fabric-events-interaction-v0 0.7.13+ba9dae0619
+	- fabric-game-rule-api-v1 1.0.53+6ced4dd919
+	- fabric-gametest-api-v1 2.0.5+6fc22b9919
+	- fabric-item-api-v1 11.1.1+d5debaed19
+	- fabric-item-group-api-v1 4.1.7+def88e3a19
+	- fabric-lifecycle-events-v1 2.6.0+0865547519
+	- fabric-loot-api-v2 3.0.15+3f89f5a519
+	- fabric-loot-api-v3 1.0.3+3f89f5a519
+	- fabric-message-api-v1 6.0.14+8aaf3aca19
+	- fabric-networking-api-v1 4.3.0+c7469b2119
+	- fabric-object-builder-api-v1 15.2.1+40875a9319
+	- fabric-particles-v1 4.0.2+6573ed8c19
+	- fabric-recipe-api-v1 5.0.14+248df81c19
+	- fabric-registry-sync-v0 5.3.1+e3eddc2119
+	- fabric-rendering-data-attachment-v1 0.3.49+73761d2e19
+	- fabric-rendering-fluids-v1 3.1.6+1daea21519
+	- fabric-resource-conditions-api-v1 4.3.0+8dc279b119
+	- fabric-resource-loader-v0 1.3.1+5b5275af19
+	- fabric-screen-handler-api-v1 1.3.90+b559734419
+	- fabric-transfer-api-v1 5.4.3+c24bd99419
+	- fabric-transitive-access-wideners-v1 6.2.0+45b9699719
+	- fabricloader 0.16.5
+	- greatrivers 1.0.0
+	- java 21
+	- kempenaar 1.0.0
+	- minecraft 1.21.1
+	- mixinextras 0.4.1
+[16:53:45] [main/INFO] (FabricLoader/Mixin) SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.15.3+mixin.0.8.7/51ee0a44ab05f6fddd66b09e66b3a16904f9c55d/sponge-mixin-0.15.3+mixin.0.8.7.jar Service=Knot/Fabric Env=SERVER
+[16:53:45] [main/INFO] (FabricLoader/Mixin) Loaded Fabric development mappings for mixin remapper!
+[16:53:45] [main/INFO] (FabricLoader/Mixin) Compatibility level set to JAVA_17
+[16:53:45] [main/INFO] (FabricLoader/Mixin) Compatibility level set to JAVA_21
+[16:53:46] [main/INFO] (FabricLoader/MixinExtras|Service) Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.4.1).
+[16:53:52] [main/ERROR] (Minecraft) No data fixer registered for kempenaar
+[16:53:52] [main/INFO] (kempenaar) Kempenaar geladen: schip JOHANNA (70 m lang)
+[16:53:52] [main/INFO] (greatrivers) Great Rivers loaded
+[16:53:52] [main/INFO] (Minecraft) Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
+[16:53:53] [main/INFO] (Minecraft) No existing world data, creating new world
+[16:53:54] [main/INFO] (Minecraft) Loaded 1292 recipes
+[16:53:54] [main/INFO] (Minecraft) Loaded 1399 advancements
+[16:53:54] [main/INFO] (BiomeModificationImpl) Applied 159 biome modifications to 53 of 64 new biomes in 27.35 ms
+[16:53:54] [Server thread/INFO] (Minecraft) Starting minecraft server version 1.21.1
+[16:53:54] [Server thread/INFO] (Minecraft) Loading properties
+[16:53:54] [Server thread/INFO] (Minecraft) Default game type: SURVIVAL
+[16:53:54] [Server thread/INFO] (Minecraft) Generating keypair
+[16:53:54] [Server thread/INFO] (Minecraft) Starting Minecraft server on *:25565
+[16:53:55] [Server thread/INFO] (Minecraft) Using epoll channel type
+[16:53:55] [Server thread/WARN] (Minecraft) **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[16:53:55] [Server thread/WARN] (Minecraft) The server will make no attempt to authenticate usernames. Beware.
+[16:53:55] [Server thread/WARN] (Minecraft) While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[16:53:55] [Server thread/WARN] (Minecraft) To change this, set "online-mode" to "true" in the server.properties file.
+[16:53:55] [Server thread/INFO] (Minecraft) Preparing level "world"
+[16:53:55] [Server thread/INFO] (greatrivers) Great Rivers: river network added to the overworld terrain
+[16:53:59] [Server thread/INFO] (Minecraft) Preparing start region for dimension minecraft:overworld
+[16:53:59] [Worker-Main-2/INFO] (Minecraft) Preparing spawn area: 2%
+[16:54:00] [Worker-Main-2/INFO] (Minecraft) Preparing spawn area: 2%
+[16:54:00] [Worker-Main-2/INFO] (Minecraft) Preparing spawn area: 2%
+[16:54:01] [Worker-Main-2/INFO] (Minecraft) Preparing spawn area: 2%
+[16:54:01] [Worker-Main-2/INFO] (Minecraft) Preparing spawn area: 18%
+[16:54:02] [Worker-Main-1/INFO] (Minecraft) Preparing spawn area: 18%
+[16:54:02] [Worker-Main-3/INFO] (Minecraft) Preparing spawn area: 18%
+[16:54:03] [Worker-Main-1/INFO] (Minecraft) Preparing spawn area: 51%
+[16:54:03] [Worker-Main-2/INFO] (Minecraft) Preparing spawn area: 51%
+[16:54:04] [Server thread/INFO] (Minecraft) Time elapsed: 4430 ms
+[16:54:04] [Server thread/INFO] (Minecraft) Done (8.946s)! For help, type "help"
+[16:54:06] [Server thread/INFO] (greatrivers) SELFTEST PASS riviernet actief ja
+[16:54:06] [Server thread/INFO] (greatrivers) SELFTEST PASS geen lavaplassen en geen ijsbergen 0 lava- of ijs-features over
+[16:54:06] [Server thread/INFO] (greatrivers) SELFTEST PASS river gevonden midden op -343, 1176
+[16:54:06] [Server thread/INFO] (greatrivers) SELFTEST PASS river diep genoeg 20 blokken water in het midden
+[16:54:06] [Server thread/INFO] (greatrivers) SELFTEST PASS river water tot zeeniveau bovenste water op y 62
+[16:54:06] [Server thread/INFO] (greatrivers) SELFTEST PASS river rivierbiome minecraft:river
+[16:54:12] [Server thread/INFO] (greatrivers) SELFTEST PASS river breedte klopt 162 blokken water dwars over de rivier (ontwerp 163)
+[16:54:12] [Server thread/INFO] (greatrivers) SELFTEST PASS river vaste bodem 5 van 5 plekken met een vaste bodem onder de bedding
+[16:54:12] [Server thread/INFO] (greatrivers) SELFTEST PASS dorp gevonden op -403, -385
+[16:54:13] [Server thread/INFO] (greatrivers) SELFTEST PASS dorp: kerktoren Bricks op toren-hoogte
+[16:54:14] [Server thread/INFO] (greatrivers) SELFTEST PASS dorp: huizen en straten gevel Bricks, straat Bricks
+[16:54:14] [Server thread/INFO] (greatrivers) SELFTEST PASS stad gevonden op -369, 5231
+[16:54:14] [Server thread/INFO] (greatrivers) SELFTEST PASS stad: kerktoren Bricks op toren-hoogte
+[16:54:15] [Server thread/INFO] (greatrivers) SELFTEST PASS stad: huizen en straten gevel White Concrete, straat Bricks
+[16:54:15] [Server thread/INFO] (greatrivers) SELFTEST PASS stad aan de rivier gevonden op -1661, 3645
+[16:54:16] [Server thread/INFO] (greatrivers) SELFTEST PASS stad aan de rivier: kademuur Smooth Stone op Bricks bij -1546, 3727
+[16:54:32] [Server thread/INFO] (greatrivers) SELFTEST PASS stad aan de rivier: hoogbouw 7 torens hoger dan 22
+[16:54:33] [Server thread/INFO] (greatrivers) SELFTEST PASS grote stad gevonden op 1671, 4893, 1482 breed, aan de rivier
+[16:54:33] [Server thread/INFO] (greatrivers) SELFTEST PASS grote stad: wijken old centre 116, business district 55, inner city 103, flats 185, row houses 420, new estate 502, villas 220, industrial estate 207, city park 135, 
+[16:54:34] [Server thread/INFO] (greatrivers) SELFTEST PASS grote stad: hoogbouw 3 torens hoger dan 30
+[16:54:34] [Server thread/INFO] (greatrivers) SELFTEST PASS grote stad: grachten (geen gracht op het land gevonden)
+[16:54:34] [Server thread/INFO] (greatrivers) SELFTEST PASS grote stad: brug over de rivier (geen brug: de opritten zouden buiten de stad uitkomen)
+[16:54:34] [Server thread/INFO] (greatrivers) SELFTEST PASS kleine haven gevonden op -836, 735 aan een river, lading coal
+[16:54:35] [Server thread/INFO] (greatrivers) SELFTEST PASS kleine haven: kade verhard Polished Andesite op y 64 bij -845, 843
+[16:54:35] [Server thread/INFO] (greatrivers) SELFTEST PASS kleine haven: bekken diep 10 blokken water in het bekken bij -843, 822
+[16:54:36] [Server thread/INFO] (greatrivers) SELFTEST PASS kleine haven: kranen 2 kranen, eerste: kempenaar:laadkraan, vol met coal
+[16:54:36] [Server thread/INFO] (greatrivers) SELFTEST PASS kleine haven: kraan op 20 van de rand 20.1 blokken van de rand
+[16:54:36] [Server thread/INFO] (greatrivers) SELFTEST PASS middelgrote haven gevonden op -4846, 521 aan een river, lading timber
+[16:54:37] [Server thread/INFO] (greatrivers) SELFTEST PASS middelgrote haven: kade verhard Polished Andesite op y 64 bij -4857, 413
+[16:54:37] [Server thread/INFO] (greatrivers) SELFTEST PASS middelgrote haven: bekken diep 10 blokken water in het bekken bij -4854, 438
+[16:54:38] [Server thread/INFO] (greatrivers) SELFTEST PASS middelgrote haven: kranen 5 kranen, eerste: kempenaar:laadkraan, vol met timber
+[16:54:38] [Server thread/INFO] (greatrivers) SELFTEST PASS middelgrote haven: kraan op 20 van de rand 20.4 blokken van de rand
+[16:54:38] [Server thread/INFO] (greatrivers) SELFTEST PASS grote haven gevonden op 5013, 3399 aan een river, lading timber
+[16:54:38] [Server thread/INFO] (greatrivers) SELFTEST PASS grote haven: kade verhard Smooth Stone op y 64 bij 4795, 3384
+[16:54:39] [Server thread/INFO] (greatrivers) SELFTEST PASS grote haven: bekken diep 10 blokken water in het bekken bij 4804, 3433
+[16:54:39] [Server thread/INFO] (greatrivers) SELFTEST PASS grote haven: kranen 12 kranen, eerste: kempenaar:laadkraan, vol met timber
+[16:54:39] [Server thread/INFO] (greatrivers) SELFTEST PASS grote haven: kraan op 20 van de rand 19.5 blokken van de rand
+[16:54:39] [Server thread/INFO] (greatrivers) SELFTEST PASS brug gevonden op -1588, -1662
+[16:54:40] [Server thread/INFO] (greatrivers) SELFTEST PASS brug: wegdek Light Gray Concrete op y 87
+[16:54:40] [Server thread/INFO] (greatrivers) SELFTEST PASS brug: doorvaarthoogte 0 blokken in de weg, 23 blokken vrij boven het water
+[16:54:43] [Server thread/INFO] (greatrivers) SELFTEST PASS afrit gevonden op 5498, -1980
+[16:54:44] [Server thread/INFO] (greatrivers) SELFTEST PASS afrit: viaduct over de snelweg dek Light Gray Concrete, onder: Light Gray Concrete
+[16:54:44] [Server thread/INFO] (greatrivers) SELFTEST PASS metropool gevonden op -9651, 8793, 5207 breed
+[16:54:44] [Server thread/INFO] (greatrivers) SELFTEST PASS metropool: 5 tot 10 km 5207 blokken
+[16:54:44] [Server thread/INFO] (greatrivers) SELFTEST PASS metropool: alle soorten wijken 9 soorten
+[16:54:46] [Server thread/INFO] (greatrivers) SELFTEST PASS metropool: hoogbouw in het centrum 3 torens hoger dan 40
+[16:54:47] [Server thread/INFO] (greatrivers) SELFTEST PASS centraal station: op het viaduct Light Gray Concrete op y 72, 6 vrij eronder
+[16:54:47] [Server thread/INFO] (greatrivers) SELFTEST PASS groot laagbouwdorp gevonden op 32305, 8975, 3000 breed
+[16:54:47] [Server thread/INFO] (greatrivers) SELFTEST PASS groot laagbouwdorp: geen hoogbouw 0 blokken met hoogbouw
+[16:54:47] [Server thread/INFO] (greatrivers) SELFTEST PASS dijkwijk gevonden town behind the dike op -1355, 2735
+[16:54:47] [Server thread/INFO] (greatrivers) SELFTEST PASS dijkwijk: dijk staat er nog dijk tot y 69 e=51 t=64.7 town behind the dike; e=58 t=68.9 town behind the dike; e=65 t=69.3 town behind the dike; e=73 t=65.3 town behind the dike; e=80 t=64.3 town behind the dike; e=89 t=64.3 town behind the dike; e=96 t=64.3 town behind the dike;
+[16:54:47] [Server thread/INFO] (greatrivers) SELFTEST PASS grote haven gevonden op 6010, -3945, 3 bekkens
+[16:54:48] [Server thread/INFO] (greatrivers) SELFTEST PASS grote haven: water in het bekken op 6200, -3615
+[16:54:50] [Server thread/INFO] (greatrivers) SELFTEST PASS grote haven: kade Smooth Stone op 6154, 64, -3622
+[16:54:50] [Server thread/INFO] (greatrivers) SELFTEST PASS grote havens: minstens 5 km uit elkaar 8711 blokken naar de volgende
+[16:54:50] [Server thread/INFO] (greatrivers) SELFTEST PASS bedrijventerrein gevonden op 2203, -5473
+[16:54:51] [Server thread/INFO] (greatrivers) SELFTEST PASS bedrijventerrein: straat Gray Concrete op 2223, -5473
+[16:54:51] [Server thread/INFO] (greatrivers) SELFTEST PASS hoogspanning: geen losse masten OK: 20 masten, 8 stations op 2 lijnen
+[16:54:52] [Server thread/INFO] (greatrivers) SELFTEST PASS hoogspanningsstation gevonden op -4214, -2873
+[16:54:53] [Server thread/INFO] (greatrivers) SELFTEST PASS hoogspanningsstation: portaal Iron Bars op -4206, 69, -2884
+[16:54:54] [Server thread/INFO] (greatrivers) SELFTEST PASS spoorlijn met rails Rail op -8223, 68, 3492
+[16:54:54] [Server thread/INFO] (greatrivers) SELFTEST PASS spoorbrug gevonden op -304, -8443
+[16:54:55] [Server thread/INFO] (greatrivers) SELFTEST PASS spoorbrug hoog genoeg Light Gray Concrete, 0 blokken in de weg
+[16:54:55] [Server thread/INFO] (greatrivers) SELFTEST PASS viaduct gevonden op 883, 19381
+[16:54:57] [Server thread/INFO] (greatrivers) SELFTEST PASS viaduct: dek en weg eronder vrij dek Light Gray Concrete op y 71, onder: Air
+[16:54:57] [Server thread/INFO] (greatrivers) SELFTEST PASS sluis gevonden op -5919, 919, met weg naar een village
+[16:54:57] [Server thread/INFO] (greatrivers) SELFTEST PASS sluis: kolk open en diep 24 van 24 blokken breed open water van 6 diep
+[16:54:58] [Server thread/INFO] (greatrivers) SELFTEST PASS sluis: stuw Cyan Terracotta in de stuw
+[16:54:58] [Server thread/INFO] (greatrivers) SELFTEST PASS polder gevonden op 248, -927
+[16:55:01] [Server thread/INFO] (greatrivers) SELFTEST PASS polder vlak hoogtes 62 62 62 62 62 62 58 62 62 (8 van 9 op polderhoogte 64)
+[16:55:02] [Server thread/INFO] (greatrivers) SELFTEST PASS sloten met water 2 van 2 slootvakjes met water
+[16:55:02] [Server thread/INFO] (greatrivers) SELFTEST PASS alle sloten met water 0 van 0 slootvakjes in 200x200
+[16:55:02] [Server thread/INFO] (greatrivers) SELFTEST PASS rivier met dijk gevonden op -662, 2472
+[16:55:03] [Server thread/INFO] (greatrivers) SELFTEST PASS dijk langs de rivier dijk tot y 69
+[16:55:03] [Server thread/INFO] (greatrivers) SELFTEST PASS diepe zee gevonden op -1236, -331
+[16:55:04] [Server thread/INFO] (greatrivers) SELFTEST PASS zee 100 blokken diep 100 blokken water
+[16:55:04] [Server thread/INFO] (greatrivers) SELFTEST PASS gewoon land buiten de rivieren op 0, 0 hoogte 63
+[16:55:05] [Server thread/INFO] (Minecraft) Stopping server
+[16:55:05] [Server thread/INFO] (Minecraft) Saving players
+[16:55:05] [Server thread/INFO] (Minecraft) Saving worlds
+[16:55:09] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[16:55:20] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[16:55:20] [Server thread/INFO] (Minecraft) Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[16:55:20] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (world): All chunks are saved
+[16:55:20] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[16:55:20] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[16:55:20] [Server thread/INFO] (Minecraft) ThreadedAnvilChunkStorage: All dimensions are saved

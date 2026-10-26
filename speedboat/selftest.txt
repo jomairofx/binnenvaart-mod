@@ -1,0 +1,20 @@
+PASS water - water surface at y=-52
+PASS room - hull clear when placed
+PASS registered - boat in the list
+PASS displacement - 84 water blocks displaced
+PASS chest - cabin: Block{minecraft:chest}[facing=north,type=left,waterlogged=false]
+PASS dry cabin - cabin floor: Block{speedboat:displaced_water}
+PASS berth - 2 beds in the V-berth
+PASS cockpit floor - item lies at local y=0.000 (floor 0)
+PASS freeboard - floor 0.11 above the water
+PASS top speed - 120 km/h after 14 s, 283 blocks run
+PASS planing - she rose 0.32 blocks out of the water
+PASS carried - item at local (3.50, 0.00, 1.50)
+PASS turn at speed - heading changed 51.3 degrees in 2 s, now 111 km/h
+PASS stops - speed 0.0000 after 10 s in neutral
+PASS off the plane - 0.00 above rest
+PASS astern - speed -0.200 b/t
+PASS lights off - lamp now Block{minecraft:white_concrete}
+PASS lights on - lamp Block{minecraft:sea_lantern}
+Boat at 20, -51, 0 heading 79.78507203176169
+RESULT PASS

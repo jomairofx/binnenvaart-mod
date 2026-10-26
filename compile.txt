@@ -1,0 +1,27 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Configure project :
+Fabric Loom: 1.7.4
+:remapping 50 mods from modImplementation (java-api)
+
+> Task :compileJava
+/home/runner/work/binnenvaart-mod/binnenvaart-mod/great-rivers/src/main/java/nl/greatrivers/mixin/AquiferMixin.java:16: warning: Mixin target net.minecraft.world.gen.chunk.AquiferSampler$Impl is public and should be specified in value
+@Mixin(targets = "net.minecraft.world.gen.chunk.AquiferSampler$Impl")
+^
+Note: /home/runner/work/binnenvaart-mod/binnenvaart-mod/great-rivers/src/main/java/nl/greatrivers/SelfTest.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+1 warning
+
+> Task :processResources
+> Task :classes
+> Task :compileClientJava
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1793032112635.json
+
+BUILD SUCCESSFUL in 24s
+3 actionable tasks: 3 executed
+COMPILE OK great-rivers
+COMPILE OK ..
+COMPILE OK ../inland-barge
+COMPILE OK ../kempenaar
+COMPILE OK ../modern-bulk
+COMPILE OK ../speedboat

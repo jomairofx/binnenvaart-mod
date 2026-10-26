@@ -147,7 +147,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		if (!shadow || cam.squaredDistanceTo(shipPos) < 48 * 48)
 			dc.sink.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
 		if (!shadow) renderName(ship, matrices, consumers, light);
-		renderHelm(ship, tickDelta, matrices, consumers, light);
+		if (!shadow && cam.squaredDistanceTo(shipPos) < 40 * 40) renderHelm(ship, tickDelta, matrices, consumers, light);
 		matrices.pop();
 		super.render(ship, yaw, tickDelta, matrices, consumers, light);
 	}

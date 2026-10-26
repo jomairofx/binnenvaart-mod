@@ -33,7 +33,7 @@ final class ChartPlotter {
 	static final float SCALE = 1.5f;
 	private static final int RING = 512, MASK = RING - 1;
 	private static final int SCAN = 200;            // columns read round the ship (each side)
-	private static final int PER_TICK = 4200;
+	private static final int PER_TICK = 1600;
 	private static final int UNKNOWN = 0xFF2A1C12;  // dark navy (ABGR)
 
 	private static final int[] colour = new int[RING * RING];
@@ -122,21 +122,28 @@ final class ChartPlotter {
 				int x = (int) Math.floor(wx), z = (int) Math.floor(wz);
 				int k = (x & MASK) * RING + (z & MASK);
 				int col = keyX[k] == x && keyZ[k] == z ? colour[k] : UNKNOWN;
-				// ships: this one white, others orange, at their real size
-				for (ShipEntity o : ships) {
-					if (Math.abs(o.getX() - wx) > 130 || Math.abs(o.getZ() - wz) > 130) continue;
-					net.minecraft.util.math.Vec3d l = o.toLocal(new net.minecraft.util.math.Vec3d(wx, o.getY(), wz));
-					if (o.template.insideOutline(l.x, l.z, 0.4)) {
-						col = o == ship ? 0xFFFFFFFF : 0xFF2A8CFF;
-						break;
-					}
-				}
 				// range rings at 100 and 200 blocks
 				double dx = px + 0.5 - W / 2.0, dy = py + 0.5 - cy, r = Math.sqrt(dx * dx + dy * dy);
 				if (Math.abs(r - ring1) < 0.55 || Math.abs(r - ring2) < 0.55) col = blend(col, 0xFFE0E0E0, 0.45f);
 				// heading line straight ahead
 				if (Math.abs(dx) < 0.6 && dy < 0 && ((int) -dy / 4) % 2 == 0) col = blend(col, 0xFFFFFFFF, 0.5f);
 				img.setColor(px, py, col);
+			}
+		}
+		// ships: this one white, others orange, at their real size
+		for (ShipEntity o : ships) {
+			if (Math.abs(o.getX() - ox) > 300 || Math.abs(o.getZ() - oz) > 300) continue;
+			int len = o.template.length;
+			int shipCol = o == ship ? 0xFFFFFFFF : 0xFF2A8CFF;
+			for (float tx = 0; tx < len; tx += 0.75f) {
+				int xi = Math.min(len - 1, (int) tx);
+				for (float tz = o.template.hullZ0[xi]; tz <= o.template.hullZ1[xi] + 1; tz += 0.75f) {
+					net.minecraft.util.math.Vec3d p = o.toWorld(tx, 0, tz);
+					double rx = p.x - ox, rz = p.z - oz;
+					double f = rx * c + rz * s, r = -rx * s + rz * c;
+					int qx = (int) Math.floor(W / 2.0 + r / SCALE), qy = (int) Math.floor(cy - f / SCALE);
+					if (qx >= 0 && qy >= 0 && qx < W && qy < H) img.setColor(qx, qy, shipCol);
+				}
 			}
 		}
 		// the north mark on the outer ring
@@ -195,7 +202,8 @@ final class ChartPlotter {
 		if (ship.age != lastAge) {
 			lastAge = ship.age;
 			scan(w, ship);
-			compose(w, ship);
+			// the picture is rebuilt five times a second: enough to look live, light on the frame rate
+			if (ship.age % 4 == 0) compose(w, ship);
 		}
 		float sw = z1 - z0, sh = y1 - y0, a = sw / sh, ia = (float) W / H;
 		float u0 = 0, u1 = 1, v0 = 0, v1 = 1;

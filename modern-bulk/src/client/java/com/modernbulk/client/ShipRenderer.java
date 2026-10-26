@@ -136,7 +136,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		if (!shadow || cam.squaredDistanceTo(shipPos) < 48 * 48)
 			dc.sink.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
 		if (!shadow) renderName(ship, matrices, consumers, light);
-		if (!shadow || cam.squaredDistanceTo(shipPos) < 24 * 24) renderHelm(ship, tickDelta, matrices, consumers, light);
+		if (!shadow) renderHelm(ship, tickDelta, matrices, consumers, light);
 		matrices.pop();
 		super.render(ship, yaw, tickDelta, matrices, consumers, light);
 	}
@@ -353,6 +353,7 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 	// ---------------------------------------------------------------- naam
 
 	private final Sink helmSink = new Sink();
+	private long helmKey = Long.MIN_VALUE;
 
 	/**
 	 * The helm in the wheelhouse: a real steering wheel that turns with the rudder, twin engine telegraph levers
@@ -362,7 +363,20 @@ public class ShipRenderer extends EntityRenderer<ShipEntity> {
 		double[] seat = ship.template.seatAft;
 		float sx = (float) seat[0], sy = (float) seat[1], sz = (float) seat[2];
 		float L = ship.template.inLift(MathHelper.floor(sx), MathHelper.floor(sy), MathHelper.floor(sz)) ? ship.liftLerp(tickDelta) : 0f;
+		// only drawn when you are near the wheelhouse
+		net.minecraft.util.math.Vec3d hw = ship.toWorld(sx + 1.5, sy + L, sz);
+		if (this.dispatcher.camera.getPos().squaredDistanceTo(hw) > 40 * 40) return;
 		Sink vc = helmSink;
+		// the levers, wheel and buttons only change when the controls do: rebuild only then
+		long key = ship.getId() * 31L + Math.round(ship.syncedRudder() * 200) * 1009L + ship.syncedThrottle() * 7L + ship.syncedThruster() * 13L
+				+ (ship.engineOn() ? 1 << 20 : 0) + (ship.lightsOn() ? 1 << 21 : 0) + (ship.isAground() ? 1 << 22 : 0) + Math.round(L * 100) * 100003L + light * 7919L;
+		float fx0 = sx + 2.15f, base0 = sy + 0.61f + L;
+		if (key == helmKey && vc.n > 0) {
+			if (ship.engineOn()) ChartPlotter.draw(ship, matrices, consumers, fx0 - 0.006f, base0 + 0.04f, base0 + 0.51f, sz - 1.0f, sz - 0.4f);
+			vc.emit(consumers.getBuffer(TexturedRenderLayers.getEntityCutout()), matrices.peek());
+			return;
+		}
+		helmKey = key;
 		vc.n = 0;
 		boolean classic = false;
 		Sprite rim = sprites((classic ? Blocks.DARK_OAK_PLANKS : Blocks.BLACK_CONCRETE).getDefaultState())[0];
